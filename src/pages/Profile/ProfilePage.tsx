@@ -445,7 +445,7 @@ export default function ProfilePage() {
     <div className="mx-auto max-w-xl space-y-3">
       <header>
         <h1 className="font-display text-2xl font-extrabold tracking-tight text-navy sm:text-3xl">
-          Profile
+          {user?.name ? `Hello, ${user.name}` : 'Profile'}
         </h1>
         <p className="mt-0.5 text-sm text-muted">Tap a section to expand. Edit when you need to change it.</p>
         <div className="mt-2 flex flex-wrap items-center gap-1.5" aria-label="Your roles">
