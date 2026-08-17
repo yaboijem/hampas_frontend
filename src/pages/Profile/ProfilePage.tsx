@@ -22,7 +22,10 @@ import type {
   SkillLevel,
 } from '../../api/types';
 import { PLAYER_POSITIONS } from '../../api/types';
+import PasswordField from '../../components/PasswordField';
+import PasswordRules from '../../components/PasswordRules';
 import { SKILL_BADGE_CLASS, SKILL_LABEL } from '../../events/eventLabels';
+import { passwordFormValid } from '../../lib/passwordRules';
 
 const ROLE_META: Record<Role, { label: string; emoji: string }> = {
   player: { label: 'Player', emoji: '🏐' },
@@ -74,10 +77,6 @@ type CardKey = 'account' | 'player' | 'coach' | 'organizer' | 'elevated';
 type PasswordPhase = 'locked' | 'code_sent' | 'unlocked';
 
 const PASSWORD_RESEND_COOLDOWN_MS = 15_000;
-
-function passwordMeetsRules(pw: string): boolean {
-  return pw.length >= 8 && /[0-9]/.test(pw) && /[^A-Za-z0-9]/.test(pw);
-}
 
 function apiErrorMessage(err: unknown, fallback: string): string {
   if (err && typeof err === 'object' && 'response' in err) {
@@ -393,8 +392,7 @@ export default function ProfilePage() {
     }
   };
 
-  const passwordValid =
-    passwordMeetsRules(newPassword) && newPassword === confirmPassword;
+  const passwordValid = passwordFormValid(newPassword, confirmPassword);
 
   const handleSendCode = async () => {
     setPasswordError(null);
@@ -724,32 +722,20 @@ export default function ProfilePage() {
                       </div>
                     ) : null}
                     {passwordPhase === 'unlocked' ? (
-                      <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                        <label className="block sm:col-span-2" htmlFor="new-password">
-                          <span className={labelClass}>New password</span>
-                          <input
-                            id="new-password"
-                            type="password"
-                            autoComplete="new-password"
-                            className={fieldClass}
-                            value={newPassword}
-                            onChange={(e) => setNewPassword(e.target.value)}
-                          />
-                        </label>
-                        <label className="block sm:col-span-2" htmlFor="confirm-password">
-                          <span className={labelClass}>Confirm password</span>
-                          <input
-                            id="confirm-password"
-                            type="password"
-                            autoComplete="new-password"
-                            className={fieldClass}
-                            value={confirmPassword}
-                            onChange={(e) => setConfirmPassword(e.target.value)}
-                          />
-                        </label>
-                        <p className="text-xs text-muted sm:col-span-2">
-                          Min 8 characters, at least 1 digit and 1 special character.
-                        </p>
+                      <div className="mt-3 space-y-3">
+                        <PasswordField
+                          label="New password"
+                          value={newPassword}
+                          onChange={setNewPassword}
+                          autoComplete="new-password"
+                        />
+                        <PasswordField
+                          label="Confirm password"
+                          value={confirmPassword}
+                          onChange={setConfirmPassword}
+                          autoComplete="new-password"
+                        />
+                        <PasswordRules password={newPassword} confirmation={confirmPassword} />
                         <button
                           type="button"
                           className={primaryBtn}
