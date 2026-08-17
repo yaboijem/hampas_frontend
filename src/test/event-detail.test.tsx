@@ -161,7 +161,7 @@ describe('EventDetailPage', () => {
     expect(screen.queryByRole('button', { name: /delete event/i })).not.toBeInTheDocument();
   });
 
-  test('shows organizer contact links with icons when present', async () => {
+  test('shows organizer contact icon links below about when present', async () => {
     vi.mocked(eventsApi.getEvent).mockResolvedValue({
       ...baseEvent,
       created_by: {
@@ -176,11 +176,12 @@ describe('EventDetailPage', () => {
     renderDetail();
 
     expect(await screen.findByText(/alex organizer/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /^contact$/i })).toBeInTheDocument();
 
-    const phone = screen.getByRole('link', { name: /09171234567/i });
+    const phone = screen.getByRole('link', { name: /call 09171234567/i });
     expect(phone).toHaveAttribute('href', 'tel:09171234567');
 
-    const email = screen.getByRole('link', { name: /alex@example.com/i });
+    const email = screen.getByRole('link', { name: /email alex@example.com/i });
     expect(email).toHaveAttribute('href', 'mailto:alex@example.com');
 
     const fb = screen.getByRole('link', { name: /^facebook$/i });
@@ -207,8 +208,9 @@ describe('EventDetailPage', () => {
     renderDetail();
 
     expect(await screen.findByText(/alex organizer/i)).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /^contact$/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /^facebook$/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /^instagram$/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: /@/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /call /i })).not.toBeInTheDocument();
   });
 });

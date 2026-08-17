@@ -24,8 +24,8 @@ function nonEmpty(v: string | null | undefined): v is string {
   return typeof v === 'string' && v.trim() !== '';
 }
 
-const contactLinkClass =
-  'text-cobalt underline-offset-2 hover:underline';
+const contactIconLinkClass =
+  'inline-flex h-11 w-11 items-center justify-center rounded-full border border-border bg-surface text-cobalt shadow-soft transition hover:border-cobalt hover:bg-sky-tint';
 
 export default function EventDetailPage() {
   const { id } = useParams();
@@ -80,9 +80,10 @@ export default function EventDetailPage() {
     <article className={`relative mx-auto max-w-3xl ${showApplyChrome ? 'pb-28 md:pb-8' : 'pb-8'}`}>
       <Link
         to="/events"
-        className="mb-4 inline-flex text-sm font-medium text-muted hover:text-navy"
+        className="mb-4 inline-flex min-h-9 items-center gap-1.5 rounded-full bg-sky-tint px-3 py-1.5 text-sm font-semibold text-chip-text transition hover:bg-cobalt/15"
       >
-        ← Back to events
+        <span aria-hidden>←</span>
+        Back to events
       </Link>
 
       {event.visibility !== 'live' && (
@@ -109,9 +110,6 @@ export default function EventDetailPage() {
             🏐
           </div>
         )}
-        <span className="absolute right-3 top-3 rounded-full border border-white/40 bg-white/70 px-2.5 py-1 text-xs font-semibold text-navy backdrop-blur-md">
-          {SKILL_LABEL[event.skill_level]}
-        </span>
         {event.distance_km !== undefined && (
           <span className="absolute bottom-3 left-3 rounded-full bg-navy/80 px-2.5 py-1 text-xs font-medium text-white">
             {event.distance_km} km away
@@ -154,68 +152,6 @@ export default function EventDetailPage() {
           <dt className="text-sm text-muted">Organizer</dt>
           <dd className="text-right text-sm font-medium text-navy">{event.created_by.name}</dd>
         </div>
-        {hasContact && phone ? (
-          <div className="flex justify-between gap-4 px-4 py-3">
-            <dt className="flex items-center gap-2 text-sm text-muted">
-              <PhoneIcon className="text-cobalt" />
-              Phone
-            </dt>
-            <dd className="text-right text-sm font-medium text-navy">
-              <a href={`tel:${phone}`} className={contactLinkClass}>
-                {phone}
-              </a>
-            </dd>
-          </div>
-        ) : null}
-        {hasContact && email ? (
-          <div className="flex justify-between gap-4 px-4 py-3">
-            <dt className="flex items-center gap-2 text-sm text-muted">
-              <EmailIcon className="text-cobalt" />
-              Email
-            </dt>
-            <dd className="text-right text-sm font-medium text-navy">
-              <a href={`mailto:${email}`} className={contactLinkClass}>
-                {email}
-              </a>
-            </dd>
-          </div>
-        ) : null}
-        {hasContact && facebook ? (
-          <div className="flex justify-between gap-4 px-4 py-3">
-            <dt className="flex items-center gap-2 text-sm text-muted">
-              <FacebookIcon className="text-cobalt" />
-              Facebook
-            </dt>
-            <dd className="text-right text-sm font-medium text-navy">
-              <a
-                href={facebook}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={contactLinkClass}
-              >
-                Facebook
-              </a>
-            </dd>
-          </div>
-        ) : null}
-        {hasContact && instagram ? (
-          <div className="flex justify-between gap-4 px-4 py-3">
-            <dt className="flex items-center gap-2 text-sm text-muted">
-              <InstagramIcon className="text-cobalt" />
-              Instagram
-            </dt>
-            <dd className="text-right text-sm font-medium text-navy">
-              <a
-                href={instagram}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={contactLinkClass}
-              >
-                Instagram
-              </a>
-            </dd>
-          </div>
-        ) : null}
       </dl>
 
       <section className="mb-8">
@@ -224,6 +160,60 @@ export default function EventDetailPage() {
         </h2>
         <p className="whitespace-pre-wrap text-base leading-relaxed text-navy">{event.description}</p>
       </section>
+
+      {hasContact ? (
+        <section className="mb-8" aria-label="Organizer contact">
+          <h2 className="mb-3 font-display text-sm font-semibold uppercase tracking-wide text-muted">
+            Contact
+          </h2>
+          <ul className="flex flex-wrap gap-2">
+            {phone ? (
+              <li>
+                <a href={`tel:${phone}`} className={contactIconLinkClass} aria-label={`Call ${phone}`}>
+                  <PhoneIcon size={20} />
+                </a>
+              </li>
+            ) : null}
+            {email ? (
+              <li>
+                <a
+                  href={`mailto:${email}`}
+                  className={contactIconLinkClass}
+                  aria-label={`Email ${email}`}
+                >
+                  <EmailIcon size={20} />
+                </a>
+              </li>
+            ) : null}
+            {facebook ? (
+              <li>
+                <a
+                  href={facebook}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={contactIconLinkClass}
+                  aria-label="Facebook"
+                >
+                  <FacebookIcon size={20} />
+                </a>
+              </li>
+            ) : null}
+            {instagram ? (
+              <li>
+                <a
+                  href={instagram}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={contactIconLinkClass}
+                  aria-label="Instagram"
+                >
+                  <InstagramIcon size={20} />
+                </a>
+              </li>
+            ) : null}
+          </ul>
+        </section>
+      ) : null}
 
       {showApplyChrome && (
         <div
