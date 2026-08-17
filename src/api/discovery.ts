@@ -15,7 +15,7 @@ export async function listEvents(params: EventFilters): Promise<Paginated<EventI
   return data;
 }
 
-export async function nearbyEvents(lat: number, lng: number, radiusKm = 25): Promise<Paginated<EventItem>> {
+export async function nearbyEvents(lat: number, lng: number, radiusKm = 50): Promise<Paginated<EventItem>> {
   const { data } = await api.get('/events/nearby', { params: { lat, lng, radius_km: radiusKm } });
   return data;
 }

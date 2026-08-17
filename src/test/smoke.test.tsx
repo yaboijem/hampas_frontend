@@ -11,7 +11,7 @@ test('app shell renders brand and navigation', () => {
   );
   expect(screen.getByRole('navigation')).toBeInTheDocument();
   expect(screen.getByRole('link', { name: /hampas/i })).toBeInTheDocument();
-  expect(screen.getByText(/angeles city/i)).toBeInTheDocument();
+  expect(screen.getByText(/find · play · enjoy/i)).toBeInTheDocument();
 });
 
 test('mobile menu toggles navigation links', async () => {

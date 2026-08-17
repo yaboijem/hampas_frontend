@@ -4,8 +4,10 @@ import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import RoleRequestsPanel from '../pages/Admin/RoleRequestsPanel';
 import * as adminApi from '../api/admin';
+import { pageOf } from './adminPaginated';
 
 vi.mock('../api/admin', () => ({
+  ADMIN_PAGE_SIZE: 10,
   listAdminRoleRequests: vi.fn(),
   approveRoleRequest: vi.fn(),
   rejectRoleRequest: vi.fn(),
@@ -33,16 +35,18 @@ describe('RoleRequestsPanel', () => {
   });
 
   test('lists pending requests and approves one', async () => {
-    vi.mocked(adminApi.listAdminRoleRequests).mockResolvedValue([
-      {
-        id: 7,
-        role: 'organizer',
-        status: 'pending',
-        note: 'I run Angeles courts',
-        created_at: '2026-08-17T00:00:00Z',
-        user: { id: 1, name: 'Jem Player', email: 'jem@example.com' },
-      },
-    ]);
+    vi.mocked(adminApi.listAdminRoleRequests).mockResolvedValue(
+      pageOf([
+        {
+          id: 7,
+          role: 'organizer',
+          status: 'pending',
+          note: 'I run Angeles courts',
+          created_at: '2026-08-17T00:00:00Z',
+          user: { id: 1, name: 'Jem Player', email: 'jem@example.com' },
+        },
+      ]),
+    );
     vi.mocked(adminApi.approveRoleRequest).mockResolvedValue({
       id: 7,
       role: 'organizer',
@@ -66,16 +70,18 @@ describe('RoleRequestsPanel', () => {
   });
 
   test('rejects a request', async () => {
-    vi.mocked(adminApi.listAdminRoleRequests).mockResolvedValue([
-      {
-        id: 8,
-        role: 'coach',
-        status: 'pending',
-        note: null,
-        created_at: '2026-08-17T00:00:00Z',
-        user: { id: 2, name: 'Sam', email: 'sam@example.com' },
-      },
-    ]);
+    vi.mocked(adminApi.listAdminRoleRequests).mockResolvedValue(
+      pageOf([
+        {
+          id: 8,
+          role: 'coach',
+          status: 'pending',
+          note: null,
+          created_at: '2026-08-17T00:00:00Z',
+          user: { id: 2, name: 'Sam', email: 'sam@example.com' },
+        },
+      ]),
+    );
     vi.mocked(adminApi.rejectRoleRequest).mockResolvedValue({
       id: 8,
       role: 'coach',
@@ -98,26 +104,40 @@ describe('RoleRequestsPanel', () => {
     await waitFor(() => expect(adminApi.rejectRoleRequest).toHaveBeenCalledWith(8));
   });
 
-  test('filters to the requested role only', async () => {
-    vi.mocked(adminApi.listAdminRoleRequests).mockResolvedValue([
-      {
-        id: 1,
-        role: 'coach',
-        status: 'pending',
-        note: null,
-        created_at: '2026-08-17T00:00:00Z',
-        user: { id: 1, name: 'Coach Only', email: 'c@e.com' },
-      },
-      {
-        id: 2,
-        role: 'organizer',
-        status: 'pending',
-        note: null,
-        created_at: '2026-08-17T00:00:00Z',
-        user: { id: 2, name: 'Org Only', email: 'o@e.com' },
-      },
-    ]);
+  test('loads with role filter and paginates', async () => {
+    vi.mocked(adminApi.listAdminRoleRequests).mockImplementation(async (params) => {
+      const p = typeof params === 'string' ? { status: params } : params;
+      if (p && typeof p === 'object' && p.page === 2) {
+        return pageOf(
+          [
+            {
+              id: 20,
+              role: 'coach',
+              status: 'pending',
+              note: null,
+              created_at: '2026-08-17T00:00:00Z',
+              user: { id: 20, name: 'Page Two', email: 'p2@e.com' },
+            },
+          ],
+          { current_page: 2, last_page: 2, total: 11, per_page: 10 },
+        );
+      }
+      return pageOf(
+        [
+          {
+            id: 1,
+            role: 'coach',
+            status: 'pending',
+            note: null,
+            created_at: '2026-08-17T00:00:00Z',
+            user: { id: 1, name: 'Coach Only', email: 'c@e.com' },
+          },
+        ],
+        { current_page: 1, last_page: 2, total: 11, per_page: 10 },
+      );
+    });
 
+    const user = userEvent.setup();
     render(
       <MemoryRouter>
         <RoleRequestsPanel role="coach" />
@@ -125,6 +145,14 @@ describe('RoleRequestsPanel', () => {
     );
 
     expect(await screen.findByText('Coach Only')).toBeInTheDocument();
-    expect(screen.queryByText('Org Only')).not.toBeInTheDocument();
+    expect(adminApi.listAdminRoleRequests).toHaveBeenCalledWith(
+      expect.objectContaining({ role: 'coach', page: 1 }),
+    );
+
+    await user.click(screen.getByRole('button', { name: /next/i }));
+    expect(await screen.findByText('Page Two')).toBeInTheDocument();
+    expect(adminApi.listAdminRoleRequests).toHaveBeenCalledWith(
+      expect.objectContaining({ role: 'coach', page: 2 }),
+    );
   });
 });

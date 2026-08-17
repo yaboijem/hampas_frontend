@@ -13,7 +13,7 @@ export default defineConfig({
       manifest: {
         name: 'Hampas',
         short_name: 'Hampas',
-        description: 'Find volleyball games in Angeles City.',
+        description: 'Find volleyball games across Pampanga.',
         start_url: '/',
         display: 'standalone',
         background_color: '#ffffff',
@@ -30,4 +30,19 @@ export default defineConfig({
       },
     }),
   ],
+  server: {
+    host: true,
+    port: 5173,
+    // Phone/LAN: browser only talks to Vite; API is proxied (avoids firewall/CORS on :8000).
+    proxy: {
+      '/api': {
+        target: 'http://127.0.0.1:8000',
+        changeOrigin: true,
+      },
+      '/storage': {
+        target: 'http://127.0.0.1:8000',
+        changeOrigin: true,
+      },
+    },
+  },
 });

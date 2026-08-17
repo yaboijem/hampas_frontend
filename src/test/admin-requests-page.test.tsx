@@ -5,8 +5,10 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { AdminPendingCountsProvider } from '../admin/AdminPendingCountsContext';
 import AdminRequestsPage from '../pages/Admin/AdminRequestsPage';
 import * as adminApi from '../api/admin';
+import { pageOf } from './adminPaginated';
 
 vi.mock('../api/admin', () => ({
+  ADMIN_PAGE_SIZE: 10,
   listAdminRoleRequests: vi.fn(),
   listAdminEvents: vi.fn(),
   approveRoleRequest: vi.fn(),
@@ -46,41 +48,51 @@ function renderAt(path: string) {
 describe('AdminRequestsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(adminApi.listAdminRoleRequests).mockResolvedValue([
-      {
-        id: 1,
-        role: 'coach',
-        status: 'pending',
-        note: null,
-        created_at: '2026-08-17T00:00:00Z',
-        user: { id: 1, name: 'Coach A', email: 'c@e.com' },
-      },
-      {
-        id: 2,
-        role: 'organizer',
-        status: 'pending',
-        note: null,
-        created_at: '2026-08-17T00:00:00Z',
-        user: { id: 2, name: 'Org B', email: 'o@e.com' },
-      },
-    ]);
-    vi.mocked(adminApi.listAdminEvents).mockResolvedValue([
-      {
-        id: 11,
-        title: 'Pending Cup',
-        description: '',
-        event_type: 'tournament',
-        skill_level: 'all_levels',
-        barangay: null,
-        city: 'Angeles City',
-        starts_at: '2026-09-01T18:00:00+08:00',
-        photo_url: null,
-        visibility: 'pending_review',
-        is_owner: false,
-        my_application: null,
-        created_by: { id: 3, name: 'Creator' },
-      },
-    ]);
+    vi.mocked(adminApi.listAdminRoleRequests).mockImplementation(async (params) => {
+      const p = typeof params === 'string' ? { status: params } : params;
+      const role = p?.role;
+      if (role === 'organizer') {
+        return pageOf([
+          {
+            id: 2,
+            role: 'organizer',
+            status: 'pending',
+            note: null,
+            created_at: '2026-08-17T00:00:00Z',
+            user: { id: 2, name: 'Org B', email: 'o@e.com' },
+          },
+        ]);
+      }
+      return pageOf([
+        {
+          id: 1,
+          role: 'coach',
+          status: 'pending',
+          note: null,
+          created_at: '2026-08-17T00:00:00Z',
+          user: { id: 1, name: 'Coach A', email: 'c@e.com' },
+        },
+      ]);
+    });
+    vi.mocked(adminApi.listAdminEvents).mockResolvedValue(
+      pageOf([
+        {
+          id: 11,
+          title: 'Pending Cup',
+          description: '',
+          event_type: 'tournament',
+          skill_level: 'all_levels',
+          barangay: null,
+          city: 'Angeles City',
+          starts_at: '2026-09-01T18:00:00+08:00',
+          photo_url: null,
+          visibility: 'pending_review',
+          is_owner: false,
+          my_application: null,
+          created_by: { id: 3, name: 'Creator' },
+        },
+      ]),
+    );
   });
 
   test('defaults to coach tab', async () => {
@@ -105,5 +117,33 @@ describe('AdminRequestsPage', () => {
   test('respects ?tab=events', async () => {
     renderAt('/admin/requests?tab=events');
     expect(await screen.findByText('Pending Cup')).toBeInTheDocument();
+  });
+
+  test('search passes q to role requests API', async () => {
+    const user = userEvent.setup();
+    renderAt('/admin/requests');
+    await screen.findByText('Coach A');
+
+    await user.type(screen.getByRole('searchbox', { name: /search requests/i }), 'other');
+    await screen.findByText('Coach A');
+
+    expect(adminApi.listAdminRoleRequests).toHaveBeenCalledWith(
+      expect.objectContaining({ role: 'coach', q: 'other' }),
+    );
+  });
+
+  test('search passes q to events API', async () => {
+    const user = userEvent.setup();
+    renderAt('/admin/requests?tab=events');
+    await screen.findByText('Pending Cup');
+
+    await user.type(
+      screen.getByRole('searchbox', { name: /search requests/i }),
+      'cup',
+    );
+
+    expect(adminApi.listAdminEvents).toHaveBeenCalledWith(
+      expect.objectContaining({ visibility: 'pending_review', q: 'cup' }),
+    );
   });
 });

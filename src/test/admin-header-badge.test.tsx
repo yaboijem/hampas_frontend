@@ -1,10 +1,13 @@
 import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { AdminPendingCountsProvider } from '../admin/AdminPendingCountsContext';
 import AppHeader from '../components/AppHeader';
 import * as adminApi from '../api/admin';
+import * as notes from '../lib/adminNotifications';
 import { ThemeProvider } from '../theme/ThemeContext';
+import { pageOf } from './adminPaginated';
 
 vi.mock('../api/admin', () => ({
   listAdminRoleRequests: vi.fn(),
@@ -30,33 +33,16 @@ vi.mock('../auth/AuthContext', () => ({
 describe('AppHeader admin badge', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(adminApi.listAdminRoleRequests).mockResolvedValue([
-      {
-        id: 1,
-        role: 'coach',
-        status: 'pending',
-        note: null,
-        created_at: '2026-08-17T00:00:00Z',
-        user: { id: 1, name: 'A', email: 'a@b.c' },
-      },
-    ]);
-    vi.mocked(adminApi.listAdminEvents).mockResolvedValue([
-      {
-        id: 11,
-        title: 'E',
-        description: '',
-        event_type: 'open_play',
-        skill_level: 'all_levels',
-        barangay: null,
-        city: 'X',
-        starts_at: '2026-09-01T18:00:00+08:00',
-        photo_url: null,
-        visibility: 'pending_review',
-        is_owner: false,
-        my_application: null,
-        created_by: { id: 3, name: 'C' },
-      },
-    ]);
+    vi.mocked(adminApi.listAdminRoleRequests).mockImplementation(async (params) => {
+      const p = typeof params === 'string' ? {} : params;
+      if (p?.role === 'coach') {
+        return pageOf([], { total: 1, per_page: 1 });
+      }
+      return pageOf([], { total: 0, per_page: 1 });
+    });
+    vi.mocked(adminApi.listAdminEvents).mockResolvedValue(
+      pageOf([], { total: 1, per_page: 1 }),
+    );
   });
 
   test('shows Admin link with total pending badge', async () => {
@@ -82,5 +68,23 @@ describe('AppHeader admin badge', () => {
     await waitFor(() => {
       expect(screen.getAllByLabelText(/2 pending/i).length).toBeGreaterThan(0);
     });
+  });
+
+  test('shows toast when logging out', async () => {
+    const toastSpy = vi.spyOn(notes, 'showToast').mockImplementation(() => {});
+    const user = userEvent.setup();
+
+    render(
+      <ThemeProvider>
+        <MemoryRouter>
+          <AdminPendingCountsProvider>
+            <AppHeader />
+          </AdminPendingCountsProvider>
+        </MemoryRouter>
+      </ThemeProvider>,
+    );
+
+    await user.click(screen.getAllByRole('button', { name: /log out/i })[0]);
+    expect(toastSpy).toHaveBeenCalledWith("You've been logged out.");
   });
 });

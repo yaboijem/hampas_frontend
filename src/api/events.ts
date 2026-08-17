@@ -12,7 +12,9 @@ export async function createEvent(form: FormData): Promise<EventItem> {
 }
 
 export async function updateEvent(id: number, form: FormData): Promise<EventItem> {
-  const { data } = await api.put(`/events/${id}`, form);
+  // PHP does not parse multipart bodies on real PUT requests; spoof via POST.
+  form.set('_method', 'PUT');
+  const { data } = await api.post(`/events/${id}`, form);
   return data;
 }
 

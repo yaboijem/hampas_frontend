@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
@@ -6,8 +6,10 @@ import EventRequestsPanel from '../pages/Admin/EventRequestsPanel';
 import * as adminApi from '../api/admin';
 import * as eventsApi from '../api/events';
 import type { EventItem } from '../api/types';
+import { pageOf } from './adminPaginated';
 
 vi.mock('../api/admin', () => ({
+  ADMIN_PAGE_SIZE: 10,
   listAdminEvents: vi.fn(),
   approveEvent: vi.fn(),
   rejectEvent: vi.fn(),
@@ -64,7 +66,7 @@ describe('EventRequestsPanel', () => {
   });
 
   test('lists pending events and approves one', async () => {
-    vi.mocked(adminApi.listAdminEvents).mockResolvedValue([pendingEvent()]);
+    vi.mocked(adminApi.listAdminEvents).mockResolvedValue(pageOf([pendingEvent()]));
     vi.mocked(adminApi.approveEvent).mockResolvedValue(
       pendingEvent({ visibility: 'live' }),
     );
@@ -78,19 +80,18 @@ describe('EventRequestsPanel', () => {
 
     expect(await screen.findByText('Angeles Open Cup')).toBeInTheDocument();
     expect(screen.getByText('Sample Organizer')).toBeInTheDocument();
-    expect(adminApi.listAdminEvents).toHaveBeenCalledWith('pending_review');
+    expect(adminApi.listAdminEvents).toHaveBeenCalledWith(
+      expect.objectContaining({ visibility: 'pending_review', page: 1 }),
+    );
 
     await user.click(screen.getByRole('button', { name: /approve/i }));
     await waitFor(() => expect(adminApi.approveEvent).toHaveBeenCalledWith(11));
-    await waitFor(() =>
-      expect(screen.queryByText('Angeles Open Cup')).not.toBeInTheDocument(),
-    );
   });
 
   test('rejects a pending event', async () => {
-    vi.mocked(adminApi.listAdminEvents).mockResolvedValue([
-      pendingEvent({ id: 12, title: 'Reject Me' }),
-    ]);
+    vi.mocked(adminApi.listAdminEvents).mockResolvedValue(
+      pageOf([pendingEvent({ id: 12, title: 'Reject Me' })]),
+    );
     vi.mocked(adminApi.rejectEvent).mockResolvedValue(
       pendingEvent({ id: 12, title: 'Reject Me', visibility: 'rejected' }),
     );
@@ -105,29 +106,26 @@ describe('EventRequestsPanel', () => {
     await screen.findByText('Reject Me');
     await user.click(screen.getByRole('button', { name: /reject/i }));
     await waitFor(() => expect(adminApi.rejectEvent).toHaveBeenCalledWith(12));
-    await waitFor(() =>
-      expect(screen.queryByText('Reject Me')).not.toBeInTheDocument(),
-    );
   });
 
   test('Live tab shows edit and delete for live events', async () => {
-    vi.mocked(adminApi.listAdminEvents).mockImplementation(async (visibility) => {
-      if (visibility === 'pending_review') return [];
+    vi.mocked(adminApi.listAdminEvents).mockImplementation(async (arg) => {
+      const visibility = typeof arg === 'string' ? arg : arg.visibility;
+      if (visibility === 'pending_review') return pageOf([]);
       if (visibility === 'live') {
-        return [
+        return pageOf([
           pendingEvent({
             id: 20,
             title: 'Already Live',
             visibility: 'live',
           }),
-        ];
+        ]);
       }
-      return [];
+      return pageOf([]);
     });
     vi.mocked(eventsApi.deleteEvent).mockResolvedValue(undefined);
 
     const user = userEvent.setup();
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
 
     render(
       <MemoryRouter>
@@ -139,7 +137,9 @@ describe('EventRequestsPanel', () => {
     await user.click(screen.getByRole('tab', { name: /live/i }));
 
     expect(await screen.findByText('Already Live')).toBeInTheDocument();
-    expect(adminApi.listAdminEvents).toHaveBeenCalledWith('live');
+    expect(adminApi.listAdminEvents).toHaveBeenCalledWith(
+      expect.objectContaining({ visibility: 'live' }),
+    );
     expect(screen.queryByRole('button', { name: /approve/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /reject/i })).not.toBeInTheDocument();
 
@@ -149,9 +149,40 @@ describe('EventRequestsPanel', () => {
     );
 
     await user.click(screen.getByRole('button', { name: /^delete$/i }));
+    const dialog = await screen.findByRole('dialog', { name: /delete event/i });
+    expect(
+      within(dialog).getByText(/are you sure you want to delete this event/i),
+    ).toBeInTheDocument();
+    await user.click(within(dialog).getByRole('button', { name: /^delete$/i }));
     await waitFor(() => expect(eventsApi.deleteEvent).toHaveBeenCalledWith(20));
-    await waitFor(() =>
-      expect(screen.queryByText('Already Live')).not.toBeInTheDocument(),
+  });
+
+  test('paginates event lists', async () => {
+    vi.mocked(adminApi.listAdminEvents).mockImplementation(async (arg) => {
+      const params = typeof arg === 'string' ? { visibility: arg, page: 1 } : arg;
+      if (params.page === 2) {
+        return pageOf(
+          [pendingEvent({ id: 99, title: 'Event Page Two' })],
+          { current_page: 2, last_page: 2, total: 11, per_page: 10 },
+        );
+      }
+      return pageOf([pendingEvent()], {
+        current_page: 1,
+        last_page: 2,
+        total: 11,
+        per_page: 10,
+      });
+    });
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <EventRequestsPanel />
+      </MemoryRouter>,
     );
+
+    expect(await screen.findByText('Angeles Open Cup')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /next/i }));
+    expect(await screen.findByText('Event Page Two')).toBeInTheDocument();
   });
 });

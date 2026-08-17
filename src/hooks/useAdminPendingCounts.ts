@@ -10,18 +10,33 @@ import {
 const POLL_MS = 30_000;
 
 async function fetchCounts(): Promise<AdminPendingCounts> {
-  const [roles, events] = await Promise.all([
-    listAdminRoleRequests('pending'),
-    listAdminEvents('pending_review'),
+  const [coachPage, organizerPage, eventsPage] = await Promise.all([
+    listAdminRoleRequests({
+      status: 'pending',
+      role: 'coach',
+      page: 1,
+      per_page: 1,
+    }),
+    listAdminRoleRequests({
+      status: 'pending',
+      role: 'organizer',
+      page: 1,
+      per_page: 1,
+    }),
+    listAdminEvents({
+      visibility: 'pending_review',
+      page: 1,
+      per_page: 1,
+    }),
   ]);
-  const coach = roles.filter((r) => r.role === 'coach').length;
-  const organizer = roles.filter((r) => r.role === 'organizer').length;
-  const eventsCount = events.length;
+  const coach = coachPage.meta.total;
+  const organizer = organizerPage.meta.total;
+  const events = eventsPage.meta.total;
   return {
     coach,
     organizer,
-    events: eventsCount,
-    total: coach + organizer + eventsCount,
+    events,
+    total: coach + organizer + events,
   };
 }
 

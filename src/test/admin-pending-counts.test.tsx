@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { useAdminPendingCounts } from '../hooks/useAdminPendingCounts';
 import * as adminApi from '../api/admin';
 import * as notes from '../lib/adminNotifications';
+import { pageOf } from './adminPaginated';
 
 vi.mock('../api/admin', () => ({
   listAdminRoleRequests: vi.fn(),
@@ -16,17 +17,16 @@ describe('useAdminPendingCounts', () => {
   });
 
   test('loads counts when enabled and does not toast on first fetch', async () => {
-    vi.mocked(adminApi.listAdminRoleRequests).mockResolvedValue([
-      {
-        id: 1,
-        role: 'coach',
-        status: 'pending',
-        note: null,
-        created_at: '2026-08-17T00:00:00Z',
-        user: { id: 1, name: 'A', email: 'a@b.c' },
-      },
-    ]);
-    vi.mocked(adminApi.listAdminEvents).mockResolvedValue([]);
+    vi.mocked(adminApi.listAdminRoleRequests).mockImplementation(async (params) => {
+      const p = typeof params === 'string' ? {} : params;
+      if (p?.role === 'coach') {
+        return pageOf([], { total: 1, per_page: 1, last_page: 1 });
+      }
+      return pageOf([], { total: 0, per_page: 1, last_page: 1 });
+    });
+    vi.mocked(adminApi.listAdminEvents).mockResolvedValue(
+      pageOf([], { total: 0, per_page: 1, last_page: 1 }),
+    );
 
     const { result } = renderHook(() => useAdminPendingCounts(true));
 
@@ -36,23 +36,22 @@ describe('useAdminPendingCounts', () => {
   });
 
   test('toasts when refresh sees an increase', async () => {
-    vi.mocked(adminApi.listAdminRoleRequests)
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([
-        {
-          id: 2,
-          role: 'organizer',
-          status: 'pending',
-          note: null,
-          created_at: '2026-08-17T00:00:00Z',
-          user: { id: 2, name: 'B', email: 'b@b.c' },
-        },
-      ]);
-    vi.mocked(adminApi.listAdminEvents).mockResolvedValue([]);
+    let organizerTotal = 0;
+    vi.mocked(adminApi.listAdminRoleRequests).mockImplementation(async (params) => {
+      const p = typeof params === 'string' ? {} : params;
+      if (p?.role === 'organizer') {
+        return pageOf([], { total: organizerTotal, per_page: 1, last_page: 1 });
+      }
+      return pageOf([], { total: 0, per_page: 1, last_page: 1 });
+    });
+    vi.mocked(adminApi.listAdminEvents).mockResolvedValue(
+      pageOf([], { total: 0, per_page: 1, last_page: 1 }),
+    );
 
     const { result } = renderHook(() => useAdminPendingCounts(true));
     await waitFor(() => expect(result.current.loading).toBe(false));
 
+    organizerTotal = 1;
     await act(async () => {
       await result.current.refresh();
     });

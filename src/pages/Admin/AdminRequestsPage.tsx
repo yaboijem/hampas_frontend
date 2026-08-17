@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAdminPendingCountsContext } from '../../admin/AdminPendingCountsContext';
 import AdminPendingBadge from '../../components/AdminPendingBadge';
@@ -11,10 +12,17 @@ function parseTab(raw: string | null): Tab {
   return 'coach';
 }
 
+const SEARCH_PLACEHOLDER: Record<Tab, string> = {
+  coach: 'Search by name, email, or note',
+  organizer: 'Search by name, email, or note',
+  events: 'Search by title, city, place, or creator',
+};
+
 export default function AdminRequestsPage() {
   const [params, setParams] = useSearchParams();
   const tab = parseTab(params.get('tab'));
   const { counts, refresh } = useAdminPendingCountsContext();
+  const [query, setQuery] = useState('');
 
   const setTab = (next: Tab) => {
     setParams(next === 'coach' ? {} : { tab: next }, { replace: true });
@@ -66,14 +74,47 @@ export default function AdminRequestsPage() {
         })}
       </div>
 
+      <label className="flex items-center gap-2 rounded-[var(--radius-control)] border border-border bg-surface px-3 shadow-soft">
+        <span className="text-muted" aria-hidden>
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <circle cx="11" cy="11" r="7" />
+            <path d="M20 20l-3-3" strokeLinecap="round" />
+          </svg>
+        </span>
+        <input
+          type="search"
+          role="searchbox"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder={SEARCH_PLACEHOLDER[tab]}
+          aria-label="Search requests"
+          className="w-full border-0 bg-transparent py-2.5 text-sm text-navy placeholder:text-muted outline-none"
+        />
+      </label>
+
       {tab === 'coach' ? (
-        <RoleRequestsPanel role="coach" onChanged={() => void refresh()} />
+        <RoleRequestsPanel
+          role="coach"
+          query={query}
+          onChanged={() => void refresh()}
+        />
       ) : null}
       {tab === 'organizer' ? (
-        <RoleRequestsPanel role="organizer" onChanged={() => void refresh()} />
+        <RoleRequestsPanel
+          role="organizer"
+          query={query}
+          onChanged={() => void refresh()}
+        />
       ) : null}
       {tab === 'events' ? (
-        <EventRequestsPanel onChanged={() => void refresh()} />
+        <EventRequestsPanel query={query} onChanged={() => void refresh()} />
       ) : null}
     </div>
   );

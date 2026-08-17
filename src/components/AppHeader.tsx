@@ -2,6 +2,7 @@ import { useEffect, useId, useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAdminPendingCountsContext } from "../admin/AdminPendingCountsContext";
 import { useAuth } from "../auth/AuthContext";
+import { showToast } from "../lib/adminNotifications";
 import AdminPendingBadge from "./AdminPendingBadge";
 import ThemeToggle from "./ThemeToggle";
 
@@ -53,6 +54,7 @@ export default function AppHeader() {
   const handleSignOut = () => {
     setMenuOpen(false);
     signOut();
+    showToast("You've been logged\u00a0out.");
     navigate("/events", { replace: true });
   };
 
