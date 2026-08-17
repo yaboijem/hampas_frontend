@@ -694,88 +694,6 @@ export default function ProfilePage() {
             {editActions('player', () => void savePlayer(), savingRole === 'player', 'Save player')}
           </CollapsibleCard>
 
-          <CollapsibleCard
-            id="elevated"
-            title="Elevated access"
-            open={openCard === 'elevated'}
-            onToggle={() => toggleCard('elevated')}
-            summary={<span className="text-xs text-muted">Coach & organizer requests</span>}
-          >
-            <p className="text-sm text-muted">Coach and organizer require admin approval.</p>
-            <ul className="mt-3 space-y-3">
-              {ELEVATED.map((role) => {
-                if (profile.roles.includes(role)) {
-                  return (
-                    <li key={role} className="text-sm text-muted">
-                      {ROLE_META[role].emoji} {ROLE_META[role].label} granted — open that card below.
-                    </li>
-                  );
-                }
-                const latest = latestFor(role);
-                if (latest?.status === 'pending') {
-                  return (
-                    <li
-                      key={role}
-                      className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border/80 bg-ice px-3 py-2"
-                    >
-                      <span className="text-sm font-medium text-navy">
-                        {ROLE_META[role].emoji} {ROLE_META[role].label}
-                      </span>
-                      <span className="rounded-full bg-sky-tint px-2 py-0.5 text-xs font-semibold text-chip-text">
-                        Pending
-                      </span>
-                    </li>
-                  );
-                }
-                if (latest?.status === 'rejected') {
-                  return (
-                    <li
-                      key={role}
-                      className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border/80 px-3 py-2"
-                    >
-                      <div>
-                        <p className="text-sm font-medium text-navy">
-                          {ROLE_META[role].emoji} {ROLE_META[role].label}
-                        </p>
-                        <p className="text-xs text-muted">Request was rejected.</p>
-                      </div>
-                      <button
-                        type="button"
-                        className={secondaryBtn}
-                        disabled={requesting === role}
-                        onClick={() => void requestRole(role)}
-                      >
-                        {requesting === role ? 'Requesting…' : 'Request again'}
-                      </button>
-                    </li>
-                  );
-                }
-                return (
-                  <li
-                    key={role}
-                    className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border/80 px-3 py-2"
-                  >
-                    <span className="text-sm font-medium text-navy">
-                      {ROLE_META[role].emoji} {ROLE_META[role].label}
-                    </span>
-                    <button
-                      type="button"
-                      className={primaryBtn}
-                      disabled={requesting === role}
-                      onClick={() => void requestRole(role)}
-                    >
-                      {requesting === role
-                        ? 'Requesting…'
-                        : role === 'coach'
-                          ? 'Request coach'
-                          : 'Request organizer'}
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          </CollapsibleCard>
-
           {profile.roles.includes('coach') ? (
             <CollapsibleCard
               id="coach"
@@ -926,6 +844,89 @@ export default function ProfilePage() {
               )}
             </CollapsibleCard>
           ) : null}
+
+          <CollapsibleCard
+            id="elevated"
+            title="Elevated access"
+            open={openCard === 'elevated'}
+            onToggle={() => toggleCard('elevated')}
+            summary={<span className="text-xs text-muted">Coach & organizer requests</span>}
+          >
+            <p className="text-sm text-muted">Coach and organizer require admin approval.</p>
+            <ul className="mt-3 space-y-3">
+              {ELEVATED.map((role) => {
+                if (profile.roles.includes(role)) {
+                  return (
+                    <li key={role} className="text-sm text-muted">
+                      {ROLE_META[role].emoji} {ROLE_META[role].label} granted — open that card
+                      above.
+                    </li>
+                  );
+                }
+                const latest = latestFor(role);
+                if (latest?.status === 'pending') {
+                  return (
+                    <li
+                      key={role}
+                      className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border/80 bg-ice px-3 py-2"
+                    >
+                      <span className="text-sm font-medium text-navy">
+                        {ROLE_META[role].emoji} {ROLE_META[role].label}
+                      </span>
+                      <span className="rounded-full bg-sky-tint px-2 py-0.5 text-xs font-semibold text-chip-text">
+                        Pending
+                      </span>
+                    </li>
+                  );
+                }
+                if (latest?.status === 'rejected') {
+                  return (
+                    <li
+                      key={role}
+                      className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border/80 px-3 py-2"
+                    >
+                      <div>
+                        <p className="text-sm font-medium text-navy">
+                          {ROLE_META[role].emoji} {ROLE_META[role].label}
+                        </p>
+                        <p className="text-xs text-muted">Request was rejected.</p>
+                      </div>
+                      <button
+                        type="button"
+                        className={secondaryBtn}
+                        disabled={requesting === role}
+                        onClick={() => void requestRole(role)}
+                      >
+                        {requesting === role ? 'Requesting…' : 'Request again'}
+                      </button>
+                    </li>
+                  );
+                }
+                return (
+                  <li
+                    key={role}
+                    className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border/80 px-3 py-2"
+                  >
+                    <span className="text-sm font-medium text-navy">
+                      {ROLE_META[role].emoji} {ROLE_META[role].label}
+                    </span>
+                    <button
+                      type="button"
+                      className={primaryBtn}
+                      disabled={requesting === role}
+                      onClick={() => void requestRole(role)}
+                    >
+                      {requesting === role
+                        ? 'Requesting…'
+                        : role === 'coach'
+                          ? 'Request coach'
+                          : 'Request organizer'}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </CollapsibleCard>
         </>
       )}
     </div>
