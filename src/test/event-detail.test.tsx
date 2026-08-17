@@ -176,7 +176,7 @@ describe('EventDetailPage', () => {
     renderDetail();
 
     expect(await screen.findByText(/alex organizer/i)).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /^contact$/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /^contact details$/i })).toBeInTheDocument();
 
     const phone = screen.getByRole('link', { name: /call 09171234567/i });
     expect(phone).toHaveAttribute('href', 'tel:09171234567');
@@ -208,7 +208,7 @@ describe('EventDetailPage', () => {
     renderDetail();
 
     expect(await screen.findByText(/alex organizer/i)).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: /^contact$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /^contact details$/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /^facebook$/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /^instagram$/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /call /i })).not.toBeInTheDocument();

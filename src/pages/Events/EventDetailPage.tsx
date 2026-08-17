@@ -164,7 +164,7 @@ export default function EventDetailPage() {
       {hasContact ? (
         <section className="mb-8" aria-label="Organizer contact">
           <h2 className="mb-3 font-display text-sm font-semibold uppercase tracking-wide text-muted">
-            Contact
+            Contact Details
           </h2>
           <ul className="flex flex-wrap gap-2">
             {phone ? (
