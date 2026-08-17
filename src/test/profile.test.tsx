@@ -27,6 +27,9 @@ vi.mock('../api/profiles', () => ({
 
 vi.mock('../api/auth', () => ({
   updateMe: vi.fn(),
+  sendPasswordCode: vi.fn(),
+  verifyPasswordCode: vi.fn(),
+  changePassword: vi.fn(),
 }));
 
 vi.mock('../auth/AuthContext', () => ({
@@ -242,6 +245,85 @@ describe('ProfilePage', () => {
         gender: 'female',
       }),
     );
+  });
+
+  test('password fields stay locked until code verified; then changePassword is called', async () => {
+    vi.mocked(profilesApi.getProfile).mockResolvedValue({
+      roles: ['player'],
+      player: {},
+      coach: null,
+      organizer: null,
+    });
+    vi.mocked(authApi.sendPasswordCode).mockResolvedValue({
+      message: 'A 4-digit code was sent to your email.',
+    });
+    vi.mocked(authApi.verifyPasswordCode).mockResolvedValue({
+      message: 'Code verified. You can set a new password.',
+    });
+    vi.mocked(authApi.changePassword).mockResolvedValue({
+      message: 'Password updated.',
+    });
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <ProfilePage />
+      </MemoryRouter>,
+    );
+
+    await expand(/^account/i);
+    await user.click(screen.getByRole('button', { name: /^edit$/i }));
+
+    expect(screen.queryByLabelText(/^new password$/i)).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /^send code$/i }));
+    await waitFor(() => expect(authApi.sendPasswordCode).toHaveBeenCalled());
+
+    await user.type(screen.getByLabelText(/4-digit code/i), '1234');
+    await user.click(screen.getByRole('button', { name: /verify code/i }));
+    await waitFor(() => expect(authApi.verifyPasswordCode).toHaveBeenCalledWith('1234'));
+
+    await user.type(screen.getByLabelText(/^new password$/i), 'Newpass1!');
+    await user.type(screen.getByLabelText(/^confirm password$/i), 'Newpass1!');
+    await user.click(screen.getByRole('button', { name: /save password/i }));
+
+    await waitFor(() =>
+      expect(authApi.changePassword).toHaveBeenCalledWith('Newpass1!', 'Newpass1!'),
+    );
+  });
+
+  test('weak password keeps Save password disabled', async () => {
+    vi.mocked(profilesApi.getProfile).mockResolvedValue({
+      roles: ['player'],
+      player: {},
+      coach: null,
+      organizer: null,
+    });
+    vi.mocked(authApi.sendPasswordCode).mockResolvedValue({
+      message: 'A 4-digit code was sent to your email.',
+    });
+    vi.mocked(authApi.verifyPasswordCode).mockResolvedValue({
+      message: 'Code verified. You can set a new password.',
+    });
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <ProfilePage />
+      </MemoryRouter>,
+    );
+
+    await expand(/^account/i);
+    await user.click(screen.getByRole('button', { name: /^edit$/i }));
+    await user.click(screen.getByRole('button', { name: /^send code$/i }));
+    await waitFor(() => expect(authApi.sendPasswordCode).toHaveBeenCalled());
+    await user.type(screen.getByLabelText(/4-digit code/i), '1234');
+    await user.click(screen.getByRole('button', { name: /verify code/i }));
+    await waitFor(() => expect(authApi.verifyPasswordCode).toHaveBeenCalled());
+
+    await user.type(screen.getByLabelText(/^new password$/i), 'password');
+    await user.type(screen.getByLabelText(/^confirm password$/i), 'password');
+    expect(screen.getByRole('button', { name: /save password/i })).toBeDisabled();
+    expect(authApi.changePassword).not.toHaveBeenCalled();
   });
 
   test('organizer can add multiple managed courts', async () => {
