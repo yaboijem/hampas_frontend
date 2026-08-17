@@ -39,7 +39,7 @@ describe('ApplyButton', () => {
 
     await user.click(screen.getByRole('button', { name: /apply/i }));
     await waitFor(() => expect(applicationsApi.apply).toHaveBeenCalledWith(1));
-    expect(await screen.findByText('pending')).toBeInTheDocument();
+    expect(await screen.findByText('Pending')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /cancel application/i })).toBeInTheDocument();
   });
 
