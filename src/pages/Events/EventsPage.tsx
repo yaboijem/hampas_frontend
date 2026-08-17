@@ -367,25 +367,38 @@ export default function EventsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="mb-1 text-sm font-bold text-muted tracking-wider">
-            📍 VOLLEYBALL HUB
-          </p>
-          <h1 className="font-display text-6xl font-extrabold tracking-tight text-navy">
-            {mode === 'nearby' ? 'Games Near\u00A0You' : 'Events in Pampanga'}
-          </h1>
-          <p className="mt-1 text-sm text-muted">
-            Explore nearby games, leagues, and camps. Tap to get on&nbsp;court.
-          </p>
+      <div
+        data-testid="events-hero"
+        className="relative overflow-hidden rounded-[var(--radius-card)] border border-border shadow-soft"
+        style={{
+          backgroundImage: [
+            'linear-gradient(120deg, rgb(15 23 42 / 0.82) 0%, rgb(15 23 42 / 0.68) 45%, rgb(15 23 42 / 0.55) 100%)',
+            'url(/courtwball.jpg)',
+          ].join(', '),
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+      >
+        <div className="relative z-10 flex flex-col gap-4 px-4 py-6 sm:flex-row sm:items-end sm:justify-between sm:px-6 sm:py-8">
+          <div>
+            <p className="mb-1 text-sm font-medium tracking-wider text-white/75">
+              📍 VOLLEYBALL HUB
+            </p>
+            <h1 className="font-display text-6xl font-extrabold tracking-tight text-white">
+              {mode === 'nearby' ? 'Games Near\u00A0You' : 'Events in Pampanga'}
+            </h1>
+            <p className="mt-1 text-sm text-white/80">
+              Explore nearby games, leagues, and camps. Tap to get on&nbsp;court.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={focusSearch}
+            className="inline-flex items-center justify-center rounded-[var(--radius-control)] bg-cobalt px-4 py-2.5 text-sm font-semibold text-white shadow-soft hover:bg-electric focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+          >
+            Find a game
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={focusSearch}
-          className="inline-flex items-center justify-center rounded-[var(--radius-control)] bg-cobalt px-4 py-2.5 text-sm font-semibold text-white shadow-soft hover:bg-electric"
-        >
-          Find a game
-        </button>
       </div>
 
       {geoHint ? (

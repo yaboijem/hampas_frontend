@@ -202,4 +202,31 @@ describe('EventsPage', () => {
     expect(screen.queryByText(/Sunday Open Play/i)).not.toBeInTheDocument();
     expect(screen.getByText(/Friday League Night/i)).toBeInTheDocument();
   });
+
+  test('hero uses court photo background', async () => {
+    stubGeolocation((success) =>
+      success({ coords: { latitude: 15.1395, longitude: 120.5877 } } as GeolocationPosition),
+    );
+    vi.mocked(discoveryApi.nearbyEvents).mockResolvedValue({
+      data: [event({ distance_km: 2.4 })],
+      links: { first: null, last: null, prev: null, next: null },
+      meta: { current_page: 1, last_page: 1, per_page: 50, total: 1 },
+    });
+
+    render(
+      <MemoryRouter>
+        <EventsPage />
+      </MemoryRouter>,
+    );
+
+    const hero = await screen.findByTestId('events-hero');
+    expect(hero).toBeInTheDocument();
+    const bg =
+      hero.style.backgroundImage ||
+      getComputedStyle(hero).backgroundImage ||
+      hero.className;
+    expect(String(bg)).toMatch(/courtwball\.jpg/);
+    expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /find a game/i })).toBeInTheDocument();
+  });
 });
