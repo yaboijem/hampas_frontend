@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { EventItem, EventType, SkillLevel } from '../../api/types';
+import { DEFAULT_EVENT_CITY, PAMPANGA_CITIES } from '../../data/pampanga';
 
 interface Props {
   initial?: EventItem | null;
@@ -13,7 +14,8 @@ const EVENT_TYPES: { value: EventType; label: string }[] = [
   { value: 'league', label: 'League' },
   { value: 'tournament', label: 'Tournament' },
   { value: 'training_camp', label: 'Training Camp' },
-  { value: 'friendly', label: 'Friendly' },
+  { value: 'try_out', label: 'Try Out' },
+  { value: 'friendly', label: 'Exclusive' },
 ];
 
 const SKILL_LEVELS: { value: SkillLevel; label: string }[] = [
@@ -46,10 +48,15 @@ export default function EventForm({ initial = null, onSubmit, submitLabel }: Pro
   const [eventType, setEventType] = useState<EventType>(initial?.event_type ?? 'open_play');
   const [skillLevel, setSkillLevel] = useState<SkillLevel>(initial?.skill_level ?? 'all_levels');
   const [barangay, setBarangay] = useState(initial?.barangay ?? '');
-  const [city, setCity] = useState(initial?.city ?? 'Angeles City');
+  const [city, setCity] = useState(initial?.city ?? DEFAULT_EVENT_CITY);
+  const cityOptions =
+    initial?.city && !(PAMPANGA_CITIES as readonly string[]).includes(initial.city)
+      ? [initial.city, ...PAMPANGA_CITIES]
+      : [...PAMPANGA_CITIES];
   const [startsAt, setStartsAt] = useState(toLocal(initial?.starts_at));
   const [photo, setPhoto] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(initial?.photo_url ?? null);
+  const [removePhoto, setRemovePhoto] = useState(false);
   const [geo, setGeo] = useState<{ latitude: number; longitude: number } | null>(null);
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
@@ -74,12 +81,14 @@ export default function EventForm({ initial = null, onSubmit, submitLabel }: Pro
       return;
     }
     setError(null);
+    setRemovePhoto(false);
     setPhoto(file);
   };
 
   const clearPhoto = () => {
     setPhoto(null);
     setPreview(null);
+    setRemovePhoto(Boolean(initial?.photo_url));
     if (fileRef.current) fileRef.current.value = '';
   };
 
@@ -122,6 +131,7 @@ export default function EventForm({ initial = null, onSubmit, submitLabel }: Pro
       form.set('longitude', String(geo.longitude));
     }
     if (photo) form.set('photo', photo);
+    else if (removePhoto) form.set('remove_photo', '1');
 
     setError(null);
     setSubmitting(true);
@@ -300,15 +310,21 @@ export default function EventForm({ initial = null, onSubmit, submitLabel }: Pro
           </div>
           <div>
             <label htmlFor={cityId} className={label}>
-              City
+              City / Municipality
             </label>
-            <input
+            <select
               id={cityId}
               className={field}
               value={city}
               onChange={(e) => setCity(e.target.value)}
               required
-            />
+            >
+              {cityOptions.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 

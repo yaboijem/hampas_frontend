@@ -4,6 +4,7 @@ import {
   SKILL_BADGE_CLASS,
   SKILL_BADGE_OVERLAY_CLASS,
   SKILL_LABEL,
+  TYPE_EMOJI,
   TYPE_LABEL,
   formatEventPlace,
   formatEventWhen,
@@ -13,6 +14,14 @@ describe('eventLabels', () => {
   test('maps event types and skills', () => {
     expect(TYPE_LABEL.open_play).toBe('Open play');
     expect(TYPE_LABEL.training_camp).toBe('Training Camp');
+    expect(TYPE_LABEL.exclusive).toBe('Exclusive');
+    expect(TYPE_LABEL.try_out).toBe('Try Out');
+    expect(TYPE_EMOJI.open_play).toBe('🏐');
+    expect(TYPE_EMOJI.league).toBe('🏅');
+    expect(TYPE_EMOJI.tournament).toBe('🏆');
+    expect(TYPE_EMOJI.training_camp).toBe('💪');
+    expect(TYPE_EMOJI.exclusive).toBe('🤝');
+    expect(TYPE_EMOJI.try_out).toBe('🎯');
     expect(SKILL_LABEL.all_levels).toBe('All levels');
   });
 
@@ -27,7 +36,7 @@ describe('eventLabels', () => {
     expect(SKILL_BADGE_CLASS.intermediate).toMatch(/blue/);
     expect(SKILL_BADGE_CLASS.advanced).toMatch(/slate-900|zinc-900|neutral-900/);
     expect(SKILL_BADGE_CLASS.advanced).toMatch(/red/);
-    expect(SKILL_BADGE_CLASS.all_levels).toMatch(/ice|muted|slate/);
+    expect(SKILL_BADGE_CLASS.all_levels).toMatch(/emerald/);
 
     expect(SKILL_BADGE_OVERLAY_CLASS.beginner).toMatch(/emerald/);
     expect(SKILL_BADGE_OVERLAY_CLASS.beginner).toMatch(/backdrop-blur/);

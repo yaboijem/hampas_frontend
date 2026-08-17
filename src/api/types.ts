@@ -1,4 +1,11 @@
-export type EventType = 'open_play' | 'league' | 'tournament' | 'training_camp' | 'friendly';
+export type EventType =
+  | 'open_play'
+  | 'league'
+  | 'tournament'
+  | 'training_camp'
+  | 'exclusive'
+  | 'friendly' // legacy API value; display as Exclusive
+  | 'try_out';
 export type SkillLevel = 'beginner' | 'intermediate' | 'advanced' | 'all_levels';
 export type Gender = 'male' | 'female' | 'other';
 export type Role = 'player' | 'coach' | 'organizer';
