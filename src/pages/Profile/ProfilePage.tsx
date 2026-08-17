@@ -12,7 +12,6 @@ import type {
   ElevatedRole,
   Gender,
   PlayerPosition,
-  ProfileFieldset,
   Role,
   RoleRequest,
   SkillLevel,
