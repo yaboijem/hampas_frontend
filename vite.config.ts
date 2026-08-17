@@ -26,6 +26,7 @@ export default defineConfig({
       workbox: {
         navigateFallbackDenylist: [/^\/api\//],
         navigateFallback: '/offline',
+        importScripts: ['admin-push-sw.js'],
       },
     }),
   ],

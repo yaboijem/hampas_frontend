@@ -1,6 +1,8 @@
 import { useEffect, useId, useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
+import { useAdminPendingCountsContext } from "../admin/AdminPendingCountsContext";
 import { useAuth } from "../auth/AuthContext";
+import AdminPendingBadge from "./AdminPendingBadge";
 import ThemeToggle from "./ThemeToggle";
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
@@ -19,10 +21,21 @@ const menuLinkClass = ({ isActive }: { isActive: boolean }) =>
 
 export default function AppHeader() {
   const { user, loading, signOut } = useAuth();
+  const { counts } = useAdminPendingCountsContext();
   const location = useLocation();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuId = useId();
+
+  const adminLinkClass = ({ isActive }: { isActive: boolean }) =>
+    linkClass({
+      isActive: isActive || location.pathname.startsWith("/admin"),
+    });
+
+  const adminMenuLinkClass = ({ isActive }: { isActive: boolean }) =>
+    menuLinkClass({
+      isActive: isActive || location.pathname.startsWith("/admin"),
+    });
 
   useEffect(() => {
     setMenuOpen(false);
@@ -83,14 +96,12 @@ export default function AppHeader() {
                 Profile
               </NavLink>
               {user.is_admin ? (
-                <>
-                  <NavLink to="/admin/role-requests" className={linkClass}>
-                    Role requests
-                  </NavLink>
-                  <NavLink to="/admin/event-requests" className={linkClass}>
-                    Event requests
-                  </NavLink>
-                </>
+                <NavLink to="/admin/requests" className={adminLinkClass}>
+                  <span className="inline-flex items-center">
+                    Admin
+                    <AdminPendingBadge count={counts.total} />
+                  </span>
+                </NavLink>
               ) : null}
               <Link
                 to="/events/new"
@@ -180,22 +191,16 @@ export default function AppHeader() {
                         Profile
                       </NavLink>
                       {user.is_admin ? (
-                        <>
-                          <NavLink
-                            to="/admin/role-requests"
-                            role="menuitem"
-                            className={menuLinkClass}
-                          >
-                            Role requests
-                          </NavLink>
-                          <NavLink
-                            to="/admin/event-requests"
-                            role="menuitem"
-                            className={menuLinkClass}
-                          >
-                            Event requests
-                          </NavLink>
-                        </>
+                        <NavLink
+                          to="/admin/requests"
+                          role="menuitem"
+                          className={adminMenuLinkClass}
+                        >
+                          <span className="inline-flex items-center">
+                            Admin
+                            <AdminPendingBadge count={counts.total} />
+                          </span>
+                        </NavLink>
                       ) : null}
                       <Link
                         to="/events/new"

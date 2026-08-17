@@ -2,7 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import EventRequestsPage from '../pages/Admin/EventRequestsPage';
+import EventRequestsPanel from '../pages/Admin/EventRequestsPanel';
 import * as adminApi from '../api/admin';
 import * as eventsApi from '../api/events';
 import type { EventItem } from '../api/types';
@@ -58,7 +58,7 @@ function pendingEvent(overrides: Partial<EventItem> = {}): EventItem {
   };
 }
 
-describe('EventRequestsPage', () => {
+describe('EventRequestsPanel', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -72,7 +72,7 @@ describe('EventRequestsPage', () => {
     const user = userEvent.setup();
     render(
       <MemoryRouter>
-        <EventRequestsPage />
+        <EventRequestsPanel />
       </MemoryRouter>,
     );
 
@@ -98,7 +98,7 @@ describe('EventRequestsPage', () => {
     const user = userEvent.setup();
     render(
       <MemoryRouter>
-        <EventRequestsPage />
+        <EventRequestsPanel />
       </MemoryRouter>,
     );
 
@@ -131,7 +131,7 @@ describe('EventRequestsPage', () => {
 
     render(
       <MemoryRouter>
-        <EventRequestsPage />
+        <EventRequestsPanel />
       </MemoryRouter>,
     );
 

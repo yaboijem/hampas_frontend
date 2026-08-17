@@ -2,7 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import RoleRequestsPage from '../pages/Admin/RoleRequestsPage';
+import RoleRequestsPanel from '../pages/Admin/RoleRequestsPanel';
 import * as adminApi from '../api/admin';
 
 vi.mock('../api/admin', () => ({
@@ -27,7 +27,7 @@ vi.mock('../auth/AuthContext', () => ({
   }),
 }));
 
-describe('RoleRequestsPage', () => {
+describe('RoleRequestsPanel', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -55,12 +55,11 @@ describe('RoleRequestsPage', () => {
     const user = userEvent.setup();
     render(
       <MemoryRouter>
-        <RoleRequestsPage />
+        <RoleRequestsPanel role="organizer" />
       </MemoryRouter>,
     );
 
     expect(await screen.findByText('Jem Player')).toBeInTheDocument();
-    expect(screen.getByText('organizer')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /approve/i }));
 
     await waitFor(() => expect(adminApi.approveRoleRequest).toHaveBeenCalledWith(7));
@@ -89,7 +88,7 @@ describe('RoleRequestsPage', () => {
     const user = userEvent.setup();
     render(
       <MemoryRouter>
-        <RoleRequestsPage />
+        <RoleRequestsPanel role="coach" />
       </MemoryRouter>,
     );
 
@@ -97,5 +96,35 @@ describe('RoleRequestsPage', () => {
     await user.click(screen.getByRole('button', { name: /reject/i }));
 
     await waitFor(() => expect(adminApi.rejectRoleRequest).toHaveBeenCalledWith(8));
+  });
+
+  test('filters to the requested role only', async () => {
+    vi.mocked(adminApi.listAdminRoleRequests).mockResolvedValue([
+      {
+        id: 1,
+        role: 'coach',
+        status: 'pending',
+        note: null,
+        created_at: '2026-08-17T00:00:00Z',
+        user: { id: 1, name: 'Coach Only', email: 'c@e.com' },
+      },
+      {
+        id: 2,
+        role: 'organizer',
+        status: 'pending',
+        note: null,
+        created_at: '2026-08-17T00:00:00Z',
+        user: { id: 2, name: 'Org Only', email: 'o@e.com' },
+      },
+    ]);
+
+    render(
+      <MemoryRouter>
+        <RoleRequestsPanel role="coach" />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText('Coach Only')).toBeInTheDocument();
+    expect(screen.queryByText('Org Only')).not.toBeInTheDocument();
   });
 });

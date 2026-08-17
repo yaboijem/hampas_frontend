@@ -4,28 +4,36 @@ import {
   listAdminRoleRequests,
   rejectRoleRequest,
 } from '../../api/admin';
-import type { AdminRoleRequest } from '../../api/types';
+import type { AdminRoleRequest, ElevatedRole } from '../../api/types';
 
-export default function RoleRequestsPage() {
+type Props = { role: ElevatedRole; onChanged?: () => void };
+
+export default function RoleRequestsPanel({ role, onChanged }: Props) {
   const [items, setItems] = useState<AdminRoleRequest[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<number | null>(null);
 
-  const load = async () => {
-    try {
-      const data = await listAdminRoleRequests('pending');
-      setItems(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load requests.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    void load();
-  }, []);
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    void (async () => {
+      try {
+        const data = await listAdminRoleRequests('pending');
+        if (!cancelled) setItems(data.filter((r) => r.role === role));
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : 'Failed to load requests.');
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [role]);
 
   const approve = async (id: number) => {
     setBusyId(id);
@@ -33,6 +41,7 @@ export default function RoleRequestsPage() {
     try {
       await approveRoleRequest(id);
       setItems((list) => list.filter((r) => r.id !== id));
+      onChanged?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Approve failed.');
     } finally {
@@ -46,6 +55,7 @@ export default function RoleRequestsPage() {
     try {
       await rejectRoleRequest(id);
       setItems((list) => list.filter((r) => r.id !== id));
+      onChanged?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Reject failed.');
     } finally {
@@ -53,10 +63,13 @@ export default function RoleRequestsPage() {
     }
   };
 
+  const empty =
+    role === 'coach'
+      ? 'No pending coach requests.'
+      : 'No pending organizer requests.';
+
   return (
-    <div className="mx-auto max-w-xl space-y-3">
-      <h1 className="font-display text-2xl font-extrabold text-navy sm:text-3xl">Role requests</h1>
-      <p className="text-sm text-muted">Approve coach or organizer access.</p>
+    <div className="space-y-3">
       {error ? (
         <p role="alert" className="text-sm font-medium text-red-700">
           {error}
@@ -65,7 +78,7 @@ export default function RoleRequestsPage() {
       {loading ? (
         <p className="text-sm text-muted">Loading…</p>
       ) : items.length === 0 ? (
-        <p className="text-sm text-muted">No pending requests.</p>
+        <p className="text-sm text-muted">{empty}</p>
       ) : (
         <ul className="space-y-3">
           {items.map((r) => (
@@ -75,7 +88,6 @@ export default function RoleRequestsPage() {
             >
               <p className="font-display font-bold text-navy">{r.user.name}</p>
               <p className="text-sm text-muted">{r.user.email}</p>
-              <p className="mt-1 text-sm capitalize text-navy">{r.role}</p>
               {r.note ? <p className="mt-1 text-sm text-muted">{r.note}</p> : null}
               <div className="mt-3 flex flex-wrap gap-2">
                 <button

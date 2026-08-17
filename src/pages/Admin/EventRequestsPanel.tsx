@@ -15,7 +15,9 @@ const TABS: { id: Visibility; label: string; empty: string }[] = [
   { id: 'rejected', label: 'Rejected', empty: 'No rejected events.' },
 ];
 
-export default function EventRequestsPage() {
+type Props = { onChanged?: () => void };
+
+export default function EventRequestsPanel({ onChanged }: Props) {
   const [tab, setTab] = useState<Visibility>('pending_review');
   const [items, setItems] = useState<EventItem[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -46,6 +48,7 @@ export default function EventRequestsPage() {
     try {
       await approveEvent(id);
       setItems((list) => list.filter((e) => e.id !== id));
+      onChanged?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Approve failed.');
     } finally {
@@ -59,6 +62,7 @@ export default function EventRequestsPage() {
     try {
       await rejectEvent(id);
       setItems((list) => list.filter((e) => e.id !== id));
+      onChanged?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Reject failed.');
     } finally {
@@ -73,6 +77,7 @@ export default function EventRequestsPage() {
     try {
       await deleteEvent(id);
       setItems((list) => list.filter((e) => e.id !== id));
+      onChanged?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Delete failed.');
     } finally {
@@ -85,12 +90,7 @@ export default function EventRequestsPage() {
   const showLiveManage = tab === 'live';
 
   return (
-    <div className="mx-auto max-w-xl space-y-3">
-      <h1 className="font-display text-2xl font-extrabold text-navy sm:text-3xl">
-        Event requests
-      </h1>
-      <p className="text-sm text-muted">Approve events before they go live.</p>
-
+    <div className="space-y-3">
       <div role="tablist" aria-label="Event visibility" className="flex flex-wrap gap-2">
         {TABS.map((t) => {
           const selected = tab === t.id;
