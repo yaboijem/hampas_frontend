@@ -20,8 +20,9 @@ const { updateUser, mockUser } = vi.hoisted(() => ({
 
 vi.mock('../api/profiles', () => ({
   getProfile: vi.fn(),
-  addRole: vi.fn(),
   updateRole: vi.fn(),
+  listMyRoleRequests: vi.fn(),
+  createRoleRequest: vi.fn(),
 }));
 
 vi.mock('../api/auth', () => ({
@@ -40,9 +41,10 @@ vi.mock('../auth/AuthContext', () => ({
 describe('ProfilePage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(profilesApi.listMyRoleRequests).mockResolvedValue([]);
   });
 
-  test('shows compact profile with editable account and roles', async () => {
+  test('player-only profile shows account and player details, not elevated editors', async () => {
     vi.mocked(profilesApi.getProfile).mockResolvedValue({
       roles: ['player'],
       player: { position: 'outside_hitter', skill_level: 'intermediate' },
@@ -58,17 +60,108 @@ describe('ProfilePage', () => {
 
     expect(await screen.findByRole('heading', { name: /^profile$/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/^name$/i)).toHaveValue('Jem Player');
-    expect(screen.getByLabelText(/^email$/i)).toHaveValue('jem@example.com');
-    expect(screen.getByLabelText(/birth date/i)).toHaveValue('2000-01-01');
-    expect(screen.getByLabelText(/^gender$/i)).toHaveValue('male');
     expect(screen.getByRole('heading', { name: /player details/i })).toBeInTheDocument();
     expect(screen.getByDisplayValue('outside_hitter')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /coach details/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /organizer details/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /add role/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /request coach/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /request organizer/i })).toBeInTheDocument();
+  });
+
+  test('requests coach access', async () => {
+    vi.mocked(profilesApi.getProfile).mockResolvedValue({
+      roles: ['player'],
+      player: {},
+      coach: null,
+      organizer: null,
+    });
+    vi.mocked(profilesApi.createRoleRequest).mockResolvedValue({
+      id: 10,
+      role: 'coach',
+      status: 'pending',
+      note: null,
+      created_at: '2026-08-17T00:00:00Z',
+    });
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <ProfilePage />
+      </MemoryRouter>,
+    );
+
+    await user.click(await screen.findByRole('button', { name: /request coach/i }));
+
+    await waitFor(() =>
+      expect(profilesApi.createRoleRequest).toHaveBeenCalledWith({ role: 'coach' }),
+    );
+    expect(await screen.findByText(/pending/i)).toBeInTheDocument();
+  });
+
+  test('shows pending status and hides coach field editors', async () => {
+    vi.mocked(profilesApi.getProfile).mockResolvedValue({
+      roles: ['player'],
+      player: {},
+      coach: null,
+      organizer: null,
+    });
+    vi.mocked(profilesApi.listMyRoleRequests).mockResolvedValue([
+      {
+        id: 10,
+        role: 'coach',
+        status: 'pending',
+        note: null,
+        created_at: '2026-08-17T00:00:00Z',
+      },
+    ]);
+
+    render(
+      <MemoryRouter>
+        <ProfilePage />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText('Pending')).toBeInTheDocument();
+    expect(screen.queryByLabelText(/bootcamp name/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /request coach/i })).not.toBeInTheDocument();
+  });
+
+  test('granted coach can save details', async () => {
+    vi.mocked(profilesApi.getProfile).mockResolvedValue({
+      roles: ['player', 'coach'],
+      player: {},
+      coach: { achievements: 'Regionals finalist' },
+      organizer: null,
+    });
+    vi.mocked(profilesApi.updateRole).mockResolvedValue({
+      role: 'coach',
+      profile: { achievements: 'Regionals finalist', bootcamp_name: 'Hampas Academy' },
+    });
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <ProfilePage />
+      </MemoryRouter>,
+    );
+
+    await screen.findByRole('heading', { name: /coach details/i });
+    await user.type(screen.getByLabelText(/bootcamp name/i), 'Hampas Academy');
+    await user.click(screen.getByRole('button', { name: /save coach/i }));
+
+    await waitFor(() =>
+      expect(profilesApi.updateRole).toHaveBeenCalledWith(
+        'coach',
+        expect.objectContaining({ bootcamp_name: 'Hampas Academy' }),
+      ),
+    );
   });
 
   test('saves account details via updateMe', async () => {
     vi.mocked(profilesApi.getProfile).mockResolvedValue({
-      roles: [],
-      player: null,
+      roles: ['player'],
+      player: {},
       coach: null,
       organizer: null,
     });
@@ -104,70 +197,6 @@ describe('ProfilePage', () => {
         birth_date: '1999-06-15',
         gender: 'female',
       }),
-    );
-    expect(updateUser).toHaveBeenCalledWith(
-      expect.objectContaining({ name: 'Jem Updated', email: 'jem2@example.com' }),
-    );
-  });
-
-  test('adds an organizer role', async () => {
-    vi.mocked(profilesApi.getProfile).mockResolvedValue({
-      roles: [],
-      player: null,
-      coach: null,
-      organizer: null,
-    });
-    vi.mocked(profilesApi.addRole).mockResolvedValue({
-      role: 'organizer',
-      profile: { managed_courts: 'Angeles City Sports Complex' },
-    });
-
-    const user = userEvent.setup();
-    render(
-      <MemoryRouter>
-        <ProfilePage />
-      </MemoryRouter>,
-    );
-
-    await user.selectOptions(await screen.findByLabelText(/add role/i), 'organizer');
-    await user.type(screen.getByLabelText(/managed courts/i), 'Angeles City Sports Complex');
-    await user.click(screen.getByRole('button', { name: /add role/i }));
-
-    await waitFor(() =>
-      expect(profilesApi.addRole).toHaveBeenCalledWith('organizer', {
-        managed_courts: 'Angeles City Sports Complex',
-      }),
-    );
-  });
-
-  test('updates coach profile', async () => {
-    vi.mocked(profilesApi.getProfile).mockResolvedValue({
-      roles: ['coach'],
-      player: null,
-      coach: { achievements: 'Regionals finalist' },
-      organizer: null,
-    });
-    vi.mocked(profilesApi.updateRole).mockResolvedValue({
-      role: 'coach',
-      profile: { achievements: 'Nationals champion', bootcamp_name: 'Hampas Academy' },
-    });
-
-    const user = userEvent.setup();
-    render(
-      <MemoryRouter>
-        <ProfilePage />
-      </MemoryRouter>,
-    );
-
-    await screen.findByRole('heading', { name: /coach details/i });
-    await user.type(screen.getByLabelText(/bootcamp name/i), 'Hampas Academy');
-    await user.click(screen.getByRole('button', { name: /save coach/i }));
-
-    await waitFor(() =>
-      expect(profilesApi.updateRole).toHaveBeenCalledWith(
-        'coach',
-        expect.objectContaining({ bootcamp_name: 'Hampas Academy' }),
-      ),
     );
   });
 });

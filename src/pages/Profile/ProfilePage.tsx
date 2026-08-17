@@ -1,8 +1,14 @@
 import { useEffect, useId, useState } from 'react';
 import { useAuth } from '../../auth/AuthContext';
 import { updateMe } from '../../api/auth';
-import { addRole, getProfile, updateRole, type ProfileView } from '../../api/profiles';
-import type { Gender, ProfileFieldset, Role } from '../../api/types';
+import {
+  createRoleRequest,
+  getProfile,
+  listMyRoleRequests,
+  updateRole,
+  type ProfileView,
+} from '../../api/profiles';
+import type { ElevatedRole, Gender, ProfileFieldset, Role, RoleRequest } from '../../api/types';
 
 const ROLE_FIELDS: Record<
   Role,
@@ -30,7 +36,7 @@ const ROLE_META: Record<Role, { label: string; emoji: string }> = {
   organizer: { label: 'Organizer', emoji: '🏟️' },
 };
 
-const ALL_ROLES: Role[] = ['player', 'coach', 'organizer'];
+const ELEVATED: ElevatedRole[] = ['coach', 'organizer'];
 
 const EMPTY: ProfileView = { roles: [], player: null, coach: null, organizer: null };
 
@@ -41,10 +47,11 @@ const MAX_BIRTH_DATE = EIGHTEEN_YEARS_AGO.toISOString().slice(0, 10);
 const fieldClass =
   'mt-1 block w-full rounded-xl border border-border/80 bg-surface px-3 py-2 text-sm text-navy shadow-sm outline-none transition placeholder:text-muted/70 focus:border-cobalt focus:ring-2 focus:ring-cobalt/20';
 const labelClass = 'text-xs font-bold uppercase tracking-wide text-chip-text';
-const cardClass =
-  'rounded-[var(--radius-card)] border border-border bg-surface p-3 shadow-soft';
+const cardClass = 'rounded-[var(--radius-card)] border border-border bg-surface p-3 shadow-soft';
 const primaryBtn =
   'inline-flex items-center justify-center rounded-[var(--radius-control)] bg-cobalt px-3 py-2 text-sm font-semibold text-white shadow-soft transition hover:bg-electric disabled:cursor-not-allowed disabled:opacity-60';
+const secondaryBtn =
+  'inline-flex items-center justify-center rounded-[var(--radius-control)] border border-border bg-surface px-3 py-2 text-sm font-semibold text-navy transition hover:bg-ice disabled:cursor-not-allowed disabled:opacity-60';
 
 function titleCase(value: string) {
   return value.replaceAll('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase());
@@ -110,20 +117,18 @@ type AccountForm = {
 
 export default function ProfilePage() {
   const { user, updateUser } = useAuth();
-  const addRoleSelectId = useId();
   const nameId = useId();
   const emailId = useId();
   const birthId = useId();
   const genderId = useId();
   const [profile, setProfile] = useState<ProfileView>(EMPTY);
+  const [requests, setRequests] = useState<RoleRequest[]>([]);
   const [loading, setLoading] = useState(true);
-  const [newRole, setNewRole] = useState<Role>('player');
-  const [newFields, setNewFields] = useState<ProfileFieldset>({});
   const [edits, setEdits] = useState<Partial<Record<Role, ProfileFieldset>>>({});
   const [error, setError] = useState<string | null>(null);
   const [savingRole, setSavingRole] = useState<Role | null>(null);
-  const [adding, setAdding] = useState(false);
   const [savingAccount, setSavingAccount] = useState(false);
+  const [requesting, setRequesting] = useState<ElevatedRole | null>(null);
   const [account, setAccount] = useState<AccountForm>({
     name: '',
     email: '',
@@ -153,8 +158,9 @@ export default function ProfilePage() {
 
   const load = async () => {
     try {
-      const data = await getProfile();
+      const [data, reqs] = await Promise.all([getProfile(), listMyRoleRequests()]);
       setProfile(data);
+      setRequests(reqs);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load profile.');
     } finally {
@@ -165,9 +171,6 @@ export default function ProfilePage() {
   useEffect(() => {
     void load();
   }, []);
-
-  const availableRoles = ALL_ROLES.filter((r) => !profile.roles.includes(r));
-  const addRoleValue = availableRoles.includes(newRole) ? newRole : (availableRoles[0] ?? 'player');
 
   const accountValid =
     account.name.trim() !== '' &&
@@ -195,21 +198,6 @@ export default function ProfilePage() {
     }
   };
 
-  const add = async (role: Role = addRoleValue) => {
-    setError(null);
-    setAdding(true);
-    try {
-      await addRole(role, newFields);
-      setNewFields({});
-      setNewRole(role);
-      await load();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to add role.');
-    } finally {
-      setAdding(false);
-    }
-  };
-
   const save = async (role: Role) => {
     setError(null);
     setSavingRole(role);
@@ -223,6 +211,24 @@ export default function ProfilePage() {
     }
   };
 
+  const requestRole = async (role: ElevatedRole) => {
+    setError(null);
+    setRequesting(role);
+    try {
+      const created = await createRoleRequest({ role });
+      setRequests((rs) => [...rs, created]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to request role.');
+    } finally {
+      setRequesting(null);
+    }
+  };
+
+  const latestFor = (role: ElevatedRole): RoleRequest | undefined => {
+    const mine = requests.filter((r) => r.role === role);
+    return mine.sort((a, b) => b.id - a.id)[0];
+  };
+
   const currentFields = (role: Role): ProfileFieldset =>
     ({
       player: profile.player,
@@ -230,13 +236,55 @@ export default function ProfilePage() {
       organizer: profile.organizer,
     })[role] ?? {};
 
+  const renderRoleCard = (role: Role) => (
+    <section key={role} className={cardClass}>
+      <h2 className="font-display text-base font-bold capitalize text-navy">
+        <span aria-hidden className="mr-1.5">
+          {ROLE_META[role].emoji}
+        </span>
+        {role} details
+      </h2>
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        {ROLE_FIELDS[role].map((field) => {
+          const value = (edits[role]?.[field.key] ?? currentFields(role)[field.key]) as
+            | string
+            | undefined;
+          return (
+            <FieldControl
+              key={field.key}
+              field={field}
+              idPrefix={`edit-${role}`}
+              value={value ?? ''}
+              onChange={(next) =>
+                setEdits((ed) => ({
+                  ...ed,
+                  [role]: { ...ed[role], [field.key]: next },
+                }))
+              }
+            />
+          );
+        })}
+      </div>
+      <div className="mt-3">
+        <button
+          type="button"
+          onClick={() => void save(role)}
+          disabled={savingRole === role}
+          className={primaryBtn}
+        >
+          {savingRole === role ? 'Saving…' : `Save ${role}`}
+        </button>
+      </div>
+    </section>
+  );
+
   return (
     <div className="mx-auto max-w-xl space-y-3">
       <header>
         <h1 className="font-display text-2xl font-extrabold tracking-tight text-navy sm:text-3xl">
           Profile
         </h1>
-        <p className="mt-0.5 text-sm text-muted">Your account and role details.</p>
+        <p className="mt-0.5 text-sm text-muted">Your account and player details.</p>
         <div className="mt-2 flex flex-wrap items-center gap-1.5" aria-label="Your roles">
           {loading ? null : profile.roles.length === 0 ? (
             <span className="text-sm text-muted">No roles yet.</span>
@@ -331,93 +379,88 @@ export default function ProfilePage() {
             </section>
           ) : null}
 
-          {availableRoles.length > 0 ? (
-            <section className={`${cardClass} border-dashed`}>
-              <h2 className="font-display text-base font-bold text-navy">Add a role</h2>
-              <div className="mt-3 space-y-3">
-                <label htmlFor={addRoleSelectId} className="block">
-                  <span className={labelClass}>Role</span>
-                  <select
-                    id={addRoleSelectId}
-                    aria-label="Add role"
-                    className={fieldClass}
-                    value={addRoleValue}
-                    onChange={(e) => {
-                      setNewRole(e.target.value as Role);
-                      setNewFields({});
-                    }}
-                  >
-                    {availableRoles.map((r) => (
-                      <option key={r} value={r}>
-                        {ROLE_META[r].emoji} {ROLE_META[r].label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {ROLE_FIELDS[addRoleValue].map((field) => (
-                    <FieldControl
-                      key={field.key}
-                      field={field}
-                      idPrefix={`add-${addRoleValue}`}
-                      value={(newFields[field.key] as string) ?? ''}
-                      onChange={(next) => setNewFields((f) => ({ ...f, [field.key]: next }))}
-                    />
-                  ))}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => void add(addRoleValue)}
-                  disabled={adding}
-                  className={primaryBtn}
-                >
-                  {adding ? 'Adding…' : 'Add role'}
-                </button>
-              </div>
-            </section>
-          ) : null}
+          {renderRoleCard('player')}
 
-          {profile.roles.map((role) => (
-            <section key={role} className={cardClass}>
-              <h2 className="font-display text-base font-bold capitalize text-navy">
-                <span aria-hidden className="mr-1.5">
-                  {ROLE_META[role].emoji}
-                </span>
-                {role} details
-              </h2>
-              <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                {ROLE_FIELDS[role].map((field) => {
-                  const value = (edits[role]?.[field.key] ?? currentFields(role)[field.key]) as
-                    | string
-                    | undefined;
+          <section className={cardClass} aria-label="Elevated roles">
+            <h2 className="font-display text-base font-bold text-navy">Elevated access</h2>
+            <p className="mt-1 text-sm text-muted">
+              Coach and organizer require admin approval.
+            </p>
+            <ul className="mt-3 space-y-3">
+              {ELEVATED.map((role) => {
+                if (profile.roles.includes(role)) {
                   return (
-                    <FieldControl
-                      key={field.key}
-                      field={field}
-                      idPrefix={`edit-${role}`}
-                      value={value ?? ''}
-                      onChange={(next) =>
-                        setEdits((ed) => ({
-                          ...ed,
-                          [role]: { ...ed[role], [field.key]: next },
-                        }))
-                      }
-                    />
+                    <li key={role} className="text-sm text-muted">
+                      {ROLE_META[role].emoji} {ROLE_META[role].label} granted — edit below.
+                    </li>
                   );
-                })}
-              </div>
-              <div className="mt-3">
-                <button
-                  type="button"
-                  onClick={() => void save(role)}
-                  disabled={savingRole === role}
-                  className={primaryBtn}
-                >
-                  {savingRole === role ? 'Saving…' : `Save ${role}`}
-                </button>
-              </div>
-            </section>
-          ))}
+                }
+                const latest = latestFor(role);
+                if (latest?.status === 'pending') {
+                  return (
+                    <li
+                      key={role}
+                      className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border/80 bg-ice px-3 py-2"
+                    >
+                      <span className="text-sm font-medium text-navy">
+                        {ROLE_META[role].emoji} {ROLE_META[role].label}
+                      </span>
+                      <span className="rounded-full bg-sky-tint px-2 py-0.5 text-xs font-semibold text-chip-text">
+                        Pending
+                      </span>
+                    </li>
+                  );
+                }
+                if (latest?.status === 'rejected') {
+                  return (
+                    <li
+                      key={role}
+                      className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border/80 px-3 py-2"
+                    >
+                      <div>
+                        <p className="text-sm font-medium text-navy">
+                          {ROLE_META[role].emoji} {ROLE_META[role].label}
+                        </p>
+                        <p className="text-xs text-muted">Request was rejected.</p>
+                      </div>
+                      <button
+                        type="button"
+                        className={secondaryBtn}
+                        disabled={requesting === role}
+                        onClick={() => void requestRole(role)}
+                      >
+                        {requesting === role ? 'Requesting…' : 'Request again'}
+                      </button>
+                    </li>
+                  );
+                }
+                return (
+                  <li
+                    key={role}
+                    className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border/80 px-3 py-2"
+                  >
+                    <span className="text-sm font-medium text-navy">
+                      {ROLE_META[role].emoji} {ROLE_META[role].label}
+                    </span>
+                    <button
+                      type="button"
+                      className={primaryBtn}
+                      disabled={requesting === role}
+                      onClick={() => void requestRole(role)}
+                    >
+                      {requesting === role
+                        ? 'Requesting…'
+                        : role === 'coach'
+                          ? 'Request coach'
+                          : 'Request organizer'}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+
+          {ELEVATED.filter((r) => profile.roles.includes(r)).map((role) => renderRoleCard(role))}
         </>
       )}
     </div>
