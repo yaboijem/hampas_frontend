@@ -5,6 +5,17 @@ import EventDetailPage from '../pages/Events/EventDetailPage';
 import * as eventsApi from '../api/events';
 import type { EventItem } from '../api/types';
 
+const authState = vi.hoisted(() => ({
+  user: {
+    id: 9,
+    name: 'Me',
+    email: 'me@example.com',
+    birth_date: '2000-01-01',
+    gender: 'male' as const,
+    is_admin: false,
+  },
+}));
+
 vi.mock('../api/events', () => ({
   getEvent: vi.fn(),
   deleteEvent: vi.fn(),
@@ -14,14 +25,7 @@ vi.mock('../api/events', () => ({
 
 vi.mock('../auth/AuthContext', () => ({
   useAuth: () => ({
-    user: {
-      id: 9,
-      name: 'Me',
-      email: 'me@example.com',
-      birth_date: '2000-01-01',
-      gender: 'male',
-      is_admin: false,
-    },
+    user: authState.user,
     loading: false,
     signIn: vi.fn(),
     signOut: vi.fn(),
@@ -59,6 +63,14 @@ function renderDetail(path = '/events/7') {
 beforeEach(() => {
   vi.mocked(eventsApi.getEvent).mockReset();
   vi.mocked(eventsApi.deleteEvent).mockReset();
+  authState.user = {
+    id: 9,
+    name: 'Me',
+    email: 'me@example.com',
+    birth_date: '2000-01-01',
+    gender: 'male',
+    is_admin: false,
+  };
 });
 
 describe('EventDetailPage', () => {
@@ -107,5 +119,45 @@ describe('EventDetailPage', () => {
     vi.mocked(eventsApi.getEvent).mockResolvedValue(baseEvent);
     renderDetail();
     expect(await screen.findByRole('button', { name: /report this event/i })).toBeInTheDocument();
+  });
+
+  test('admin sees edit and delete on non-owned live event but not manage applications', async () => {
+    authState.user = {
+      ...authState.user,
+      is_admin: true,
+    };
+    vi.mocked(eventsApi.getEvent).mockResolvedValue({
+      ...baseEvent,
+      is_owner: false,
+      visibility: 'live',
+    });
+    renderDetail();
+
+    expect(await screen.findByRole('link', { name: /edit event/i })).toHaveAttribute(
+      'href',
+      '/events/7/edit',
+    );
+    expect(screen.getByRole('button', { name: /delete event/i })).toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', { name: /manage applications/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  test('admin does not see manage tools on non-owned pending event', async () => {
+    authState.user = {
+      ...authState.user,
+      is_admin: true,
+    };
+    vi.mocked(eventsApi.getEvent).mockResolvedValue({
+      ...baseEvent,
+      title: 'Still Pending',
+      is_owner: false,
+      visibility: 'pending_review',
+    });
+    renderDetail();
+
+    expect(await screen.findByRole('heading', { name: /still pending/i })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /edit event/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /delete event/i })).not.toBeInTheDocument();
   });
 });

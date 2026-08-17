@@ -4,6 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import EventRequestsPage from '../pages/Admin/EventRequestsPage';
 import * as adminApi from '../api/admin';
+import * as eventsApi from '../api/events';
 import type { EventItem } from '../api/types';
 
 vi.mock('../api/admin', () => ({
@@ -13,6 +14,13 @@ vi.mock('../api/admin', () => ({
   listAdminRoleRequests: vi.fn(),
   approveRoleRequest: vi.fn(),
   rejectRoleRequest: vi.fn(),
+}));
+
+vi.mock('../api/events', () => ({
+  deleteEvent: vi.fn(),
+  getEvent: vi.fn(),
+  createEvent: vi.fn(),
+  updateEvent: vi.fn(),
 }));
 
 vi.mock('../auth/AuthContext', () => ({
@@ -102,7 +110,7 @@ describe('EventRequestsPage', () => {
     );
   });
 
-  test('Live tab loads live visibility without action buttons', async () => {
+  test('Live tab shows edit and delete for live events', async () => {
     vi.mocked(adminApi.listAdminEvents).mockImplementation(async (visibility) => {
       if (visibility === 'pending_review') return [];
       if (visibility === 'live') {
@@ -116,8 +124,11 @@ describe('EventRequestsPage', () => {
       }
       return [];
     });
+    vi.mocked(eventsApi.deleteEvent).mockResolvedValue(undefined);
 
     const user = userEvent.setup();
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+
     render(
       <MemoryRouter>
         <EventRequestsPage />
@@ -131,5 +142,16 @@ describe('EventRequestsPage', () => {
     expect(adminApi.listAdminEvents).toHaveBeenCalledWith('live');
     expect(screen.queryByRole('button', { name: /approve/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /reject/i })).not.toBeInTheDocument();
+
+    expect(screen.getByRole('link', { name: /^edit$/i })).toHaveAttribute(
+      'href',
+      '/events/20/edit',
+    );
+
+    await user.click(screen.getByRole('button', { name: /^delete$/i }));
+    await waitFor(() => expect(eventsApi.deleteEvent).toHaveBeenCalledWith(20));
+    await waitFor(() =>
+      expect(screen.queryByText('Already Live')).not.toBeInTheDocument(),
+    );
   });
 });

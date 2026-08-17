@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { deleteEvent, getEvent } from '../../api/events';
 import type { EventItem } from '../../api/types';
+import { useAuth } from '../../auth/AuthContext';
 import ApplyButton from '../../components/ApplyButton';
 import ReportModal from '../../components/ReportModal';
 import {
@@ -14,6 +15,7 @@ import {
 export default function EventDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [event, setEvent] = useState<EventItem | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showReport, setShowReport] = useState(false);
@@ -39,6 +41,9 @@ export default function EventDetailPage() {
   const place = formatEventPlace(event.barangay, event.city);
   const when = formatEventWhen(event.starts_at);
   const showApplyChrome = !event.is_owner && event.visibility === 'live';
+  const canManage =
+    event.is_owner ||
+    (user?.is_admin === true && event.visibility === 'live');
 
   const remove = async () => {
     if (!window.confirm('Delete this event?')) return;
@@ -155,7 +160,7 @@ export default function EventDetailPage() {
         </div>
       )}
 
-      {event.is_owner && (
+      {canManage && (
         <div className="mb-6 flex flex-wrap gap-2">
           <Link
             to={`/events/${event.id}/edit`}
@@ -163,12 +168,14 @@ export default function EventDetailPage() {
           >
             Edit event
           </Link>
-          <Link
-            to={`/events/${event.id}/applications`}
-            className="inline-flex min-h-11 items-center rounded-[var(--radius-control)] border border-border bg-surface px-4 py-2 text-sm font-medium text-navy hover:border-cobalt"
-          >
-            Manage applications
-          </Link>
+          {event.is_owner ? (
+            <Link
+              to={`/events/${event.id}/applications`}
+              className="inline-flex min-h-11 items-center rounded-[var(--radius-control)] border border-border bg-surface px-4 py-2 text-sm font-medium text-navy hover:border-cobalt"
+            >
+              Manage applications
+            </Link>
+          ) : null}
           <button
             type="button"
             onClick={remove}

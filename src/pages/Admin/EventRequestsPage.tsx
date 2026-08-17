@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { approveEvent, listAdminEvents, rejectEvent } from '../../api/admin';
+import { deleteEvent } from '../../api/events';
 import type { EventItem, Visibility } from '../../api/types';
 import {
   formatEventPlace,
@@ -64,8 +66,23 @@ export default function EventRequestsPage() {
     }
   };
 
+  const remove = async (id: number) => {
+    if (!window.confirm('Delete this event?')) return;
+    setBusyId(id);
+    setError(null);
+    try {
+      await deleteEvent(id);
+      setItems((list) => list.filter((e) => e.id !== id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Delete failed.');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   const emptyCopy = TABS.find((t) => t.id === tab)?.empty ?? 'No events.';
   const showActions = tab === 'pending_review';
+  const showLiveManage = tab === 'live';
 
   return (
     <div className="mx-auto max-w-xl space-y-3">
@@ -120,7 +137,7 @@ export default function EventRequestsPage() {
               </p>
               <p className="text-sm text-muted">{formatEventWhen(e.starts_at)}</p>
               <p className="mt-1 text-sm text-navy">{e.created_by.name}</p>
-              {!showActions ? (
+              {!showActions && !showLiveManage ? (
                 <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-muted">
                   {e.visibility === 'live' ? 'Live' : 'Rejected'}
                 </p>
@@ -142,6 +159,27 @@ export default function EventRequestsPage() {
                     className="rounded-[var(--radius-control)] border border-border px-3 py-2 text-sm font-semibold text-navy disabled:opacity-60"
                   >
                     Reject
+                  </button>
+                </div>
+              ) : null}
+              {showLiveManage ? (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <p className="w-full text-xs font-semibold uppercase tracking-wide text-muted">
+                    Live
+                  </p>
+                  <Link
+                    to={`/events/${e.id}/edit`}
+                    className="rounded-[var(--radius-control)] border border-border px-3 py-2 text-sm font-semibold text-navy"
+                  >
+                    Edit
+                  </Link>
+                  <button
+                    type="button"
+                    disabled={busyId === e.id}
+                    onClick={() => void remove(e.id)}
+                    className="rounded-[var(--radius-control)] border border-red-300 px-3 py-2 text-sm font-semibold text-red-700 disabled:opacity-60"
+                  >
+                    Delete
                   </button>
                 </div>
               ) : null}
