@@ -3,8 +3,27 @@ import { Link } from 'react-router-dom';
 import { cancelApplication, myApplications } from '../../api/applications';
 import StatusBadge from '../../components/StatusBadge';
 import type { ApplicationStatus, EventItem } from '../../api/types';
+import { formatEventWhen } from '../../events/eventLabels';
 
-interface Row { id: number; status: ApplicationStatus; event: EventItem }
+interface Row {
+  id: number;
+  status: ApplicationStatus;
+  event: EventItem;
+}
+
+function RowSkeleton() {
+  return (
+    <div className="rounded-[var(--radius-card)] border border-border bg-surface p-4 shadow-soft">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0 flex-1 space-y-2">
+          <div className="skeleton-shimmer h-5 w-2/3 rounded" />
+          <div className="skeleton-shimmer h-4 w-1/3 rounded" />
+        </div>
+        <div className="skeleton-shimmer h-7 w-20 rounded-full" />
+      </div>
+    </div>
+  );
+}
 
 export default function MyApplicationsPage() {
   const [rows, setRows] = useState<Row[]>([]);
@@ -24,26 +43,67 @@ export default function MyApplicationsPage() {
     await load();
   };
 
-  if (loading) return <div className="p-6">Loading…</div>;
+  if (loading) {
+    return (
+      <div className="mx-auto max-w-3xl space-y-3 p-6" aria-busy="true" aria-label="Loading applications">
+        <div className="skeleton-shimmer mb-2 h-8 w-56 rounded" />
+        <div className="skeleton-shimmer mb-4 h-4 w-40 rounded" />
+        <RowSkeleton />
+        <RowSkeleton />
+        <RowSkeleton />
+      </div>
+    );
+  }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-3 p-6">
-      <h1 className="text-2xl font-bold">My Applications</h1>
-      {rows.length === 0 && <p>You have not applied to any events yet.</p>}
-      {rows.map((row) => (
-        <div key={row.id} className="flex items-center justify-between border p-4">
-          <div>
-            <Link to={`/events/${row.event.id}`} className="font-semibold hover:underline">{row.event.title}</Link>
-            <p className="text-sm text-gray-600">{new Date(row.event.starts_at).toLocaleString()}</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <StatusBadge status={row.status} />
-            {row.status === 'pending' && (
-              <button onClick={() => cancel(row.event.id)} className="border px-3 py-1">Cancel</button>
-            )}
-          </div>
+    <div className="mx-auto max-w-3xl space-y-4 p-6">
+      <header className="space-y-1">
+        <h1 className="font-display text-3xl font-extrabold tracking-tight text-navy">My Applications</h1>
+        <p className="text-sm text-muted">Events you’ve applied to</p>
+      </header>
+
+      {rows.length === 0 ? (
+        <div className="rounded-[var(--radius-card)] border border-dashed border-border bg-surface px-6 py-16 text-center">
+          <p className="text-sm text-muted">You have not applied to any events yet.</p>
+          <Link
+            to="/events"
+            className="mt-4 inline-flex min-h-11 items-center justify-center rounded-[var(--radius-control)] bg-cobalt px-4 py-2 text-sm font-semibold text-white shadow-soft hover:bg-electric"
+          >
+            Browse events
+          </Link>
         </div>
-      ))}
+      ) : (
+        <ul className="space-y-3">
+          {rows.map((row) => (
+            <li
+              key={row.id}
+              className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-card)] border border-border bg-surface p-4 shadow-soft"
+            >
+              <div className="min-w-0">
+                <Link
+                  to={`/events/${row.event.id}`}
+                  className="font-semibold text-navy hover:text-cobalt hover:underline"
+                >
+                  {row.event.title}
+                </Link>
+                <p className="text-sm text-muted">{formatEventWhen(row.event.starts_at)}</p>
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <StatusBadge status={row.status} />
+                {row.status === 'pending' && (
+                  <button
+                    type="button"
+                    onClick={() => cancel(row.event.id)}
+                    className="inline-flex min-h-11 items-center rounded-[var(--radius-control)] border border-border bg-surface px-4 py-2 text-sm font-medium text-muted hover:text-navy"
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

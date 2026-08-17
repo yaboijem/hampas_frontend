@@ -4,6 +4,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { describe, expect, test, vi } from 'vitest';
 import ApplyButton from '../components/ApplyButton';
 import EventApplicationsPage from '../pages/Applications/EventApplicationsPage';
+import MyApplicationsPage from '../pages/Applications/MyApplicationsPage';
 import * as applicationsApi from '../api/applications';
 
 vi.mock('../api/applications', () => ({
@@ -94,5 +95,64 @@ describe('EventApplicationsPage', () => {
     await waitFor(() => expect(applicationsApi.approveApplication).toHaveBeenCalledWith(1, 3));
     expect(await screen.findByText('Ana')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /approve/i })).not.toBeInTheDocument();
+  });
+});
+
+describe('MyApplicationsPage', () => {
+  test('lists applications and cancels pending', async () => {
+    const user = userEvent.setup();
+    const event = {
+      id: 11,
+      title: 'Friday League',
+      description: 'x',
+      event_type: 'league' as const,
+      skill_level: 'intermediate' as const,
+      barangay: null,
+      city: 'Angeles City',
+      starts_at: '2026-09-01T18:00:00.000Z',
+      photo_url: null,
+      visibility: 'live' as const,
+      is_owner: false,
+      my_application: null,
+      created_by: { id: 1, name: 'Org' },
+    };
+
+    vi.mocked(applicationsApi.myApplications)
+      .mockResolvedValueOnce({
+        data: [{ id: 20, status: 'pending', event }],
+      })
+      .mockResolvedValueOnce({
+        data: [],
+      });
+    vi.mocked(applicationsApi.cancelApplication).mockResolvedValue(undefined);
+
+    render(
+      <MemoryRouter initialEntries={['/me/applications']}>
+        <Routes>
+          <Route path="/me/applications" element={<MyApplicationsPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByRole('heading', { name: /my applications/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /friday league/i })).toHaveAttribute('href', '/events/11');
+    expect(screen.getByText('Pending')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /^cancel$/i }));
+    await waitFor(() => expect(applicationsApi.cancelApplication).toHaveBeenCalledWith(11));
+    expect(await screen.findByText(/not applied to any events/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /browse events/i })).toHaveAttribute('href', '/events');
+  });
+
+  test('shows empty state when none', async () => {
+    vi.mocked(applicationsApi.myApplications).mockResolvedValue({ data: [] });
+
+    render(
+      <MemoryRouter>
+        <MyApplicationsPage />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText(/not applied to any events/i)).toBeInTheDocument();
   });
 });
