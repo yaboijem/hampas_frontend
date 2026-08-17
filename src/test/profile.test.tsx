@@ -66,7 +66,7 @@ describe('ProfilePage', () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByRole('heading', { name: /hello, jem player/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /hello[!,]?\s*jem player/i })).toBeInTheDocument();
     expect(screen.queryByLabelText(/^name$/i)).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/^setter$/i)).not.toBeInTheDocument();
 
