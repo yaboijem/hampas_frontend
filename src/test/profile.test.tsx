@@ -4,6 +4,9 @@ import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import ProfilePage from '../pages/Profile/ProfilePage';
 import * as profilesApi from '../api/profiles';
+import * as authApi from '../api/auth';
+
+const updateUser = vi.fn();
 
 vi.mock('../api/profiles', () => ({
   getProfile: vi.fn(),
@@ -11,11 +14,23 @@ vi.mock('../api/profiles', () => ({
   updateRole: vi.fn(),
 }));
 
+vi.mock('../api/auth', () => ({
+  updateMe: vi.fn(),
+}));
+
 vi.mock('../auth/AuthContext', () => ({
   useAuth: () => ({
-    user: { id: 1, name: 'Jem Player', email: 'jem@example.com' },
+    user: {
+      id: 1,
+      name: 'Jem Player',
+      email: 'jem@example.com',
+      birth_date: '2000-01-01',
+      gender: 'male' as const,
+      is_admin: false,
+    },
     loading: false,
     signOut: vi.fn(),
+    updateUser,
   }),
 }));
 
@@ -24,7 +39,7 @@ describe('ProfilePage', () => {
     vi.clearAllMocks();
   });
 
-  test('shows hero, account strip, and current roles', async () => {
+  test('shows compact profile with editable account and roles', async () => {
     vi.mocked(profilesApi.getProfile).mockResolvedValue({
       roles: ['player'],
       player: { position: 'outside_hitter', skill_level: 'intermediate' },
@@ -39,10 +54,60 @@ describe('ProfilePage', () => {
     );
 
     expect(await screen.findByRole('heading', { name: /^profile$/i })).toBeInTheDocument();
-    expect(screen.getByText('Jem Player')).toBeInTheDocument();
-    expect(screen.getByText('jem@example.com')).toBeInTheDocument();
+    expect(screen.getByLabelText(/^name$/i)).toHaveValue('Jem Player');
+    expect(screen.getByLabelText(/^email$/i)).toHaveValue('jem@example.com');
+    expect(screen.getByLabelText(/birth date/i)).toHaveValue('2000-01-01');
+    expect(screen.getByLabelText(/^gender$/i)).toHaveValue('male');
     expect(screen.getByRole('heading', { name: /player details/i })).toBeInTheDocument();
     expect(screen.getByDisplayValue('outside_hitter')).toBeInTheDocument();
+  });
+
+  test('saves account details via updateMe', async () => {
+    vi.mocked(profilesApi.getProfile).mockResolvedValue({
+      roles: [],
+      player: null,
+      coach: null,
+      organizer: null,
+    });
+    vi.mocked(authApi.updateMe).mockResolvedValue({
+      user: {
+        id: 1,
+        name: 'Jem Updated',
+        email: 'jem2@example.com',
+        birth_date: '1999-06-15',
+        gender: 'female',
+        is_admin: false,
+      },
+    });
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <ProfilePage />
+      </MemoryRouter>,
+    );
+
+    await screen.findByLabelText(/^name$/i);
+    await user.clear(screen.getByLabelText(/^name$/i));
+    await user.type(screen.getByLabelText(/^name$/i), 'Jem Updated');
+    await user.clear(screen.getByLabelText(/^email$/i));
+    await user.type(screen.getByLabelText(/^email$/i), 'jem2@example.com');
+    await user.clear(screen.getByLabelText(/birth date/i));
+    await user.type(screen.getByLabelText(/birth date/i), '1999-06-15');
+    await user.selectOptions(screen.getByLabelText(/^gender$/i), 'female');
+    await user.click(screen.getByRole('button', { name: /save account/i }));
+
+    await waitFor(() =>
+      expect(authApi.updateMe).toHaveBeenCalledWith({
+        name: 'Jem Updated',
+        email: 'jem2@example.com',
+        birth_date: '1999-06-15',
+        gender: 'female',
+      }),
+    );
+    expect(updateUser).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'Jem Updated', email: 'jem2@example.com' }),
+    );
   });
 
   test('adds an organizer role', async () => {
@@ -95,7 +160,6 @@ describe('ProfilePage', () => {
     );
 
     await screen.findByRole('heading', { name: /coach details/i });
-
     await user.type(screen.getByLabelText(/bootcamp name/i), 'Hampas Academy');
     await user.click(screen.getByRole('button', { name: /save coach/i }));
 
