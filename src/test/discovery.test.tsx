@@ -20,6 +20,18 @@ vi.mock('../api/weather', async (importOriginal) => {
   };
 });
 
+const emptyPage = {
+  data: [] as EventItem[],
+  links: { first: null, last: null, prev: null, next: null },
+  meta: { current_page: 1, last_page: 1, per_page: 50, total: 0 },
+};
+
+const pageOf = (data: EventItem[]) => ({
+  data,
+  links: { first: null, last: null, prev: null, next: null },
+  meta: { current_page: 1, last_page: 1, per_page: 50, total: data.length },
+});
+
 const event = (overrides: Partial<EventItem> = {}): EventItem => ({
   id: 1,
   title: 'Sunday Open Play',
@@ -44,6 +56,8 @@ beforeEach(() => {
     rainChancePct: 20,
     condition: 'sunny',
   });
+  vi.mocked(discoveryApi.listEvents).mockResolvedValue(emptyPage);
+  vi.mocked(discoveryApi.nearbyEvents).mockResolvedValue(emptyPage);
 });
 
 afterEach(() => vi.restoreAllMocks());
@@ -56,21 +70,34 @@ function stubGeolocation(impl: (success: PositionCallback, error?: PositionError
 }
 
 describe('EventsPage', () => {
-  test('uses nearby endpoint when geolocation granted', async () => {
-    stubGeolocation((success) =>
-      success({ coords: { latitude: 15.1395, longitude: 120.5877 } } as GeolocationPosition),
-    );
-    vi.mocked(discoveryApi.nearbyEvents).mockResolvedValue({
-      data: [event({ distance_km: 2.4 })],
-      links: { first: null, last: null, prev: null, next: null },
-      meta: { current_page: 1, last_page: 1, per_page: 50, total: 1 },
-    });
+  test('loads all events by default via list endpoint', async () => {
+    vi.mocked(discoveryApi.listEvents).mockResolvedValue(pageOf([event()]));
 
     render(
       <MemoryRouter>
         <EventsPage />
       </MemoryRouter>,
     );
+
+    expect(await screen.findByText(/Sunday Open Play/i)).toBeInTheDocument();
+    expect(discoveryApi.listEvents).toHaveBeenCalled();
+    expect(discoveryApi.nearbyEvents).not.toHaveBeenCalled();
+  });
+
+  test('uses nearby endpoint when Near you is selected and geolocation granted', async () => {
+    stubGeolocation((success) =>
+      success({ coords: { latitude: 15.1395, longitude: 120.5877 } } as GeolocationPosition),
+    );
+    vi.mocked(discoveryApi.nearbyEvents).mockResolvedValue(pageOf([event({ distance_km: 2.4 })]));
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <EventsPage />
+      </MemoryRouter>,
+    );
+
+    await user.click(screen.getByRole('button', { name: /near you/i }));
 
     expect(await screen.findByText(/Sunday Open Play/i)).toBeInTheDocument();
     expect(screen.getByText(/2.4 km away/i)).toBeInTheDocument();
@@ -83,17 +110,16 @@ describe('EventsPage', () => {
     stubGeolocation((_success, error) =>
       error?.({ code: 1, message: 'denied' } as GeolocationPositionError),
     );
-    vi.mocked(discoveryApi.nearbyEvents).mockResolvedValue({
-      data: [event({ distance_km: 12 })],
-      links: { first: null, last: null, prev: null, next: null },
-      meta: { current_page: 1, last_page: 1, per_page: 50, total: 1 },
-    });
+    vi.mocked(discoveryApi.nearbyEvents).mockResolvedValue(pageOf([event({ distance_km: 12 })]));
 
+    const user = userEvent.setup();
     render(
       <MemoryRouter>
         <EventsPage />
       </MemoryRouter>,
     );
+
+    await user.click(screen.getByRole('button', { name: /near you/i }));
 
     expect(await screen.findByText(/Sunday Open Play/i)).toBeInTheDocument();
     expect(screen.getByRole('status')).toHaveTextContent(/location/i);
@@ -106,8 +132,8 @@ describe('EventsPage', () => {
     stubGeolocation((_success, error) =>
       error?.({ code: 1, message: 'denied' } as GeolocationPositionError),
     );
-    vi.mocked(discoveryApi.nearbyEvents).mockResolvedValue({
-      data: [
+    vi.mocked(discoveryApi.nearbyEvents).mockResolvedValue(
+      pageOf([
         event({ id: 1, title: 'Sunday Open Play', event_type: 'open_play', skill_level: 'all_levels' }),
         event({
           id: 2,
@@ -115,10 +141,8 @@ describe('EventsPage', () => {
           event_type: 'league',
           skill_level: 'intermediate',
         }),
-      ],
-      links: { first: null, last: null, prev: null, next: null },
-      meta: { current_page: 1, last_page: 1, per_page: 50, total: 2 },
-    });
+      ]),
+    );
 
     const user = userEvent.setup();
     render(
@@ -127,6 +151,7 @@ describe('EventsPage', () => {
       </MemoryRouter>,
     );
 
+    await user.click(screen.getByRole('button', { name: /near you/i }));
     expect(await screen.findByText(/Sunday Open Play/i)).toBeInTheDocument();
     const callsBefore = vi.mocked(discoveryApi.nearbyEvents).mock.calls.length;
 
@@ -141,51 +166,13 @@ describe('EventsPage', () => {
     expect(discoveryApi.nearbyEvents).toHaveBeenCalledTimes(callsBefore);
   });
 
-  test('applies type filter on nearby results without re-fetching', async () => {
-    stubGeolocation((success) =>
-      success({ coords: { latitude: 15.1395, longitude: 120.5877 } } as GeolocationPosition),
-    );
-    vi.mocked(discoveryApi.nearbyEvents).mockResolvedValue({
-      data: [
-        event({ id: 1, title: 'Sunday Open Play', event_type: 'open_play' }),
-        event({ id: 2, title: 'Friday League Night', event_type: 'league', skill_level: 'intermediate' }),
-      ],
-      links: { first: null, last: null, prev: null, next: null },
-      meta: { current_page: 1, last_page: 1, per_page: 50, total: 2 },
-    });
-
-    const user = userEvent.setup();
-    render(
-      <MemoryRouter>
-        <EventsPage />
-      </MemoryRouter>,
-    );
-
-    expect(await screen.findByText(/Sunday Open Play/i)).toBeInTheDocument();
-    expect(screen.getByText(/Friday League Night/i)).toBeInTheDocument();
-    const callsBeforeFilter = vi.mocked(discoveryApi.nearbyEvents).mock.calls.length;
-
-    await user.click(screen.getByRole('button', { name: /^filters$/i }));
-    await user.click(screen.getByRole('button', { name: /event type/i }));
-    await user.click(screen.getByRole('option', { name: /^league$/i }));
-
-    expect(screen.queryByText(/Sunday Open Play/i)).not.toBeInTheDocument();
-    expect(screen.getByText(/Friday League Night/i)).toBeInTheDocument();
-    expect(discoveryApi.nearbyEvents).toHaveBeenCalledTimes(callsBeforeFilter);
-  });
-
   test('client-side search filters loaded events by title', async () => {
-    stubGeolocation((_success, error) =>
-      error?.({ code: 1, message: 'denied' } as GeolocationPositionError),
-    );
-    vi.mocked(discoveryApi.nearbyEvents).mockResolvedValue({
-      data: [
+    vi.mocked(discoveryApi.listEvents).mockResolvedValue(
+      pageOf([
         event({ id: 1, title: 'Sunday Open Play' }),
         event({ id: 2, title: 'Friday League Night' }),
-      ],
-      links: { first: null, last: null, prev: null, next: null },
-      meta: { current_page: 1, last_page: 1, per_page: 50, total: 2 },
-    });
+      ]),
+    );
 
     const user = userEvent.setup();
     render(
@@ -204,14 +191,7 @@ describe('EventsPage', () => {
   });
 
   test('hero uses court photo background', async () => {
-    stubGeolocation((success) =>
-      success({ coords: { latitude: 15.1395, longitude: 120.5877 } } as GeolocationPosition),
-    );
-    vi.mocked(discoveryApi.nearbyEvents).mockResolvedValue({
-      data: [event({ distance_km: 2.4 })],
-      links: { first: null, last: null, prev: null, next: null },
-      meta: { current_page: 1, last_page: 1, per_page: 50, total: 1 },
-    });
+    vi.mocked(discoveryApi.listEvents).mockResolvedValue(pageOf([event()]));
 
     render(
       <MemoryRouter>

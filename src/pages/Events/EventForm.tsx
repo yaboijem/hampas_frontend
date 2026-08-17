@@ -1,7 +1,12 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { EventItem, EventType, SkillLevel } from '../../api/types';
-import { DEFAULT_EVENT_CITY, PAMPANGA_CITIES } from '../../data/pampanga';
+import {
+  DEFAULT_EVENT_CITY,
+  PAMPANGA_CENTER,
+  PAMPANGA_CITIES,
+  cityCenter,
+} from '../../data/pampanga';
 
 interface Props {
   initial?: EventItem | null;
@@ -126,10 +131,11 @@ export default function EventForm({ initial = null, onSubmit, submitLabel }: Pro
     form.set('barangay', barangay.trim());
     form.set('city', city.trim());
     form.set('starts_at', startsAt);
-    if (geo) {
-      form.set('latitude', String(geo.latitude));
-      form.set('longitude', String(geo.longitude));
-    }
+    const pin = geo
+      ? { lat: geo.latitude, lng: geo.longitude }
+      : (cityCenter(city) ?? PAMPANGA_CENTER);
+    form.set('latitude', String(pin.lat));
+    form.set('longitude', String(pin.lng));
     if (photo) form.set('photo', photo);
     else if (removePhoto) form.set('remove_photo', '1');
 

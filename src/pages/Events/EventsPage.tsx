@@ -37,15 +37,41 @@ function toLocalDateInput(d: Date) {
   return `${y}-${m}-${day}`;
 }
 
-function EventCardSkeleton() {
+function EventCardSkeleton({ index = 0 }: { index?: number }) {
   return (
-    <div className="overflow-hidden rounded-[var(--radius-card)] border border-border bg-surface">
-      <div className="skeleton-shimmer aspect-[16/10]" />
-      <div className="space-y-2 p-4">
-        <div className="skeleton-shimmer h-5 w-2/3 rounded" />
-        <div className="skeleton-shimmer h-4 w-1/2 rounded" />
-        <div className="skeleton-shimmer h-4 w-1/3 rounded" />
+    <div
+      className="skeleton-card-enter overflow-hidden rounded-[var(--radius-card)] border border-border bg-surface shadow-soft"
+      style={{ ['--skeleton-delay' as string]: `${index * 70}ms` }}
+      aria-hidden
+    >
+      <div className="relative aspect-[16/10] overflow-hidden">
+        <div className="skeleton-shimmer absolute inset-0" />
+        <div className="skeleton-shimmer absolute right-3 top-3 h-6 w-16 rounded-full" />
+        <div className="skeleton-shimmer absolute bottom-3 left-3 h-6 w-20 rounded-full" />
       </div>
+      <div className="flex flex-1 flex-col gap-2 p-4">
+        <div className="skeleton-shimmer h-5 w-3/4 rounded" />
+        <div className="skeleton-shimmer h-4 w-1/2 rounded" />
+        <div className="skeleton-shimmer h-4 w-2/5 rounded" />
+        <div className="mt-auto flex flex-wrap gap-2 pt-2">
+          <div className="skeleton-shimmer h-6 w-20 rounded-full" />
+          <div className="skeleton-shimmer h-6 w-16 rounded-full" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EventsGridSkeleton({ count = 6 }: { count?: number }) {
+  return (
+    <div
+      className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3"
+      aria-busy="true"
+      aria-label="Loading events"
+    >
+      {Array.from({ length: count }, (_, i) => (
+        <EventCardSkeleton key={i} index={i} />
+      ))}
     </div>
   );
 }
@@ -155,7 +181,7 @@ function MenuOption({
 }
 
 export default function EventsPage() {
-  const [mode, setMode] = useState<Mode>('nearby');
+  const [mode, setMode] = useState<Mode>('manual');
   const [events, setEvents] = useState<EventItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<EventFilters>({});
@@ -369,7 +395,7 @@ export default function EventsPage() {
     <div className="space-y-6">
       <div
         data-testid="events-hero"
-        className="relative overflow-hidden rounded-[var(--radius-card)] border border-border shadow-soft"
+        className="hero-enter relative overflow-hidden rounded-[var(--radius-card)] border border-border shadow-soft"
         style={{
           backgroundImage: [
             'linear-gradient(120deg, rgb(15 23 42 / 0.82) 0%, rgb(15 23 42 / 0.68) 45%, rgb(15 23 42 / 0.55) 100%)',
@@ -381,20 +407,30 @@ export default function EventsPage() {
       >
         <div className="relative z-10 flex flex-col gap-4 px-4 py-6 sm:flex-row sm:items-end sm:justify-between sm:px-6 sm:py-8">
           <div>
-            <p className="mb-1 text-sm font-medium tracking-wider text-white/75">
+            <p
+              className="hero-enter-item mb-1 text-sm font-medium tracking-wider text-white/75"
+              style={{ ['--hero-delay' as string]: '200ms' }}
+            >
               📍 VOLLEYBALL HUB
             </p>
-            <h1 className="font-display text-6xl font-extrabold tracking-tight text-white">
+            <h1
+              className="hero-enter-item font-display text-6xl font-extrabold tracking-tight text-white"
+              style={{ ['--hero-delay' as string]: '600ms' }}
+            >
               {mode === 'nearby' ? 'Games Near\u00A0You' : 'Events in Pampanga'}
             </h1>
-            <p className="mt-1 text-sm text-white/80">
+            <p
+              className="hero-enter-item mt-1 text-sm text-white/80"
+              style={{ ['--hero-delay' as string]: '800ms' }}
+            >
               Explore nearby games, leagues, and camps. Tap to get on&nbsp;court.
             </p>
           </div>
           <button
             type="button"
             onClick={focusSearch}
-            className="inline-flex items-center justify-center rounded-[var(--radius-control)] bg-cobalt px-4 py-2.5 text-sm font-semibold text-white shadow-soft hover:bg-electric focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+            className="hero-enter-item inline-flex items-center justify-center rounded-[var(--radius-control)] bg-cobalt px-4 py-2.5 text-sm font-semibold text-white shadow-soft hover:bg-electric focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+            style={{ ['--hero-delay' as string]: '1100ms' }}
           >
             Find a game
           </button>
@@ -688,10 +724,44 @@ export default function EventsPage() {
         </p>
       </section>
 
+      <div className="flex flex-wrap items-center gap-2">
+        <div
+          className="inline-flex rounded-full border border-border bg-surface p-1 shadow-soft"
+          role="group"
+          aria-label="Event list mode"
+        >
+          <button
+            type="button"
+            aria-pressed={mode === 'manual'}
+            onClick={() => {
+              setCoords(null);
+              setMode('manual');
+            }}
+            className={[
+              'rounded-full px-3 py-1.5 text-xs font-semibold transition',
+              mode === 'manual' ? 'bg-cobalt text-white' : 'text-muted hover:text-navy',
+            ].join(' ')}
+          >
+            All events
+          </button>
+          <button
+            type="button"
+            aria-pressed={mode === 'nearby'}
+            onClick={() => setMode('nearby')}
+            className={[
+              'rounded-full px-3 py-1.5 text-xs font-semibold transition',
+              mode === 'nearby' ? 'bg-cobalt text-white' : 'text-muted hover:text-navy',
+            ].join(' ')}
+          >
+            Near you
+          </button>
+        </div>
+      </div>
+
       {mode === 'manual' && (
         <div className="glass-panel rounded-[var(--radius-card)] border border-border p-4">
           <p className="mb-3 text-sm font-medium text-navy">
-            Location unavailable — browse Pampanga, or narrow by city.
+            Browse all live games in Pampanga, or narrow by city.
           </p>
           <div className="flex flex-wrap items-end gap-3">
             <label className="text-sm text-muted">
@@ -731,12 +801,10 @@ export default function EventsPage() {
         </div>
       )}
 
+      <hr className="border-0 border-t border-border" aria-hidden />
+
       {loading ? (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3" aria-busy="true">
-          <EventCardSkeleton />
-          <EventCardSkeleton />
-          <EventCardSkeleton />
-        </div>
+        <EventsGridSkeleton />
       ) : visible.length === 0 ? (
         <div className="rounded-[var(--radius-card)] border border-dashed border-border bg-surface px-6 py-16 text-center">
           <div className="text-4xl" aria-hidden>
@@ -755,8 +823,8 @@ export default function EventsPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {visible.map((event) => (
-            <EventCard key={event.id} event={event} />
+          {visible.map((event, i) => (
+            <EventCard key={event.id} event={event} index={i} />
           ))}
         </div>
       )}
