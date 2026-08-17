@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, test, vi } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import ProfilePage from '../pages/Profile/ProfilePage';
 import * as profilesApi from '../api/profiles';
 
@@ -11,8 +11,20 @@ vi.mock('../api/profiles', () => ({
   updateRole: vi.fn(),
 }));
 
+vi.mock('../auth/AuthContext', () => ({
+  useAuth: () => ({
+    user: { id: 1, name: 'Jem Player', email: 'jem@example.com' },
+    loading: false,
+    signOut: vi.fn(),
+  }),
+}));
+
 describe('ProfilePage', () => {
-  test('shows current roles', async () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  test('shows hero, account strip, and current roles', async () => {
     vi.mocked(profilesApi.getProfile).mockResolvedValue({
       roles: ['player'],
       player: { position: 'outside_hitter', skill_level: 'intermediate' },
@@ -26,12 +38,20 @@ describe('ProfilePage', () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByText('player')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /^profile$/i })).toBeInTheDocument();
+    expect(screen.getByText('Jem Player')).toBeInTheDocument();
+    expect(screen.getByText('jem@example.com')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /player details/i })).toBeInTheDocument();
     expect(screen.getByDisplayValue('outside_hitter')).toBeInTheDocument();
   });
 
   test('adds an organizer role', async () => {
-    vi.mocked(profilesApi.getProfile).mockResolvedValue({ roles: [], player: null, coach: null, organizer: null });
+    vi.mocked(profilesApi.getProfile).mockResolvedValue({
+      roles: [],
+      player: null,
+      coach: null,
+      organizer: null,
+    });
     vi.mocked(profilesApi.addRole).mockResolvedValue({
       role: 'organizer',
       profile: { managed_courts: 'Angeles City Sports Complex' },
@@ -44,12 +64,14 @@ describe('ProfilePage', () => {
       </MemoryRouter>,
     );
 
-    await user.selectOptions(screen.getByLabelText(/add role/i), 'organizer');
+    await user.selectOptions(await screen.findByLabelText(/add role/i), 'organizer');
     await user.type(screen.getByLabelText(/managed courts/i), 'Angeles City Sports Complex');
     await user.click(screen.getByRole('button', { name: /add role/i }));
 
     await waitFor(() =>
-      expect(profilesApi.addRole).toHaveBeenCalledWith('organizer', { managed_courts: 'Angeles City Sports Complex' }),
+      expect(profilesApi.addRole).toHaveBeenCalledWith('organizer', {
+        managed_courts: 'Angeles City Sports Complex',
+      }),
     );
   });
 
