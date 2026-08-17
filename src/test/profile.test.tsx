@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
@@ -6,7 +6,17 @@ import ProfilePage from '../pages/Profile/ProfilePage';
 import * as profilesApi from '../api/profiles';
 import * as authApi from '../api/auth';
 
-const updateUser = vi.fn();
+const { updateUser, mockUser } = vi.hoisted(() => ({
+  updateUser: vi.fn(),
+  mockUser: {
+    id: 1,
+    name: 'Jem Player',
+    email: 'jem@example.com',
+    birth_date: '2000-01-01',
+    gender: 'male' as const,
+    is_admin: false,
+  },
+}));
 
 vi.mock('../api/profiles', () => ({
   getProfile: vi.fn(),
@@ -20,14 +30,7 @@ vi.mock('../api/auth', () => ({
 
 vi.mock('../auth/AuthContext', () => ({
   useAuth: () => ({
-    user: {
-      id: 1,
-      name: 'Jem Player',
-      email: 'jem@example.com',
-      birth_date: '2000-01-01',
-      gender: 'male' as const,
-      is_admin: false,
-    },
+    user: mockUser,
     loading: false,
     signOut: vi.fn(),
     updateUser,
@@ -88,12 +91,9 @@ describe('ProfilePage', () => {
     );
 
     await screen.findByLabelText(/^name$/i);
-    await user.clear(screen.getByLabelText(/^name$/i));
-    await user.type(screen.getByLabelText(/^name$/i), 'Jem Updated');
-    await user.clear(screen.getByLabelText(/^email$/i));
-    await user.type(screen.getByLabelText(/^email$/i), 'jem2@example.com');
-    await user.clear(screen.getByLabelText(/birth date/i));
-    await user.type(screen.getByLabelText(/birth date/i), '1999-06-15');
+    fireEvent.change(screen.getByLabelText(/^name$/i), { target: { value: 'Jem Updated' } });
+    fireEvent.change(screen.getByLabelText(/^email$/i), { target: { value: 'jem2@example.com' } });
+    fireEvent.change(screen.getByLabelText(/birth date/i), { target: { value: '1999-06-15' } });
     await user.selectOptions(screen.getByLabelText(/^gender$/i), 'female');
     await user.click(screen.getByRole('button', { name: /save account/i }));
 
