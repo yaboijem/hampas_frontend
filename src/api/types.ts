@@ -50,7 +50,14 @@ export interface EventItem {
   is_owner: boolean;
   distance_km?: number;
   my_application: { id: number; status: ApplicationStatus } | null;
-  created_by: { id: number; name: string };
+  created_by: {
+    id: number;
+    name: string;
+    contact_number?: string | null;
+    contact_email?: string | null;
+    facebook_url?: string | null;
+    instagram_url?: string | null;
+  };
 }
 
 export type PlayerPosition =
@@ -69,6 +76,10 @@ export interface ProfileFieldset {
   bootcamp_name?: string;
   /** list of court names (API JSON array) */
   managed_courts?: string[] | string;
+  contact_number?: string | null;
+  contact_email?: string | null;
+  facebook_url?: string | null;
+  instagram_url?: string | null;
 }
 
 export const PLAYER_POSITIONS: { value: PlayerPosition; label: string }[] = [
