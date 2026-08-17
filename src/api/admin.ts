@@ -1,5 +1,11 @@
 import { api } from './client';
-import type { AdminRoleRequest, RoleRequestStatus } from './types';
+import type {
+  AdminRoleRequest,
+  EventItem,
+  Paginated,
+  RoleRequestStatus,
+  Visibility,
+} from './types';
 
 export async function listAdminRoleRequests(
   status: RoleRequestStatus = 'pending',
@@ -20,5 +26,22 @@ export async function rejectRoleRequest(
   const { data } = await api.post(`/admin/role-requests/${id}/reject`, {
     reason: reason ?? null,
   });
+  return data;
+}
+
+export async function listAdminEvents(visibility: Visibility): Promise<EventItem[]> {
+  const { data } = await api.get<Paginated<EventItem>>('/admin/events', {
+    params: { visibility },
+  });
+  return data.data;
+}
+
+export async function approveEvent(id: number): Promise<EventItem> {
+  const { data } = await api.patch<EventItem>(`/admin/events/${id}/approve`);
+  return data;
+}
+
+export async function rejectEvent(id: number): Promise<EventItem> {
+  const { data } = await api.patch<EventItem>(`/admin/events/${id}/reject`);
   return data;
 }
