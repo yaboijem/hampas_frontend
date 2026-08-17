@@ -4,13 +4,28 @@ import { deleteEvent, getEvent } from '../../api/events';
 import type { EventItem } from '../../api/types';
 import { useAuth } from '../../auth/AuthContext';
 import ApplyButton from '../../components/ApplyButton';
+import {
+  EmailIcon,
+  FacebookIcon,
+  InstagramIcon,
+  PhoneIcon,
+} from '../../components/ContactIcons';
 import ReportModal from '../../components/ReportModal';
 import {
+  SKILL_BADGE_CLASS,
   SKILL_LABEL,
-  TYPE_LABEL,
+  typeEmoji,
+  typeLabel,
   formatEventPlace,
   formatEventWhen,
 } from '../../events/eventLabels';
+
+function nonEmpty(v: string | null | undefined): v is string {
+  return typeof v === 'string' && v.trim() !== '';
+}
+
+const contactLinkClass =
+  'text-cobalt underline-offset-2 hover:underline';
 
 export default function EventDetailPage() {
   const { id } = useParams();
@@ -44,6 +59,12 @@ export default function EventDetailPage() {
   const canManage =
     event.is_owner ||
     (user?.is_admin === true && event.visibility === 'live');
+  const org = event.created_by;
+  const phone = nonEmpty(org.contact_number) ? org.contact_number.trim() : null;
+  const email = nonEmpty(org.contact_email) ? org.contact_email.trim() : null;
+  const facebook = nonEmpty(org.facebook_url) ? org.facebook_url.trim() : null;
+  const instagram = nonEmpty(org.instagram_url) ? org.instagram_url.trim() : null;
+  const hasContact = Boolean(phone || email || facebook || instagram);
 
   const remove = async () => {
     if (!window.confirm('Delete this event?')) return;
@@ -104,9 +125,11 @@ export default function EventDetailPage() {
         </h1>
         <div className="flex flex-wrap gap-2">
           <span className="rounded-full bg-sky-tint px-2.5 py-1 text-xs font-medium text-chip-text">
-            🏐 {TYPE_LABEL[event.event_type]}
+            {typeEmoji(event.event_type)} {typeLabel(event.event_type)}
           </span>
-          <span className="rounded-full bg-ice px-2.5 py-1 text-xs font-medium text-muted">
+          <span
+            className={`rounded-full px-2.5 py-1 text-xs font-medium ${SKILL_BADGE_CLASS[event.skill_level]}`}
+          >
             {SKILL_LABEL[event.skill_level]}
           </span>
         </div>
@@ -131,6 +154,68 @@ export default function EventDetailPage() {
           <dt className="text-sm text-muted">Organizer</dt>
           <dd className="text-right text-sm font-medium text-navy">{event.created_by.name}</dd>
         </div>
+        {hasContact && phone ? (
+          <div className="flex justify-between gap-4 px-4 py-3">
+            <dt className="flex items-center gap-2 text-sm text-muted">
+              <PhoneIcon className="text-cobalt" />
+              Phone
+            </dt>
+            <dd className="text-right text-sm font-medium text-navy">
+              <a href={`tel:${phone}`} className={contactLinkClass}>
+                {phone}
+              </a>
+            </dd>
+          </div>
+        ) : null}
+        {hasContact && email ? (
+          <div className="flex justify-between gap-4 px-4 py-3">
+            <dt className="flex items-center gap-2 text-sm text-muted">
+              <EmailIcon className="text-cobalt" />
+              Email
+            </dt>
+            <dd className="text-right text-sm font-medium text-navy">
+              <a href={`mailto:${email}`} className={contactLinkClass}>
+                {email}
+              </a>
+            </dd>
+          </div>
+        ) : null}
+        {hasContact && facebook ? (
+          <div className="flex justify-between gap-4 px-4 py-3">
+            <dt className="flex items-center gap-2 text-sm text-muted">
+              <FacebookIcon className="text-cobalt" />
+              Facebook
+            </dt>
+            <dd className="text-right text-sm font-medium text-navy">
+              <a
+                href={facebook}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={contactLinkClass}
+              >
+                Facebook
+              </a>
+            </dd>
+          </div>
+        ) : null}
+        {hasContact && instagram ? (
+          <div className="flex justify-between gap-4 px-4 py-3">
+            <dt className="flex items-center gap-2 text-sm text-muted">
+              <InstagramIcon className="text-cobalt" />
+              Instagram
+            </dt>
+            <dd className="text-right text-sm font-medium text-navy">
+              <a
+                href={instagram}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={contactLinkClass}
+              >
+                Instagram
+              </a>
+            </dd>
+          </div>
+        ) : null}
       </dl>
 
       <section className="mb-8">

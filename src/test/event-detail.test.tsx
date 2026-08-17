@@ -160,4 +160,55 @@ describe('EventDetailPage', () => {
     expect(screen.queryByRole('link', { name: /edit event/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /delete event/i })).not.toBeInTheDocument();
   });
+
+  test('shows organizer contact links with icons when present', async () => {
+    vi.mocked(eventsApi.getEvent).mockResolvedValue({
+      ...baseEvent,
+      created_by: {
+        id: 3,
+        name: 'Alex Organizer',
+        contact_number: '09171234567',
+        contact_email: 'alex@example.com',
+        facebook_url: 'https://facebook.com/alex',
+        instagram_url: 'https://instagram.com/alex',
+      },
+    });
+    renderDetail();
+
+    expect(await screen.findByText(/alex organizer/i)).toBeInTheDocument();
+
+    const phone = screen.getByRole('link', { name: /09171234567/i });
+    expect(phone).toHaveAttribute('href', 'tel:09171234567');
+
+    const email = screen.getByRole('link', { name: /alex@example.com/i });
+    expect(email).toHaveAttribute('href', 'mailto:alex@example.com');
+
+    const fb = screen.getByRole('link', { name: /^facebook$/i });
+    expect(fb).toHaveAttribute('href', 'https://facebook.com/alex');
+    expect(fb).toHaveAttribute('target', '_blank');
+
+    const ig = screen.getByRole('link', { name: /^instagram$/i });
+    expect(ig).toHaveAttribute('href', 'https://instagram.com/alex');
+    expect(ig).toHaveAttribute('rel', expect.stringContaining('noopener'));
+  });
+
+  test('hides contact block when organizer contact is empty', async () => {
+    vi.mocked(eventsApi.getEvent).mockResolvedValue({
+      ...baseEvent,
+      created_by: {
+        id: 3,
+        name: 'Alex Organizer',
+        contact_number: null,
+        contact_email: null,
+        facebook_url: null,
+        instagram_url: null,
+      },
+    });
+    renderDetail();
+
+    expect(await screen.findByText(/alex organizer/i)).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^facebook$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^instagram$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /@/i })).not.toBeInTheDocument();
+  });
 });
