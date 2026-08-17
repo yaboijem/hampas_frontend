@@ -1,6 +1,11 @@
 import { useEffect, useId, useState, type ReactNode } from 'react';
 import { useAuth } from '../../auth/AuthContext';
-import { updateMe } from '../../api/auth';
+import {
+  changePassword,
+  sendPasswordCode,
+  updateMe,
+  verifyPasswordCode,
+} from '../../api/auth';
 import {
   createRoleRequest,
   getProfile,
@@ -66,6 +71,26 @@ const secondaryBtn =
   'inline-flex items-center justify-center rounded-[var(--radius-control)] border border-border bg-surface px-3 py-2 text-sm font-semibold text-navy transition hover:bg-ice disabled:cursor-not-allowed disabled:opacity-60';
 
 type CardKey = 'account' | 'player' | 'coach' | 'organizer' | 'elevated';
+type PasswordPhase = 'locked' | 'code_sent' | 'unlocked';
+
+function passwordMeetsRules(pw: string): boolean {
+  return pw.length >= 8 && /[0-9]/.test(pw) && /[^A-Za-z0-9]/.test(pw);
+}
+
+function apiErrorMessage(err: unknown, fallback: string): string {
+  if (err && typeof err === 'object' && 'response' in err) {
+    const data = (
+      err as {
+        response?: { data?: { message?: string; errors?: Record<string, string[]> } };
+      }
+    ).response?.data;
+    const first = data?.errors && Object.values(data.errors).flat()[0];
+    if (first) return first;
+    if (data?.message) return data.message;
+  }
+  if (err instanceof Error && err.message) return err.message;
+  return fallback;
+}
 
 function titleCase(value: string) {
   return value.replaceAll('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase());
@@ -192,6 +217,29 @@ export default function ProfilePage() {
   }>({ positions: [], skill_level: '' });
   const [coachDraft, setCoachDraft] = useState({ achievements: '', bootcamp_name: '' });
   const [courtsDraft, setCourtsDraft] = useState<string[]>(['']);
+  const [passwordPhase, setPasswordPhase] = useState<PasswordPhase>('locked');
+  const [passwordCode, setPasswordCode] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [sendingCode, setSendingCode] = useState(false);
+  const [verifyingCode, setVerifyingCode] = useState(false);
+  const [savingPassword, setSavingPassword] = useState(false);
+  const [passwordMessage, setPasswordMessage] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [resendAt, setResendAt] = useState(0);
+
+  const resetPasswordUi = (keepMessage?: string | null) => {
+    setPasswordPhase('locked');
+    setPasswordCode('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setSendingCode(false);
+    setVerifyingCode(false);
+    setSavingPassword(false);
+    setPasswordError(null);
+    setResendAt(0);
+    setPasswordMessage(keepMessage ?? null);
+  };
 
   const syncDraftsFromProfile = (data: ProfileView, nextUser = user) => {
     const positions =
@@ -252,9 +300,13 @@ export default function ProfilePage() {
     setOpenCard((cur) => {
       if (cur === key) {
         setEditing((e) => ({ ...e, [key]: false }));
+        if (key === 'account') resetPasswordUi();
         return null;
       }
-      if (cur) setEditing((e) => ({ ...e, [cur]: false }));
+      if (cur) {
+        setEditing((e) => ({ ...e, [cur]: false }));
+        if (cur === 'account') resetPasswordUi();
+      }
       return key;
     });
   };
@@ -289,12 +341,14 @@ export default function ProfilePage() {
         birth_date: user.birth_date,
         gender: user.gender,
       });
+      resetPasswordUi();
     }
     setEditing((e) => ({ ...e, [key]: true }));
   };
 
   const cancelEdit = (key: CardKey) => {
     setEditing((e) => ({ ...e, [key]: false }));
+    if (key === 'account') resetPasswordUi();
     syncDraftsFromProfile(profile);
   };
 
@@ -317,11 +371,64 @@ export default function ProfilePage() {
         gender: account.gender,
       });
       updateUser(next);
+      resetPasswordUi();
       setEditing((e) => ({ ...e, account: false }));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save account.');
+      setError(apiErrorMessage(err, 'Failed to save account.'));
     } finally {
       setSavingAccount(false);
+    }
+  };
+
+  const passwordValid =
+    passwordMeetsRules(newPassword) && newPassword === confirmPassword;
+
+  const handleSendCode = async () => {
+    setPasswordError(null);
+    setPasswordMessage(null);
+    setSendingCode(true);
+    try {
+      const { message } = await sendPasswordCode();
+      setPasswordPhase('code_sent');
+      setPasswordMessage(message);
+      setResendAt(Date.now() + 60_000);
+    } catch (err) {
+      setPasswordError(apiErrorMessage(err, 'Failed to send code.'));
+    } finally {
+      setSendingCode(false);
+    }
+  };
+
+  const handleVerifyCode = async () => {
+    if (!/^\d{4}$/.test(passwordCode)) {
+      setPasswordError('Enter the 4-digit code.');
+      return;
+    }
+    setPasswordError(null);
+    setVerifyingCode(true);
+    try {
+      const { message } = await verifyPasswordCode(passwordCode);
+      setPasswordPhase('unlocked');
+      setPasswordMessage(message);
+      setPasswordCode('');
+    } catch (err) {
+      setPasswordError(apiErrorMessage(err, 'Invalid or expired code.'));
+    } finally {
+      setVerifyingCode(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (!passwordValid) return;
+    setPasswordError(null);
+    setSavingPassword(true);
+    try {
+      const { message } = await changePassword(newPassword, confirmPassword);
+      resetPasswordUi(message || 'Password updated.');
+    } catch (err) {
+      setPasswordError(apiErrorMessage(err, 'Failed to update password.'));
+    } finally {
+      setSavingPassword(false);
     }
   };
 
@@ -492,54 +599,151 @@ export default function ProfilePage() {
               }
             >
               {editing.account ? (
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <label htmlFor={nameId} className="block sm:col-span-2">
-                    <span className={labelClass}>Name</span>
-                    <input
-                      id={nameId}
-                      className={fieldClass}
-                      value={account.name}
-                      onChange={(e) => setAccount((a) => ({ ...a, name: e.target.value }))}
-                    />
-                  </label>
-                  <label htmlFor={emailId} className="block sm:col-span-2">
-                    <span className={labelClass}>Email</span>
-                    <input
-                      id={emailId}
-                      type="email"
-                      className={fieldClass}
-                      value={account.email}
-                      onChange={(e) => setAccount((a) => ({ ...a, email: e.target.value }))}
-                    />
-                  </label>
-                  <label htmlFor={birthId} className="block">
-                    <span className={labelClass}>Birth date</span>
-                    <input
-                      id={birthId}
-                      type="date"
-                      max={MAX_BIRTH_DATE}
-                      className={fieldClass}
-                      value={account.birth_date}
-                      onChange={(e) => setAccount((a) => ({ ...a, birth_date: e.target.value }))}
-                    />
-                  </label>
-                  <label htmlFor={genderId} className="block">
-                    <span className={labelClass}>Gender</span>
-                    <select
-                      id={genderId}
-                      className={fieldClass}
-                      value={account.gender}
-                      onChange={(e) =>
-                        setAccount((a) => ({ ...a, gender: e.target.value as Gender | '' }))
-                      }
-                    >
-                      <option value="">Select…</option>
-                      <option value="male">Male</option>
-                      <option value="female">Female</option>
-                      <option value="other">Other</option>
-                    </select>
-                  </label>
-                </div>
+                <>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <label htmlFor={nameId} className="block sm:col-span-2">
+                      <span className={labelClass}>Name</span>
+                      <input
+                        id={nameId}
+                        className={fieldClass}
+                        value={account.name}
+                        onChange={(e) => setAccount((a) => ({ ...a, name: e.target.value }))}
+                      />
+                    </label>
+                    <label htmlFor={emailId} className="block sm:col-span-2">
+                      <span className={labelClass}>Email</span>
+                      <input
+                        id={emailId}
+                        type="email"
+                        className={fieldClass}
+                        value={account.email}
+                        onChange={(e) => setAccount((a) => ({ ...a, email: e.target.value }))}
+                      />
+                    </label>
+                    <label htmlFor={birthId} className="block">
+                      <span className={labelClass}>Birth date</span>
+                      <input
+                        id={birthId}
+                        type="date"
+                        max={MAX_BIRTH_DATE}
+                        className={fieldClass}
+                        value={account.birth_date}
+                        onChange={(e) => setAccount((a) => ({ ...a, birth_date: e.target.value }))}
+                      />
+                    </label>
+                    <label htmlFor={genderId} className="block">
+                      <span className={labelClass}>Gender</span>
+                      <select
+                        id={genderId}
+                        className={fieldClass}
+                        value={account.gender}
+                        onChange={(e) =>
+                          setAccount((a) => ({ ...a, gender: e.target.value as Gender | '' }))
+                        }
+                      >
+                        <option value="">Select…</option>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </label>
+                  </div>
+                  <div className="mt-4 border-t border-border pt-3">
+                    <p className={labelClass}>Password</p>
+                    <p className="mt-1 text-xs text-muted">
+                      Change password using a 4-digit code sent to {user.email}.
+                    </p>
+                    {passwordError ? (
+                      <p className="mt-2 text-sm font-medium text-red-700" role="alert">
+                        {passwordError}
+                      </p>
+                    ) : null}
+                    {passwordMessage ? (
+                      <p className="mt-2 text-sm font-medium text-emerald-800">{passwordMessage}</p>
+                    ) : null}
+                    {passwordPhase === 'locked' || passwordPhase === 'code_sent' ? (
+                      <div className="mt-3 space-y-2">
+                        {passwordPhase === 'code_sent' ? (
+                          <label className="block" htmlFor="password-change-code">
+                            <span className={labelClass}>4-digit code</span>
+                            <input
+                              id="password-change-code"
+                              inputMode="numeric"
+                              autoComplete="one-time-code"
+                              maxLength={4}
+                              className={fieldClass}
+                              value={passwordCode}
+                              onChange={(e) =>
+                                setPasswordCode(e.target.value.replace(/\D/g, '').slice(0, 4))
+                              }
+                            />
+                          </label>
+                        ) : null}
+                        <div className="flex flex-wrap gap-2">
+                          {passwordPhase === 'code_sent' ? (
+                            <button
+                              type="button"
+                              className={primaryBtn}
+                              disabled={verifyingCode || passwordCode.length !== 4}
+                              onClick={() => void handleVerifyCode()}
+                            >
+                              {verifyingCode ? 'Verifying…' : 'Verify code'}
+                            </button>
+                          ) : null}
+                          <button
+                            type="button"
+                            className={passwordPhase === 'locked' ? primaryBtn : secondaryBtn}
+                            disabled={sendingCode || Date.now() < resendAt}
+                            onClick={() => void handleSendCode()}
+                          >
+                            {sendingCode
+                              ? 'Sending…'
+                              : passwordPhase === 'code_sent'
+                                ? 'Resend code'
+                                : 'Send code'}
+                          </button>
+                        </div>
+                      </div>
+                    ) : null}
+                    {passwordPhase === 'unlocked' ? (
+                      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                        <label className="block sm:col-span-2" htmlFor="new-password">
+                          <span className={labelClass}>New password</span>
+                          <input
+                            id="new-password"
+                            type="password"
+                            autoComplete="new-password"
+                            className={fieldClass}
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
+                          />
+                        </label>
+                        <label className="block sm:col-span-2" htmlFor="confirm-password">
+                          <span className={labelClass}>Confirm password</span>
+                          <input
+                            id="confirm-password"
+                            type="password"
+                            autoComplete="new-password"
+                            className={fieldClass}
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                          />
+                        </label>
+                        <p className="text-xs text-muted sm:col-span-2">
+                          Min 8 characters, at least 1 digit and 1 special character.
+                        </p>
+                        <button
+                          type="button"
+                          className={primaryBtn}
+                          disabled={savingPassword || !passwordValid}
+                          onClick={() => void handleChangePassword()}
+                        >
+                          {savingPassword ? 'Saving…' : 'Save password'}
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
+                </>
               ) : (
                 <dl className="space-y-2 text-sm">
                   <div>
