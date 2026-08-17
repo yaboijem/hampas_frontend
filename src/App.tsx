@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './auth/AuthContext';
 import RequireAuth from './auth/RequireAuth';
+import RequireAdmin from './auth/RequireAdmin';
 import RegisterPage from './pages/Auth/RegisterPage';
 import LoginPage from './pages/Auth/LoginPage';
 import ForgotPasswordPage from './pages/Auth/ForgotPasswordPage';
@@ -8,6 +9,7 @@ import ResetPasswordPage from './pages/Auth/ResetPasswordPage';
 import PrivacyPolicy from './pages/Legal/PrivacyPolicy';
 import Terms from './pages/Legal/Terms';
 import ProfilePage from './pages/Profile/ProfilePage';
+import RoleRequestsPage from './pages/Admin/RoleRequestsPage';
 import CreateEventPage from './pages/Events/CreateEventPage';
 import EditEventPage from './pages/Events/EditEventPage';
 import EventDetailPage from './pages/Events/EventDetailPage';
@@ -50,6 +52,16 @@ export default function App() {
                 <Route path="/privacy" element={<PrivacyPolicy />} />
                 <Route path="/terms" element={<Terms />} />
                 <Route path="/profile" element={<RequireAuth><ProfilePage /></RequireAuth>} />
+                <Route
+                  path="/admin/role-requests"
+                  element={
+                    <RequireAuth>
+                      <RequireAdmin>
+                        <RoleRequestsPage />
+                      </RequireAdmin>
+                    </RequireAuth>
+                  }
+                />
                 <Route path="/events" element={<EventsPage />} />
                 <Route path="/events/new" element={<RequireAuth><CreateEventPage /></RequireAuth>} />
                 <Route path="/events/:id/edit" element={<RequireAuth><EditEventPage /></RequireAuth>} />

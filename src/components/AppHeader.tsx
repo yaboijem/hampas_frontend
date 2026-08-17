@@ -1,39 +1,27 @@
-import { useEffect, useId, useState } from 'react';
-import { Link, NavLink, useLocation } from 'react-router-dom';
-import { useAuth } from '../auth/AuthContext';
-import ThemeToggle from './ThemeToggle';
+import { useEffect, useId, useState } from "react";
+import { Link, NavLink, useLocation } from "react-router-dom";
+import { useAuth } from "../auth/AuthContext";
+import ThemeToggle from "./ThemeToggle";
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   [
-    'rounded-[var(--radius-control)] px-3 py-2 text-sm font-medium transition-colors',
-    isActive ? 'bg-sky-tint text-chip-text' : 'text-muted hover:text-navy',
-  ].join(' ');
+    "px-3 py-2 text-sm font-medium transition-colors border-b-2",
+    isActive
+      ? "border-cobalt text-navy"
+      : "border-transparent text-muted hover:text-navy",
+  ].join(" ");
 
 const menuLinkClass = ({ isActive }: { isActive: boolean }) =>
   [
-    'block w-full rounded-[var(--radius-control)] px-3 py-3 text-sm font-medium transition-colors',
-    isActive ? 'bg-sky-tint text-chip-text' : 'text-navy hover:bg-ice',
-  ].join(' ');
-
-function formatClock(date: Date) {
-  return date.toLocaleTimeString(undefined, {
-    hour: 'numeric',
-    minute: '2-digit',
-    second: '2-digit',
-  });
-}
+    "block w-full rounded-[var(--radius-control)] px-3 py-3 text-sm font-medium transition-colors",
+    isActive ? "bg-sky-tint text-chip-text" : "text-navy hover:bg-ice",
+  ].join(" ");
 
 export default function AppHeader() {
   const { user, loading, signOut } = useAuth();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [now, setNow] = useState(() => new Date());
   const menuId = useId();
-
-  useEffect(() => {
-    const id = window.setInterval(() => setNow(new Date()), 1000);
-    return () => window.clearInterval(id);
-  }, []);
 
   useEffect(() => {
     setMenuOpen(false);
@@ -42,10 +30,10 @@ export default function AppHeader() {
   useEffect(() => {
     if (!menuOpen) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setMenuOpen(false);
+      if (e.key === "Escape") setMenuOpen(false);
     };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
   }, [menuOpen]);
 
   const handleSignOut = () => {
@@ -60,30 +48,22 @@ export default function AppHeader() {
         aria-label="Main"
       >
         <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
-          <Link
-            to={user ? '/events' : '/'}
-            className="font-display flex shrink-0 items-center gap-3 text-lg font-extrabold tracking-tight text-navy"
+          <span
+            className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-cobalt text-4xl text-white"
+            aria-hidden
           >
-            Hampas
-            <span
-              className="inline-flex h-3 w-3 items-center justify-center rounded-full bg-cobalt text-xl text-white"
-              aria-hidden
+            🏐
+          </span>
+          <div className="flex min-w-0 shrink-0 flex-col justify-center">
+            <Link
+              to={user ? "/events" : "/"}
+              className="font-display flex shrink-0 items-center gap-3 text-3xl leading-tight font-extrabold tracking-tight text-navy"
             >
-              🏐
+              HAMPAS
+            </Link>
+            <span className="font-display block text-xs font-extrabold leading-tight tracking-wider text-muted">
+              FIND · PLAY · ENJOY
             </span>
-          </Link>
-          <div className="flex min-w-0 shrink items-center pl-2 gap-2 overflow-hidden sm:gap-3">
-            <span className="inline-flex shrink-0 items-center whitespace-nowrap rounded-full border border-border bg-surface px-2 py-1 text-[11px] font-medium text-muted sm:px-3 sm:text-xs">
-              📍 Angeles City
-            </span>
-            <time
-              dateTime={now.toISOString()}
-              className="inline-flex shrink-0 items-center whitespace-nowrap rounded-full border border-border bg-surface px-2 py-1 text-[11px] font-medium text-muted sm:px-3 sm:text-xs"
-              aria-live="polite"
-              aria-label={`Current time ${formatClock(now)}`}
-            >
-              {formatClock(now)}
-            </time>
           </div>
         </div>
 
@@ -100,6 +80,11 @@ export default function AppHeader() {
               <NavLink to="/profile" className={linkClass}>
                 Profile
               </NavLink>
+              {user.is_admin ? (
+                <NavLink to="/admin/role-requests" className={linkClass}>
+                  Role requests
+                </NavLink>
+              ) : null}
               <Link
                 to="/events/new"
                 className="rounded-[var(--radius-control)] bg-cobalt px-3 py-2 text-sm font-semibold text-white shadow-soft hover:bg-electric"
@@ -109,7 +94,7 @@ export default function AppHeader() {
               <button
                 type="button"
                 onClick={signOut}
-                className="rounded-[var(--radius-control)] border border-border bg-surface px-3 py-2 text-sm font-medium text-muted hover:text-navy"
+                className="rounded-[var(--radius-control)] border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-100 hover:text-red-800"
               >
                 Log out
               </button>
@@ -135,7 +120,7 @@ export default function AppHeader() {
               className="inline-flex h-11 w-11 items-center justify-center rounded-[var(--radius-control)] border border-border bg-surface text-navy"
               aria-expanded={menuOpen}
               aria-controls={menuId}
-              aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+              aria-label={menuOpen ? "Close menu" : "Open menu"}
               onClick={() => setMenuOpen((open) => !open)}
             >
               {menuOpen ? (
@@ -164,17 +149,38 @@ export default function AppHeader() {
                   role="menu"
                   className="absolute right-0 z-50 mt-2 w-56 origin-top-right rounded-[var(--radius-card)] border border-border bg-surface p-2 shadow-soft"
                 >
-                  <NavLink to="/events" role="menuitem" className={menuLinkClass}>
+                  <NavLink
+                    to="/events"
+                    role="menuitem"
+                    className={menuLinkClass}
+                  >
                     Events
                   </NavLink>
                   {!loading && user && (
                     <>
-                      <NavLink to="/me/applications" role="menuitem" className={menuLinkClass}>
+                      <NavLink
+                        to="/me/applications"
+                        role="menuitem"
+                        className={menuLinkClass}
+                      >
                         My applications
                       </NavLink>
-                      <NavLink to="/profile" role="menuitem" className={menuLinkClass}>
+                      <NavLink
+                        to="/profile"
+                        role="menuitem"
+                        className={menuLinkClass}
+                      >
                         Profile
                       </NavLink>
+                      {user.is_admin ? (
+                        <NavLink
+                          to="/admin/role-requests"
+                          role="menuitem"
+                          className={menuLinkClass}
+                        >
+                          Role requests
+                        </NavLink>
+                      ) : null}
                       <Link
                         to="/events/new"
                         role="menuitem"
@@ -186,7 +192,7 @@ export default function AppHeader() {
                         type="button"
                         role="menuitem"
                         onClick={handleSignOut}
-                        className="mt-1 block w-full rounded-[var(--radius-control)] border border-border px-3 py-3 text-left text-sm font-medium text-muted hover:bg-ice hover:text-navy"
+                        className="mt-1 block w-full rounded-[var(--radius-control)] border border-red-100 bg-red-50 px-3 py-3 text-center text-sm font-medium text-red-700 hover:bg-red-200 hover:text-red-800"
                       >
                         Log out
                       </button>
