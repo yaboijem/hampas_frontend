@@ -53,13 +53,30 @@ export interface EventItem {
   created_by: { id: number; name: string };
 }
 
+export type PlayerPosition =
+  | 'setter'
+  | 'outside_hitter'
+  | 'opposite_hitter'
+  | 'middle_blocker'
+  | 'libero';
+
 export interface ProfileFieldset {
+  /** @deprecated use positions */
   position?: string;
+  positions?: PlayerPosition[];
   skill_level?: SkillLevel;
   achievements?: string;
   bootcamp_name?: string;
   managed_courts?: string;
 }
+
+export const PLAYER_POSITIONS: { value: PlayerPosition; label: string }[] = [
+  { value: 'setter', label: 'Setter' },
+  { value: 'outside_hitter', label: 'Outside Hitter' },
+  { value: 'opposite_hitter', label: 'Opposite Hitter' },
+  { value: 'middle_blocker', label: 'Middle Blocker' },
+  { value: 'libero', label: 'Libero' },
+];
 
 export interface Paginated<T> {
   data: T[];

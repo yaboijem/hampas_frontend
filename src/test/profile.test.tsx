@@ -47,7 +47,7 @@ describe('ProfilePage', () => {
   test('player-only profile shows account and player details, not elevated editors', async () => {
     vi.mocked(profilesApi.getProfile).mockResolvedValue({
       roles: ['player'],
-      player: { position: 'outside_hitter', skill_level: 'intermediate' },
+      player: { positions: ['outside_hitter'], skill_level: 'intermediate' },
       coach: null,
       organizer: null,
     });
@@ -61,12 +61,46 @@ describe('ProfilePage', () => {
     expect(await screen.findByRole('heading', { name: /^profile$/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/^name$/i)).toHaveValue('Jem Player');
     expect(screen.getByRole('heading', { name: /player details/i })).toBeInTheDocument();
-    expect(screen.getByDisplayValue('outside_hitter')).toBeInTheDocument();
+    expect(screen.getByLabelText(/outside hitter/i)).toBeChecked();
+    expect(screen.getByLabelText(/^setter$/i)).not.toBeChecked();
     expect(screen.queryByRole('heading', { name: /coach details/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /organizer details/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /add role/i })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /request coach/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /request organizer/i })).toBeInTheDocument();
+  });
+
+  test('saves multiple player positions', async () => {
+    vi.mocked(profilesApi.getProfile).mockResolvedValue({
+      roles: ['player'],
+      player: { positions: ['setter'], skill_level: 'beginner' },
+      coach: null,
+      organizer: null,
+    });
+    vi.mocked(profilesApi.updateRole).mockResolvedValue({
+      role: 'player',
+      profile: { positions: ['setter', 'libero'], skill_level: 'beginner' },
+    });
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <ProfilePage />
+      </MemoryRouter>,
+    );
+
+    await screen.findByLabelText(/^setter$/i);
+    await user.click(screen.getByLabelText(/^libero$/i));
+    await user.click(screen.getByRole('button', { name: /save player/i }));
+
+    await waitFor(() =>
+      expect(profilesApi.updateRole).toHaveBeenCalledWith(
+        'player',
+        expect.objectContaining({
+          positions: expect.arrayContaining(['setter', 'libero']),
+        }),
+      ),
+    );
   });
 
   test('requests coach access', async () => {

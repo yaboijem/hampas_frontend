@@ -8,21 +8,20 @@ import {
   updateRole,
   type ProfileView,
 } from '../../api/profiles';
-import type { ElevatedRole, Gender, ProfileFieldset, Role, RoleRequest } from '../../api/types';
+import type {
+  ElevatedRole,
+  Gender,
+  PlayerPosition,
+  ProfileFieldset,
+  Role,
+  RoleRequest,
+} from '../../api/types';
+import { PLAYER_POSITIONS } from '../../api/types';
 
 const ROLE_FIELDS: Record<
-  Role,
+  Exclude<Role, 'player'>,
   { key: keyof ProfileFieldset; label: string; type?: 'text' | 'select'; options?: string[] }[]
 > = {
-  player: [
-    { key: 'position', label: 'Position' },
-    {
-      key: 'skill_level',
-      label: 'Skill level',
-      type: 'select',
-      options: ['beginner', 'intermediate', 'advanced'],
-    },
-  ],
   coach: [
     { key: 'achievements', label: 'Achievements' },
     { key: 'bootcamp_name', label: 'Bootcamp name' },
@@ -73,7 +72,7 @@ function FieldControl({
   onChange,
   idPrefix,
 }: {
-  field: (typeof ROLE_FIELDS)[Role][number];
+  field: { key: keyof ProfileFieldset; label: string; type?: 'text' | 'select'; options?: string[] };
   value: string;
   onChange: (next: string) => void;
   idPrefix: string;
@@ -236,7 +235,117 @@ export default function ProfilePage() {
       organizer: profile.organizer,
     })[role] ?? {};
 
-  const renderRoleCard = (role: Role) => (
+  const playerPositions = (): PlayerPosition[] => {
+    const fromEdit = edits.player?.positions;
+    if (fromEdit) return fromEdit;
+    const raw = profile.player?.positions;
+    if (raw && raw.length > 0) return raw;
+    const legacy = profile.player?.position;
+    if (legacy) return [legacy as PlayerPosition];
+    return [];
+  };
+
+  const togglePosition = (pos: PlayerPosition) => {
+    const current = playerPositions();
+    const next = current.includes(pos) ? current.filter((p) => p !== pos) : [...current, pos];
+    setEdits((ed) => ({
+      ...ed,
+      player: { ...ed.player, positions: next },
+    }));
+  };
+
+  const savePlayer = async () => {
+    setError(null);
+    setSavingRole('player');
+    try {
+      const positions = playerPositions();
+      const skill =
+        (edits.player?.skill_level as string | undefined) ??
+        profile.player?.skill_level ??
+        undefined;
+      await updateRole('player', {
+        positions,
+        ...(skill ? { skill_level: skill as ProfileFieldset['skill_level'] } : {}),
+      });
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save.');
+    } finally {
+      setSavingRole(null);
+    }
+  };
+
+  const renderPlayerCard = () => {
+    const skillValue =
+      ((edits.player?.skill_level as string | undefined) ?? profile.player?.skill_level ?? '') ||
+      '';
+    return (
+      <section className={cardClass}>
+        <h2 className="font-display text-base font-bold capitalize text-navy">
+          <span aria-hidden className="mr-1.5">
+            {ROLE_META.player.emoji}
+          </span>
+          player details
+        </h2>
+        <fieldset className="mt-3">
+          <legend className={labelClass}>Positions</legend>
+          <p className="mt-1 text-xs text-muted">Select all that apply.</p>
+          <div className="mt-2 grid gap-2 sm:grid-cols-2" role="group" aria-label="Positions">
+            {PLAYER_POSITIONS.map((p) => {
+              const id = `player-pos-${p.value}`;
+              const checked = playerPositions().includes(p.value);
+              return (
+                <label
+                  key={p.value}
+                  htmlFor={id}
+                  className="flex cursor-pointer items-center gap-2 rounded-xl border border-border/80 bg-surface px-3 py-2 text-sm text-navy"
+                >
+                  <input
+                    id={id}
+                    type="checkbox"
+                    className="h-4 w-4 rounded border-border text-cobalt focus:ring-cobalt/30"
+                    checked={checked}
+                    onChange={() => togglePosition(p.value)}
+                  />
+                  <span>{p.label}</span>
+                </label>
+              );
+            })}
+          </div>
+        </fieldset>
+        <div className="mt-3">
+          <FieldControl
+            field={{
+              key: 'skill_level',
+              label: 'Skill level',
+              type: 'select',
+              options: ['beginner', 'intermediate', 'advanced'],
+            }}
+            idPrefix="edit-player"
+            value={skillValue}
+            onChange={(next) =>
+              setEdits((ed) => ({
+                ...ed,
+                player: { ...ed.player, skill_level: next as ProfileFieldset['skill_level'] },
+              }))
+            }
+          />
+        </div>
+        <div className="mt-3">
+          <button
+            type="button"
+            onClick={() => void savePlayer()}
+            disabled={savingRole === 'player'}
+            className={primaryBtn}
+          >
+            {savingRole === 'player' ? 'Saving…' : 'Save player'}
+          </button>
+        </div>
+      </section>
+    );
+  };
+
+  const renderElevatedRoleCard = (role: Exclude<Role, 'player'>) => (
     <section key={role} className={cardClass}>
       <h2 className="font-display text-base font-bold capitalize text-navy">
         <span aria-hidden className="mr-1.5">
@@ -379,7 +488,7 @@ export default function ProfilePage() {
             </section>
           ) : null}
 
-          {renderRoleCard('player')}
+          {renderPlayerCard()}
 
           <section className={cardClass} aria-label="Elevated roles">
             <h2 className="font-display text-base font-bold text-navy">Elevated access</h2>
@@ -460,7 +569,9 @@ export default function ProfilePage() {
             </ul>
           </section>
 
-          {ELEVATED.filter((r) => profile.roles.includes(r)).map((role) => renderRoleCard(role))}
+          {ELEVATED.filter((r) => profile.roles.includes(r)).map((role) =>
+            renderElevatedRoleCard(role),
+          )}
         </>
       )}
     </div>
