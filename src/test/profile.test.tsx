@@ -383,6 +383,69 @@ describe('ProfilePage', () => {
     await waitFor(() =>
       expect(profilesApi.updateRole).toHaveBeenCalledWith('organizer', {
         managed_courts: ['Court A', 'Court B'],
+        contact_number: '',
+        contact_email: '',
+        facebook_url: '',
+        instagram_url: '',
+      }),
+    );
+  });
+
+  test('organizer can save contact fields with courts', async () => {
+    vi.mocked(profilesApi.getProfile).mockResolvedValue({
+      roles: ['player', 'organizer'],
+      player: {},
+      coach: null,
+      organizer: {
+        managed_courts: ['Court A'],
+        contact_number: null,
+        contact_email: null,
+        facebook_url: null,
+        instagram_url: null,
+      },
+    });
+    vi.mocked(profilesApi.updateRole).mockResolvedValue({
+      role: 'organizer',
+      profile: {
+        managed_courts: ['Court A'],
+        contact_number: '09171234567',
+        contact_email: 'org@example.com',
+        facebook_url: 'https://facebook.com/org',
+        instagram_url: 'https://instagram.com/org',
+      },
+    });
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <ProfilePage />
+      </MemoryRouter>,
+    );
+
+    await expand(/organizer details/i);
+    await user.click(screen.getByRole('button', { name: /^edit$/i }));
+
+    fireEvent.change(screen.getByLabelText(/contact number/i), {
+      target: { value: '09171234567' },
+    });
+    fireEvent.change(screen.getByLabelText(/contact email/i), {
+      target: { value: 'org@example.com' },
+    });
+    fireEvent.change(screen.getByLabelText(/facebook url/i), {
+      target: { value: 'https://facebook.com/org' },
+    });
+    fireEvent.change(screen.getByLabelText(/instagram url/i), {
+      target: { value: 'https://instagram.com/org' },
+    });
+    await user.click(screen.getByRole('button', { name: /save organizer/i }));
+
+    await waitFor(() =>
+      expect(profilesApi.updateRole).toHaveBeenCalledWith('organizer', {
+        managed_courts: ['Court A'],
+        contact_number: '09171234567',
+        contact_email: 'org@example.com',
+        facebook_url: 'https://facebook.com/org',
+        instagram_url: 'https://instagram.com/org',
       }),
     );
   });

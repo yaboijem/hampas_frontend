@@ -218,6 +218,12 @@ export default function ProfilePage() {
   }>({ positions: [], skill_level: '' });
   const [coachDraft, setCoachDraft] = useState({ achievements: '', bootcamp_name: '' });
   const [courtsDraft, setCourtsDraft] = useState<string[]>(['']);
+  const [contactDraft, setContactDraft] = useState({
+    contact_number: '',
+    contact_email: '',
+    facebook_url: '',
+    instagram_url: '',
+  });
   const [passwordPhase, setPasswordPhase] = useState<PasswordPhase>('locked');
   const [passwordCode, setPasswordCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -270,6 +276,12 @@ export default function ProfilePage() {
     });
     const courts = asCourtList(data.organizer?.managed_courts);
     setCourtsDraft(courts.length > 0 ? courts : ['']);
+    setContactDraft({
+      contact_number: data.organizer?.contact_number ?? '',
+      contact_email: data.organizer?.contact_email ?? '',
+      facebook_url: data.organizer?.facebook_url ?? '',
+      instagram_url: data.organizer?.instagram_url ?? '',
+    });
     if (nextUser) {
       setAccount({
         name: nextUser.name,
@@ -345,6 +357,12 @@ export default function ProfilePage() {
     if (key === 'organizer') {
       const courts = asCourtList(profile.organizer?.managed_courts);
       setCourtsDraft(courts.length > 0 ? courts : ['']);
+      setContactDraft({
+        contact_number: profile.organizer?.contact_number ?? '',
+        contact_email: profile.organizer?.contact_email ?? '',
+        facebook_url: profile.organizer?.facebook_url ?? '',
+        instagram_url: profile.organizer?.instagram_url ?? '',
+      });
     }
     if (key === 'account' && user) {
       setAccount({
@@ -486,7 +504,13 @@ export default function ProfilePage() {
     setSavingRole('organizer');
     try {
       const managed_courts = courtsDraft.map((c) => c.trim()).filter(Boolean);
-      await updateRole('organizer', { managed_courts });
+      await updateRole('organizer', {
+        managed_courts,
+        contact_number: contactDraft.contact_number.trim(),
+        contact_email: contactDraft.contact_email.trim(),
+        facebook_url: contactDraft.facebook_url.trim(),
+        instagram_url: contactDraft.instagram_url.trim(),
+      });
       await load();
       setEditing((e) => ({ ...e, organizer: false }));
     } catch (err) {
@@ -991,56 +1015,145 @@ export default function ProfilePage() {
               }
             >
               {editing.organizer ? (
-                <div className="space-y-2">
-                  <span className={labelClass}>Managed courts</span>
-                  {courtsDraft.map((court, index) => (
-                    <div key={index} className="flex gap-2">
-                      <label className="block min-w-0 flex-1" htmlFor={`managed-court-${index}`}>
-                        <span className="sr-only">Managed courts {index + 1}</span>
-                        <input
-                          id={`managed-court-${index}`}
-                          className={fieldClass}
-                          value={court}
-                          placeholder="Court name"
-                          onChange={(e) =>
-                            setCourtsDraft((list) =>
-                              list.map((c, i) => (i === index ? e.target.value : c)),
-                            )
-                          }
-                        />
-                      </label>
-                      {courtsDraft.length > 1 ? (
-                        <button
-                          type="button"
-                          className={secondaryBtn}
-                          aria-label={`Remove court ${index + 1}`}
-                          onClick={() =>
-                            setCourtsDraft((list) => list.filter((_, i) => i !== index))
-                          }
-                        >
-                          −
-                        </button>
-                      ) : null}
-                    </div>
-                  ))}
-                  <button
-                    type="button"
-                    className={secondaryBtn}
-                    aria-label="Add managed court"
-                    onClick={() => setCourtsDraft((list) => [...list, ''])}
-                  >
-                    +
-                  </button>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <span className={labelClass}>Managed courts</span>
+                    {courtsDraft.map((court, index) => (
+                      <div key={index} className="flex gap-2">
+                        <label className="block min-w-0 flex-1" htmlFor={`managed-court-${index}`}>
+                          <span className="sr-only">Managed courts {index + 1}</span>
+                          <input
+                            id={`managed-court-${index}`}
+                            className={fieldClass}
+                            value={court}
+                            placeholder="Court name"
+                            onChange={(e) =>
+                              setCourtsDraft((list) =>
+                                list.map((c, i) => (i === index ? e.target.value : c)),
+                              )
+                            }
+                          />
+                        </label>
+                        {courtsDraft.length > 1 ? (
+                          <button
+                            type="button"
+                            className={secondaryBtn}
+                            aria-label={`Remove court ${index + 1}`}
+                            onClick={() =>
+                              setCourtsDraft((list) => list.filter((_, i) => i !== index))
+                            }
+                          >
+                            −
+                          </button>
+                        ) : null}
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      className={secondaryBtn}
+                      aria-label="Add managed court"
+                      onClick={() => setCourtsDraft((list) => [...list, ''])}
+                    >
+                      +
+                    </button>
+                  </div>
+                  <label className="block" htmlFor="org-contact-number">
+                    <span className={labelClass}>Contact number</span>
+                    <input
+                      id="org-contact-number"
+                      className={fieldClass}
+                      type="text"
+                      inputMode="tel"
+                      value={contactDraft.contact_number}
+                      placeholder="09XX XXX XXXX"
+                      onChange={(e) =>
+                        setContactDraft((d) => ({ ...d, contact_number: e.target.value }))
+                      }
+                    />
+                  </label>
+                  <label className="block" htmlFor="org-contact-email">
+                    <span className={labelClass}>Contact email</span>
+                    <input
+                      id="org-contact-email"
+                      className={fieldClass}
+                      type="email"
+                      value={contactDraft.contact_email}
+                      placeholder="organizer@example.com"
+                      onChange={(e) =>
+                        setContactDraft((d) => ({ ...d, contact_email: e.target.value }))
+                      }
+                    />
+                  </label>
+                  <label className="block" htmlFor="org-facebook-url">
+                    <span className={labelClass}>Facebook URL</span>
+                    <input
+                      id="org-facebook-url"
+                      className={fieldClass}
+                      type="url"
+                      value={contactDraft.facebook_url}
+                      placeholder="https://facebook.com/…"
+                      onChange={(e) =>
+                        setContactDraft((d) => ({ ...d, facebook_url: e.target.value }))
+                      }
+                    />
+                  </label>
+                  <label className="block" htmlFor="org-instagram-url">
+                    <span className={labelClass}>Instagram URL</span>
+                    <input
+                      id="org-instagram-url"
+                      className={fieldClass}
+                      type="url"
+                      value={contactDraft.instagram_url}
+                      placeholder="https://instagram.com/…"
+                      onChange={(e) =>
+                        setContactDraft((d) => ({ ...d, instagram_url: e.target.value }))
+                      }
+                    />
+                  </label>
                 </div>
               ) : (
-                <div>
-                  <p className={labelClass}>Managed courts</p>
-                  <div className="mt-1.5 flex flex-wrap gap-1.5">
-                    {viewCourts.length === 0 ? (
-                      <span className="text-sm text-muted">None</span>
-                    ) : (
-                      viewCourts.map((c) => <Chip key={c}>{c}</Chip>)
-                    )}
+                <div className="space-y-4">
+                  <div>
+                    <p className={labelClass}>Managed courts</p>
+                    <div className="mt-1.5 flex flex-wrap gap-1.5">
+                      {viewCourts.length === 0 ? (
+                        <span className="text-sm text-muted">None</span>
+                      ) : (
+                        viewCourts.map((c) => <Chip key={c}>{c}</Chip>)
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <p className={labelClass}>Contact number</p>
+                    <p className="mt-1 text-sm text-navy">
+                      {profile.organizer?.contact_number?.trim() || (
+                        <span className="text-muted">Not set</span>
+                      )}
+                    </p>
+                  </div>
+                  <div>
+                    <p className={labelClass}>Contact email</p>
+                    <p className="mt-1 text-sm text-navy">
+                      {profile.organizer?.contact_email?.trim() || (
+                        <span className="text-muted">Not set</span>
+                      )}
+                    </p>
+                  </div>
+                  <div>
+                    <p className={labelClass}>Facebook URL</p>
+                    <p className="mt-1 break-all text-sm text-navy">
+                      {profile.organizer?.facebook_url?.trim() || (
+                        <span className="text-muted">Not set</span>
+                      )}
+                    </p>
+                  </div>
+                  <div>
+                    <p className={labelClass}>Instagram URL</p>
+                    <p className="mt-1 break-all text-sm text-navy">
+                      {profile.organizer?.instagram_url?.trim() || (
+                        <span className="text-muted">Not set</span>
+                      )}
+                    </p>
                   </div>
                 </div>
               )}
