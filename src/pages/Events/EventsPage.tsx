@@ -181,7 +181,7 @@ function MenuOption({
 }
 
 export default function EventsPage() {
-  const [mode, setMode] = useState<Mode>('manual');
+  const [mode, setMode] = useState<Mode>('nearby');
   const [events, setEvents] = useState<EventItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<EventFilters>({});
@@ -732,6 +732,17 @@ export default function EventsPage() {
         >
           <button
             type="button"
+            aria-pressed={mode === 'nearby'}
+            onClick={() => setMode('nearby')}
+            className={[
+              'rounded-full px-3 py-1.5 text-xs font-semibold transition',
+              mode === 'nearby' ? 'bg-cobalt text-white' : 'text-muted hover:text-navy',
+            ].join(' ')}
+          >
+            Near you
+          </button>
+          <button
+            type="button"
             aria-pressed={mode === 'manual'}
             onClick={() => {
               setCoords(null);
@@ -743,17 +754,6 @@ export default function EventsPage() {
             ].join(' ')}
           >
             All events
-          </button>
-          <button
-            type="button"
-            aria-pressed={mode === 'nearby'}
-            onClick={() => setMode('nearby')}
-            className={[
-              'rounded-full px-3 py-1.5 text-xs font-semibold transition',
-              mode === 'nearby' ? 'bg-cobalt text-white' : 'text-muted hover:text-navy',
-            ].join(' ')}
-          >
-            Near you
           </button>
         </div>
       </div>
