@@ -10,6 +10,7 @@ import PrivacyPolicy from './pages/Legal/PrivacyPolicy';
 import Terms from './pages/Legal/Terms';
 import ProfilePage from './pages/Profile/ProfilePage';
 import RoleRequestsPage from './pages/Admin/RoleRequestsPage';
+import EventRequestsPage from './pages/Admin/EventRequestsPage';
 import CreateEventPage from './pages/Events/CreateEventPage';
 import EditEventPage from './pages/Events/EditEventPage';
 import EventDetailPage from './pages/Events/EventDetailPage';
@@ -58,6 +59,16 @@ export default function App() {
                     <RequireAuth>
                       <RequireAdmin>
                         <RoleRequestsPage />
+                      </RequireAdmin>
+                    </RequireAuth>
+                  }
+                />
+                <Route
+                  path="/admin/event-requests"
+                  element={
+                    <RequireAuth>
+                      <RequireAdmin>
+                        <EventRequestsPage />
                       </RequireAdmin>
                     </RequireAuth>
                   }

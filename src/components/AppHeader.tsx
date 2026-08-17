@@ -81,9 +81,14 @@ export default function AppHeader() {
                 Profile
               </NavLink>
               {user.is_admin ? (
-                <NavLink to="/admin/role-requests" className={linkClass}>
-                  Role requests
-                </NavLink>
+                <>
+                  <NavLink to="/admin/role-requests" className={linkClass}>
+                    Role requests
+                  </NavLink>
+                  <NavLink to="/admin/event-requests" className={linkClass}>
+                    Event requests
+                  </NavLink>
+                </>
               ) : null}
               <Link
                 to="/events/new"
@@ -173,13 +178,22 @@ export default function AppHeader() {
                         Profile
                       </NavLink>
                       {user.is_admin ? (
-                        <NavLink
-                          to="/admin/role-requests"
-                          role="menuitem"
-                          className={menuLinkClass}
-                        >
-                          Role requests
-                        </NavLink>
+                        <>
+                          <NavLink
+                            to="/admin/role-requests"
+                            role="menuitem"
+                            className={menuLinkClass}
+                          >
+                            Role requests
+                          </NavLink>
+                          <NavLink
+                            to="/admin/event-requests"
+                            role="menuitem"
+                            className={menuLinkClass}
+                          >
+                            Event requests
+                          </NavLink>
+                        </>
                       ) : null}
                       <Link
                         to="/events/new"
