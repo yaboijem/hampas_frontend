@@ -1,5 +1,5 @@
 import { api } from './client';
-import type { ProfileFieldset, Role } from './types';
+import type { ElevatedRole, ProfileFieldset, Role, RoleRequest } from './types';
 
 export interface ProfileView {
   roles: Role[];
@@ -13,12 +13,23 @@ export async function getProfile(): Promise<ProfileView> {
   return data;
 }
 
-export async function addRole(role: Role, fields: ProfileFieldset): Promise<{ role: Role; profile: ProfileFieldset }> {
-  const { data } = await api.post('/profile/roles', { role, ...fields });
+export async function updateRole(
+  role: Role,
+  fields: ProfileFieldset,
+): Promise<{ role: Role; profile: ProfileFieldset }> {
+  const { data } = await api.put(`/profile/${role}`, fields);
   return data;
 }
 
-export async function updateRole(role: Role, fields: ProfileFieldset): Promise<{ role: Role; profile: ProfileFieldset }> {
-  const { data } = await api.put(`/profile/${role}`, fields);
+export async function listMyRoleRequests(): Promise<RoleRequest[]> {
+  const { data } = await api.get('/profile/role-requests');
+  return data;
+}
+
+export async function createRoleRequest(payload: {
+  role: ElevatedRole;
+  note?: string;
+}): Promise<RoleRequest> {
+  const { data } = await api.post('/profile/role-requests', payload);
   return data;
 }
