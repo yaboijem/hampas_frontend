@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom';
 import type { EventItem } from '../api/types';
 import {
+  SKILL_BADGE_CLASS,
+  SKILL_BADGE_OVERLAY_CLASS,
   SKILL_LABEL,
   TYPE_LABEL,
   formatEventPlace,
@@ -10,6 +12,9 @@ import {
 export default function EventCard({ event }: { event: EventItem }) {
   const place = formatEventPlace(event.barangay, event.city);
   const when = formatEventWhen(event.starts_at);
+  const skillLabel = SKILL_LABEL[event.skill_level];
+  const skillBodyClass = SKILL_BADGE_CLASS[event.skill_level];
+  const skillOverlayClass = SKILL_BADGE_OVERLAY_CLASS[event.skill_level];
 
   return (
     <Link
@@ -28,8 +33,10 @@ export default function EventCard({ event }: { event: EventItem }) {
             🏐
           </div>
         )}
-        <span className="absolute right-3 top-3 rounded-full border border-white/40 bg-white/70 px-2.5 py-1 text-xs font-semibold text-navy backdrop-blur-md">
-          {SKILL_LABEL[event.skill_level]}
+        <span
+          className={`absolute right-3 top-3 rounded-full px-2.5 py-1 text-xs font-semibold ${skillOverlayClass}`}
+        >
+          {skillLabel}
         </span>
         {event.distance_km !== undefined && (
           <span className="absolute bottom-3 left-3 rounded-full bg-navy/80 px-2.5 py-1 text-xs font-medium text-white">
@@ -47,8 +54,8 @@ export default function EventCard({ event }: { event: EventItem }) {
           <span className="rounded-full bg-sky-tint px-2.5 py-1 text-xs font-medium text-chip-text">
             🏐 {TYPE_LABEL[event.event_type]}
           </span>
-          <span className="rounded-full bg-ice px-2.5 py-1 text-xs font-medium text-muted">
-            {SKILL_LABEL[event.skill_level]}
+          <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${skillBodyClass}`}>
+            {skillLabel}
           </span>
         </div>
       </div>
