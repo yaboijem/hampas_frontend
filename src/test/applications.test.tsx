@@ -87,14 +87,52 @@ describe('EventApplicationsPage', () => {
       </MemoryRouter>,
     );
 
+    expect(await screen.findByRole('heading', { name: /^applications$/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /back to event/i })).toHaveAttribute('href', '/events/1');
     expect(await screen.findByText('Ana')).toBeInTheDocument();
     expect(screen.getByText('Ben')).toBeInTheDocument();
+    expect(screen.getByText('Pending')).toBeInTheDocument();
+    expect(screen.getByText('Approved')).toBeInTheDocument();
 
     await user.click(screen.getAllByRole('button', { name: /approve/i })[0]);
 
     await waitFor(() => expect(applicationsApi.approveApplication).toHaveBeenCalledWith(1, 3));
     expect(await screen.findByText('Ana')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /approve/i })).not.toBeInTheDocument();
+  });
+
+  test('shows empty state when no applicants', async () => {
+    vi.mocked(applicationsApi.listEventApplications).mockResolvedValue({ data: [] });
+
+    render(
+      <MemoryRouter initialEntries={['/events/2/applications']}>
+        <Routes>
+          <Route path="/events/:id/applications" element={<EventApplicationsPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText(/no applications yet/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /back to event/i })).toHaveAttribute('href', '/events/2');
+  });
+
+  test('surfaces approve failure', async () => {
+    const user = userEvent.setup();
+    vi.mocked(applicationsApi.listEventApplications).mockResolvedValue({
+      data: [{ id: 3, user: { id: 7, name: 'Ana' }, status: 'pending' }],
+    });
+    vi.mocked(applicationsApi.approveApplication).mockRejectedValue(new Error('Approve failed.'));
+
+    render(
+      <MemoryRouter initialEntries={['/events/1/applications']}>
+        <Routes>
+          <Route path="/events/:id/applications" element={<EventApplicationsPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    await user.click(await screen.findByRole('button', { name: /approve/i }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(/approve failed/i);
   });
 });
 
