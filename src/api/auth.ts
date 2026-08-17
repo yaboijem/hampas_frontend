@@ -53,3 +53,21 @@ export async function resetPassword(
   const { data } = await api.post('/reset-password', { token, email, password, password_confirmation });
   return data;
 }
+
+export async function sendPasswordCode(): Promise<{ message: string }> {
+  const { data } = await api.post('/user/password/send-code');
+  return data;
+}
+
+export async function verifyPasswordCode(code: string): Promise<{ message: string }> {
+  const { data } = await api.post('/user/password/verify-code', { code });
+  return data;
+}
+
+export async function changePassword(
+  password: string,
+  password_confirmation: string,
+): Promise<{ message: string }> {
+  const { data } = await api.put('/user/password', { password, password_confirmation });
+  return data;
+}
