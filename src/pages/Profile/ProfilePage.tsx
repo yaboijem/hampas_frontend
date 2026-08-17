@@ -17,6 +17,7 @@ import type {
   SkillLevel,
 } from '../../api/types';
 import { PLAYER_POSITIONS } from '../../api/types';
+import { SKILL_BADGE_CLASS, SKILL_LABEL } from '../../events/eventLabels';
 
 const ROLE_META: Record<Role, { label: string; emoji: string }> = {
   player: { label: 'Player', emoji: '🏐' },
@@ -25,7 +26,30 @@ const ROLE_META: Record<Role, { label: string; emoji: string }> = {
 };
 
 const ELEVATED: ElevatedRole[] = ['coach', 'organizer'];
-const SKILL_OPTIONS: SkillLevel[] = ['beginner', 'intermediate', 'advanced'];
+const SKILL_OPTIONS = ['beginner', 'intermediate', 'advanced'] as const;
+type PlayerSkill = (typeof SKILL_OPTIONS)[number];
+
+const SKILL_HINT: Record<PlayerSkill, string> = {
+  beginner: 'Learning the game',
+  intermediate: 'Comfortable in rallies',
+  advanced: 'Competitive play',
+};
+
+const SKILL_SELECT_CLASS: Record<PlayerSkill, { idle: string; active: string }> = {
+  beginner: {
+    idle: 'border-emerald-200/80 bg-surface text-navy hover:border-emerald-400 hover:bg-emerald-50',
+    active: 'border-emerald-600 bg-emerald-100 text-emerald-900 ring-2 ring-emerald-500/30',
+  },
+  intermediate: {
+    idle: 'border-blue-200/80 bg-surface text-navy hover:border-blue-400 hover:bg-blue-50',
+    active: 'border-blue-600 bg-blue-100 text-blue-900 ring-2 ring-blue-500/30',
+  },
+  advanced: {
+    idle: 'border-border bg-surface text-navy hover:border-red-400 hover:bg-red-50',
+    active: 'border-red-500 bg-slate-900 text-white ring-2 ring-red-500/40',
+  },
+};
+
 const EMPTY: ProfileView = { roles: [], player: null, coach: null, organizer: null };
 
 const EIGHTEEN_YEARS_AGO = new Date();
@@ -554,7 +578,13 @@ export default function ProfilePage() {
                   {viewPositions.map((p) => (
                     <Chip key={p}>{positionLabel(p)}</Chip>
                   ))}
-                  {viewSkill ? <Chip>{titleCase(viewSkill)}</Chip> : null}
+                  {viewSkill && viewSkill !== 'all_levels' ? (
+                    <span
+                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${SKILL_BADGE_CLASS[viewSkill]}`}
+                    >
+                      {SKILL_LABEL[viewSkill]}
+                    </span>
+                  ) : null}
                 </>
               )
             }
@@ -586,27 +616,52 @@ export default function ProfilePage() {
                     })}
                   </div>
                 </fieldset>
-                <label htmlFor="edit-player-skill_level" className="mt-3 block">
-                  <span className={labelClass}>Skill level</span>
-                  <select
-                    id="edit-player-skill_level"
-                    className={fieldClass}
-                    value={playerDraft.skill_level}
-                    onChange={(e) =>
-                      setPlayerDraft((d) => ({
-                        ...d,
-                        skill_level: e.target.value as SkillLevel | '',
-                      }))
-                    }
+                <fieldset className="mt-4">
+                  <legend className={labelClass}>Skill level</legend>
+                  <p className="mt-1 text-xs text-muted">Pick the level that best matches how you play.</p>
+                  <div
+                    className="mt-2 grid gap-2 sm:grid-cols-3"
+                    role="radiogroup"
+                    aria-label="Skill level"
                   >
-                    <option value="">Select…</option>
-                    {SKILL_OPTIONS.map((o) => (
-                      <option key={o} value={o}>
-                        {titleCase(o)}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                    {SKILL_OPTIONS.map((level) => {
+                      const selected = playerDraft.skill_level === level;
+                      const styles = SKILL_SELECT_CLASS[level];
+                      return (
+                        <button
+                          key={level}
+                          type="button"
+                          role="radio"
+                          aria-checked={selected}
+                          aria-label={SKILL_LABEL[level]}
+                          onClick={() =>
+                            setPlayerDraft((d) => ({
+                              ...d,
+                              skill_level: selected ? '' : level,
+                            }))
+                          }
+                          className={[
+                            'flex min-h-14 flex-col items-start justify-center rounded-xl border px-3 py-2.5 text-left transition',
+                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cobalt/40',
+                            selected ? styles.active : styles.idle,
+                          ].join(' ')}
+                        >
+                          <span className="text-sm font-semibold leading-tight">
+                            {SKILL_LABEL[level]}
+                          </span>
+                          <span
+                            className={[
+                              'mt-0.5 text-[11px] leading-snug',
+                              selected && level === 'advanced' ? 'text-white/80' : 'text-muted',
+                            ].join(' ')}
+                          >
+                            {SKILL_HINT[level]}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </fieldset>
               </>
             ) : (
               <div className="space-y-3">
@@ -623,8 +678,12 @@ export default function ProfilePage() {
                 <div>
                   <p className={labelClass}>Skill level</p>
                   <div className="mt-1.5">
-                    {viewSkill ? (
-                      <Chip>{titleCase(viewSkill)}</Chip>
+                    {viewSkill && viewSkill !== 'all_levels' ? (
+                      <span
+                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${SKILL_BADGE_CLASS[viewSkill]}`}
+                      >
+                        {SKILL_LABEL[viewSkill]}
+                      </span>
                     ) : (
                       <span className="text-sm text-muted">Not set</span>
                     )}
