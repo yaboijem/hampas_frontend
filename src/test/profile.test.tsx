@@ -38,13 +38,18 @@ vi.mock('../auth/AuthContext', () => ({
   }),
 }));
 
+async function expand(name: RegExp | string) {
+  const btn = await screen.findByRole('button', { name });
+  await userEvent.click(btn);
+}
+
 describe('ProfilePage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(profilesApi.listMyRoleRequests).mockResolvedValue([]);
   });
 
-  test('player-only profile shows account and player details, not elevated editors', async () => {
+  test('cards start collapsed; player shows selected chips when expanded in view mode', async () => {
     vi.mocked(profilesApi.getProfile).mockResolvedValue({
       roles: ['player'],
       player: { positions: ['outside_hitter'], skill_level: 'intermediate' },
@@ -59,18 +64,17 @@ describe('ProfilePage', () => {
     );
 
     expect(await screen.findByRole('heading', { name: /^profile$/i })).toBeInTheDocument();
-    expect(screen.getByLabelText(/^name$/i)).toHaveValue('Jem Player');
-    expect(screen.getByRole('heading', { name: /player details/i })).toBeInTheDocument();
-    expect(screen.getByLabelText(/outside hitter/i)).toBeChecked();
-    expect(screen.getByLabelText(/^setter$/i)).not.toBeChecked();
-    expect(screen.queryByRole('heading', { name: /coach details/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: /organizer details/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /add role/i })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /request coach/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /request organizer/i })).toBeInTheDocument();
+    expect(screen.queryByLabelText(/^name$/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/^setter$/i)).not.toBeInTheDocument();
+
+    await expand(/player details/i);
+    expect(screen.getByText('Outside Hitter')).toBeInTheDocument();
+    expect(screen.getByText('Intermediate')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^edit$/i })).toBeInTheDocument();
+    expect(screen.queryByLabelText(/^setter$/i)).not.toBeInTheDocument();
   });
 
-  test('saves multiple player positions', async () => {
+  test('edit then save multiple player positions', async () => {
     vi.mocked(profilesApi.getProfile).mockResolvedValue({
       roles: ['player'],
       player: { positions: ['setter'], skill_level: 'beginner' },
@@ -89,7 +93,8 @@ describe('ProfilePage', () => {
       </MemoryRouter>,
     );
 
-    await screen.findByLabelText(/^setter$/i);
+    await expand(/player details/i);
+    await user.click(screen.getByRole('button', { name: /^edit$/i }));
     await user.click(screen.getByLabelText(/^libero$/i));
     await user.click(screen.getByRole('button', { name: /save player/i }));
 
@@ -103,7 +108,7 @@ describe('ProfilePage', () => {
     );
   });
 
-  test('requests coach access', async () => {
+  test('requests coach access from elevated card', async () => {
     vi.mocked(profilesApi.getProfile).mockResolvedValue({
       roles: ['player'],
       player: {},
@@ -125,6 +130,7 @@ describe('ProfilePage', () => {
       </MemoryRouter>,
     );
 
+    await expand(/elevated access/i);
     await user.click(await screen.findByRole('button', { name: /request coach/i }));
 
     await waitFor(() =>
@@ -156,12 +162,13 @@ describe('ProfilePage', () => {
       </MemoryRouter>,
     );
 
+    await expand(/elevated access/i);
     expect(await screen.findByText('Pending')).toBeInTheDocument();
     expect(screen.queryByLabelText(/bootcamp name/i)).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /request coach/i })).not.toBeInTheDocument();
   });
 
-  test('granted coach can save details', async () => {
+  test('granted coach can edit and save details', async () => {
     vi.mocked(profilesApi.getProfile).mockResolvedValue({
       roles: ['player', 'coach'],
       player: {},
@@ -180,7 +187,8 @@ describe('ProfilePage', () => {
       </MemoryRouter>,
     );
 
-    await screen.findByRole('heading', { name: /coach details/i });
+    await expand(/coach details/i);
+    await user.click(screen.getByRole('button', { name: /^edit$/i }));
     await user.type(screen.getByLabelText(/bootcamp name/i), 'Hampas Academy');
     await user.click(screen.getByRole('button', { name: /save coach/i }));
 
@@ -192,7 +200,7 @@ describe('ProfilePage', () => {
     );
   });
 
-  test('saves account details via updateMe', async () => {
+  test('saves account details via updateMe after expand and edit', async () => {
     vi.mocked(profilesApi.getProfile).mockResolvedValue({
       roles: ['player'],
       player: {},
@@ -217,6 +225,8 @@ describe('ProfilePage', () => {
       </MemoryRouter>,
     );
 
+    await expand(/^account/i);
+    await user.click(screen.getByRole('button', { name: /^edit$/i }));
     await screen.findByLabelText(/^name$/i);
     fireEvent.change(screen.getByLabelText(/^name$/i), { target: { value: 'Jem Updated' } });
     fireEvent.change(screen.getByLabelText(/^email$/i), { target: { value: 'jem2@example.com' } });
@@ -230,6 +240,40 @@ describe('ProfilePage', () => {
         email: 'jem2@example.com',
         birth_date: '1999-06-15',
         gender: 'female',
+      }),
+    );
+  });
+
+  test('organizer can add multiple managed courts', async () => {
+    vi.mocked(profilesApi.getProfile).mockResolvedValue({
+      roles: ['player', 'organizer'],
+      player: {},
+      coach: null,
+      organizer: { managed_courts: ['Court A'] },
+    });
+    vi.mocked(profilesApi.updateRole).mockResolvedValue({
+      role: 'organizer',
+      profile: { managed_courts: ['Court A', 'Court B'] },
+    });
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <ProfilePage />
+      </MemoryRouter>,
+    );
+
+    await expand(/organizer details/i);
+    await user.click(screen.getByRole('button', { name: /^edit$/i }));
+    await user.click(screen.getByRole('button', { name: /add managed court/i }));
+    fireEvent.change(screen.getByLabelText(/managed courts 2/i), {
+      target: { value: 'Court B' },
+    });
+    await user.click(screen.getByRole('button', { name: /save organizer/i }));
+
+    await waitFor(() =>
+      expect(profilesApi.updateRole).toHaveBeenCalledWith('organizer', {
+        managed_courts: ['Court A', 'Court B'],
       }),
     );
   });

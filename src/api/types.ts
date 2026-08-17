@@ -67,7 +67,8 @@ export interface ProfileFieldset {
   skill_level?: SkillLevel;
   achievements?: string;
   bootcamp_name?: string;
-  managed_courts?: string;
+  /** list of court names (API JSON array) */
+  managed_courts?: string[] | string;
 }
 
 export const PLAYER_POSITIONS: { value: PlayerPosition; label: string }[] = [

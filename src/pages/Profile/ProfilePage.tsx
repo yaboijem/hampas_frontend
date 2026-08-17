@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useState, type ReactNode } from 'react';
 import { useAuth } from '../../auth/AuthContext';
 import { updateMe } from '../../api/auth';
 import {
@@ -15,19 +15,9 @@ import type {
   ProfileFieldset,
   Role,
   RoleRequest,
+  SkillLevel,
 } from '../../api/types';
 import { PLAYER_POSITIONS } from '../../api/types';
-
-const ROLE_FIELDS: Record<
-  Exclude<Role, 'player'>,
-  { key: keyof ProfileFieldset; label: string; type?: 'text' | 'select'; options?: string[] }[]
-> = {
-  coach: [
-    { key: 'achievements', label: 'Achievements' },
-    { key: 'bootcamp_name', label: 'Bootcamp name' },
-  ],
-  organizer: [{ key: 'managed_courts', label: 'Managed courts' }],
-};
 
 const ROLE_META: Record<Role, { label: string; emoji: string }> = {
   player: { label: 'Player', emoji: '🏐' },
@@ -36,7 +26,7 @@ const ROLE_META: Record<Role, { label: string; emoji: string }> = {
 };
 
 const ELEVATED: ElevatedRole[] = ['coach', 'organizer'];
-
+const SKILL_OPTIONS: SkillLevel[] = ['beginner', 'intermediate', 'advanced'];
 const EMPTY: ProfileView = { roles: [], player: null, coach: null, organizer: null };
 
 const EIGHTEEN_YEARS_AGO = new Date();
@@ -46,64 +36,102 @@ const MAX_BIRTH_DATE = EIGHTEEN_YEARS_AGO.toISOString().slice(0, 10);
 const fieldClass =
   'mt-1 block w-full rounded-xl border border-border/80 bg-surface px-3 py-2 text-sm text-navy shadow-sm outline-none transition placeholder:text-muted/70 focus:border-cobalt focus:ring-2 focus:ring-cobalt/20';
 const labelClass = 'text-xs font-bold uppercase tracking-wide text-chip-text';
-const cardClass = 'rounded-[var(--radius-card)] border border-border bg-surface p-3 shadow-soft';
+const cardClass = 'rounded-[var(--radius-card)] border border-border bg-surface shadow-soft';
 const primaryBtn =
   'inline-flex items-center justify-center rounded-[var(--radius-control)] bg-cobalt px-3 py-2 text-sm font-semibold text-white shadow-soft transition hover:bg-electric disabled:cursor-not-allowed disabled:opacity-60';
 const secondaryBtn =
   'inline-flex items-center justify-center rounded-[var(--radius-control)] border border-border bg-surface px-3 py-2 text-sm font-semibold text-navy transition hover:bg-ice disabled:cursor-not-allowed disabled:opacity-60';
 
+type CardKey = 'account' | 'player' | 'coach' | 'organizer' | 'elevated';
+
 function titleCase(value: string) {
   return value.replaceAll('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function positionLabel(value: string) {
+  return PLAYER_POSITIONS.find((p) => p.value === value)?.label ?? titleCase(value);
+}
+
+function asCourtList(value: string[] | string | undefined | null): string[] {
+  if (Array.isArray(value)) return value.filter((c) => c.trim() !== '');
+  if (typeof value === 'string' && value.trim() !== '') {
+    return value
+      .split(/[,;\n]+/)
+      .map((c) => c.trim())
+      .filter(Boolean);
+  }
+  return [];
+}
+
+function Chip({ children }: { children: ReactNode }) {
+  return (
+    <span className="inline-flex items-center rounded-full bg-sky-tint px-2.5 py-0.5 text-xs font-semibold text-chip-text">
+      {children}
+    </span>
+  );
 }
 
 function ProfileSkeleton() {
   return (
     <div className="space-y-3" aria-busy="true" aria-label="Loading profile">
       <div className="skeleton-shimmer h-6 w-32 rounded" />
-      <div className="skeleton-shimmer h-28 w-full rounded-[var(--radius-card)]" />
-      <div className="skeleton-shimmer h-32 w-full rounded-[var(--radius-card)]" />
+      <div className="skeleton-shimmer h-14 w-full rounded-[var(--radius-card)]" />
+      <div className="skeleton-shimmer h-14 w-full rounded-[var(--radius-card)]" />
     </div>
   );
 }
 
-function FieldControl({
-  field,
-  value,
-  onChange,
-  idPrefix,
+function CollapsibleCard({
+  id,
+  title,
+  emoji,
+  summary,
+  open,
+  onToggle,
+  children,
 }: {
-  field: { key: keyof ProfileFieldset; label: string; type?: 'text' | 'select'; options?: string[] };
-  value: string;
-  onChange: (next: string) => void;
-  idPrefix: string;
+  id: string;
+  title: string;
+  emoji?: string;
+  summary?: ReactNode;
+  open: boolean;
+  onToggle: () => void;
+  children: ReactNode;
 }) {
-  const id = `${idPrefix}-${field.key}`;
+  const panelId = `${id}-panel`;
   return (
-    <label htmlFor={id} className="block">
-      <span className={labelClass}>{field.label}</span>
-      {field.type === 'select' ? (
-        <select
-          id={id}
-          className={fieldClass}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-        >
-          <option value="">Select…</option>
-          {field.options?.map((o) => (
-            <option key={o} value={o}>
-              {titleCase(o)}
-            </option>
-          ))}
-        </select>
-      ) : (
-        <input
-          id={id}
-          className={fieldClass}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-        />
-      )}
-    </label>
+    <section className={cardClass} aria-labelledby={`${id}-title`}>
+      <button
+        type="button"
+        id={`${id}-title`}
+        className="flex w-full items-center gap-2 px-3 py-3 text-left"
+        aria-expanded={open}
+        aria-controls={panelId}
+        onClick={onToggle}
+      >
+        <span className="min-w-0 flex-1">
+          <span className="font-display block text-base font-bold text-navy">
+            {emoji ? (
+              <span aria-hidden className="mr-1.5">
+                {emoji}
+              </span>
+            ) : null}
+            {title}
+          </span>
+          {!open && summary ? (
+            <span className="mt-1 flex flex-wrap items-center gap-1.5">{summary}</span>
+          ) : null}
+        </span>
+        <span className="shrink-0 text-sm font-semibold text-muted" aria-hidden>
+          {open ? '−' : '+'}
+        </span>
+      </button>
+      {open ? (
+        <div id={panelId} className="border-t border-border px-3 pb-3 pt-3">
+          {children}
+        </div>
+      ) : null}
+    </section>
   );
 }
 
@@ -123,8 +151,9 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<ProfileView>(EMPTY);
   const [requests, setRequests] = useState<RoleRequest[]>([]);
   const [loading, setLoading] = useState(true);
-  const [edits, setEdits] = useState<Partial<Record<Role, ProfileFieldset>>>({});
   const [error, setError] = useState<string | null>(null);
+  const [openCard, setOpenCard] = useState<CardKey | null>(null);
+  const [editing, setEditing] = useState<Partial<Record<CardKey, boolean>>>({});
   const [savingRole, setSavingRole] = useState<Role | null>(null);
   const [savingAccount, setSavingAccount] = useState(false);
   const [requesting, setRequesting] = useState<ElevatedRole | null>(null);
@@ -134,32 +163,56 @@ export default function ProfilePage() {
     birth_date: '',
     gender: '',
   });
+  const [playerDraft, setPlayerDraft] = useState<{
+    positions: PlayerPosition[];
+    skill_level: SkillLevel | '';
+  }>({ positions: [], skill_level: '' });
+  const [coachDraft, setCoachDraft] = useState({ achievements: '', bootcamp_name: '' });
+  const [courtsDraft, setCourtsDraft] = useState<string[]>(['']);
+
+  const syncDraftsFromProfile = (data: ProfileView, nextUser = user) => {
+    const positions =
+      data.player?.positions && data.player.positions.length > 0
+        ? data.player.positions
+        : data.player?.position
+          ? [data.player.position as PlayerPosition]
+          : [];
+    setPlayerDraft({
+      positions,
+      skill_level: data.player?.skill_level ?? '',
+    });
+    setCoachDraft({
+      achievements: data.coach?.achievements ?? '',
+      bootcamp_name: data.coach?.bootcamp_name ?? '',
+    });
+    const courts = asCourtList(data.organizer?.managed_courts);
+    setCourtsDraft(courts.length > 0 ? courts : ['']);
+    if (nextUser) {
+      setAccount({
+        name: nextUser.name,
+        email: nextUser.email,
+        birth_date: nextUser.birth_date,
+        gender: nextUser.gender,
+      });
+    }
+  };
 
   useEffect(() => {
-    if (!user) return;
-    setAccount((prev) => {
-      if (
-        prev.name === user.name &&
-        prev.email === user.email &&
-        prev.birth_date === user.birth_date &&
-        prev.gender === user.gender
-      ) {
-        return prev;
-      }
-      return {
-        name: user.name,
-        email: user.email,
-        birth_date: user.birth_date,
-        gender: user.gender,
-      };
+    if (!user || editing.account) return;
+    setAccount({
+      name: user.name,
+      email: user.email,
+      birth_date: user.birth_date,
+      gender: user.gender,
     });
-  }, [user]);
+  }, [user, editing.account]);
 
   const load = async () => {
     try {
       const [data, reqs] = await Promise.all([getProfile(), listMyRoleRequests()]);
       setProfile(data);
       setRequests(reqs);
+      syncDraftsFromProfile(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load profile.');
     } finally {
@@ -169,7 +222,58 @@ export default function ProfilePage() {
 
   useEffect(() => {
     void load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- initial load only
   }, []);
+
+  const toggleCard = (key: CardKey) => {
+    setOpenCard((cur) => {
+      if (cur === key) {
+        setEditing((e) => ({ ...e, [key]: false }));
+        return null;
+      }
+      if (cur) setEditing((e) => ({ ...e, [cur]: false }));
+      return key;
+    });
+  };
+
+  const startEdit = (key: CardKey) => {
+    if (key === 'player') {
+      const positions =
+        profile.player?.positions && profile.player.positions.length > 0
+          ? profile.player.positions
+          : profile.player?.position
+            ? [profile.player.position as PlayerPosition]
+            : [];
+      setPlayerDraft({
+        positions,
+        skill_level: profile.player?.skill_level ?? '',
+      });
+    }
+    if (key === 'coach') {
+      setCoachDraft({
+        achievements: profile.coach?.achievements ?? '',
+        bootcamp_name: profile.coach?.bootcamp_name ?? '',
+      });
+    }
+    if (key === 'organizer') {
+      const courts = asCourtList(profile.organizer?.managed_courts);
+      setCourtsDraft(courts.length > 0 ? courts : ['']);
+    }
+    if (key === 'account' && user) {
+      setAccount({
+        name: user.name,
+        email: user.email,
+        birth_date: user.birth_date,
+        gender: user.gender,
+      });
+    }
+    setEditing((e) => ({ ...e, [key]: true }));
+  };
+
+  const cancelEdit = (key: CardKey) => {
+    setEditing((e) => ({ ...e, [key]: false }));
+    syncDraftsFromProfile(profile);
+  };
 
   const accountValid =
     account.name.trim() !== '' &&
@@ -190,6 +294,7 @@ export default function ProfilePage() {
         gender: account.gender,
       });
       updateUser(next);
+      setEditing((e) => ({ ...e, account: false }));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save account.');
     } finally {
@@ -197,12 +302,50 @@ export default function ProfilePage() {
     }
   };
 
-  const save = async (role: Role) => {
+  const savePlayer = async () => {
     setError(null);
-    setSavingRole(role);
+    setSavingRole('player');
     try {
-      await updateRole(role, edits[role] ?? {});
+      await updateRole('player', {
+        positions: playerDraft.positions,
+        ...(playerDraft.skill_level
+          ? { skill_level: playerDraft.skill_level as SkillLevel }
+          : {}),
+      });
       await load();
+      setEditing((e) => ({ ...e, player: false }));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save.');
+    } finally {
+      setSavingRole(null);
+    }
+  };
+
+  const saveCoach = async () => {
+    setError(null);
+    setSavingRole('coach');
+    try {
+      await updateRole('coach', {
+        achievements: coachDraft.achievements,
+        bootcamp_name: coachDraft.bootcamp_name,
+      });
+      await load();
+      setEditing((e) => ({ ...e, coach: false }));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save.');
+    } finally {
+      setSavingRole(null);
+    }
+  };
+
+  const saveOrganizer = async () => {
+    setError(null);
+    setSavingRole('organizer');
+    try {
+      const managed_courts = courtsDraft.map((c) => c.trim()).filter(Boolean);
+      await updateRole('organizer', { managed_courts });
+      await load();
+      setEditing((e) => ({ ...e, organizer: false }));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save.');
     } finally {
@@ -228,164 +371,52 @@ export default function ProfilePage() {
     return mine.sort((a, b) => b.id - a.id)[0];
   };
 
-  const currentFields = (role: Role): ProfileFieldset =>
-    ({
-      player: profile.player,
-      coach: profile.coach,
-      organizer: profile.organizer,
-    })[role] ?? {};
-
-  const playerPositions = (): PlayerPosition[] => {
-    const fromEdit = edits.player?.positions;
-    if (fromEdit) return fromEdit;
-    const raw = profile.player?.positions;
-    if (raw && raw.length > 0) return raw;
-    const legacy = profile.player?.position;
-    if (legacy) return [legacy as PlayerPosition];
-    return [];
-  };
-
   const togglePosition = (pos: PlayerPosition) => {
-    const current = playerPositions();
-    const next = current.includes(pos) ? current.filter((p) => p !== pos) : [...current, pos];
-    setEdits((ed) => ({
-      ...ed,
-      player: { ...ed.player, positions: next },
+    setPlayerDraft((d) => ({
+      ...d,
+      positions: d.positions.includes(pos)
+        ? d.positions.filter((p) => p !== pos)
+        : [...d.positions, pos],
     }));
   };
 
-  const savePlayer = async () => {
-    setError(null);
-    setSavingRole('player');
-    try {
-      const positions = playerPositions();
-      const skill =
-        (edits.player?.skill_level as string | undefined) ??
-        profile.player?.skill_level ??
-        undefined;
-      await updateRole('player', {
-        positions,
-        ...(skill ? { skill_level: skill as ProfileFieldset['skill_level'] } : {}),
-      });
-      await load();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save.');
-    } finally {
-      setSavingRole(null);
-    }
-  };
+  const viewPositions =
+    profile.player?.positions && profile.player.positions.length > 0
+      ? profile.player.positions
+      : profile.player?.position
+        ? [profile.player.position as PlayerPosition]
+        : [];
+  const viewSkill = profile.player?.skill_level;
+  const viewCourts = asCourtList(profile.organizer?.managed_courts);
 
-  const renderPlayerCard = () => {
-    const skillValue =
-      ((edits.player?.skill_level as string | undefined) ?? profile.player?.skill_level ?? '') ||
-      '';
-    return (
-      <section className={cardClass}>
-        <h2 className="font-display text-base font-bold capitalize text-navy">
-          <span aria-hidden className="mr-1.5">
-            {ROLE_META.player.emoji}
-          </span>
-          player details
-        </h2>
-        <fieldset className="mt-3">
-          <legend className={labelClass}>Positions</legend>
-          <p className="mt-1 text-xs text-muted">Select all that apply.</p>
-          <div className="mt-2 grid gap-2 sm:grid-cols-2" role="group" aria-label="Positions">
-            {PLAYER_POSITIONS.map((p) => {
-              const id = `player-pos-${p.value}`;
-              const checked = playerPositions().includes(p.value);
-              return (
-                <label
-                  key={p.value}
-                  htmlFor={id}
-                  className="flex cursor-pointer items-center gap-2 rounded-xl border border-border/80 bg-surface px-3 py-2 text-sm text-navy"
-                >
-                  <input
-                    id={id}
-                    type="checkbox"
-                    className="h-4 w-4 rounded border-border text-cobalt focus:ring-cobalt/30"
-                    checked={checked}
-                    onChange={() => togglePosition(p.value)}
-                  />
-                  <span>{p.label}</span>
-                </label>
-              );
-            })}
-          </div>
-        </fieldset>
-        <div className="mt-3">
-          <FieldControl
-            field={{
-              key: 'skill_level',
-              label: 'Skill level',
-              type: 'select',
-              options: ['beginner', 'intermediate', 'advanced'],
-            }}
-            idPrefix="edit-player"
-            value={skillValue}
-            onChange={(next) =>
-              setEdits((ed) => ({
-                ...ed,
-                player: { ...ed.player, skill_level: next as ProfileFieldset['skill_level'] },
-              }))
-            }
-          />
-        </div>
-        <div className="mt-3">
-          <button
-            type="button"
-            onClick={() => void savePlayer()}
-            disabled={savingRole === 'player'}
-            className={primaryBtn}
-          >
-            {savingRole === 'player' ? 'Saving…' : 'Save player'}
-          </button>
-        </div>
-      </section>
-    );
-  };
-
-  const renderElevatedRoleCard = (role: Exclude<Role, 'player'>) => (
-    <section key={role} className={cardClass}>
-      <h2 className="font-display text-base font-bold capitalize text-navy">
-        <span aria-hidden className="mr-1.5">
-          {ROLE_META[role].emoji}
-        </span>
-        {role} details
-      </h2>
-      <div className="mt-3 grid gap-3 sm:grid-cols-2">
-        {ROLE_FIELDS[role].map((field) => {
-          const value = (edits[role]?.[field.key] ?? currentFields(role)[field.key]) as
-            | string
-            | undefined;
-          return (
-            <FieldControl
-              key={field.key}
-              field={field}
-              idPrefix={`edit-${role}`}
-              value={value ?? ''}
-              onChange={(next) =>
-                setEdits((ed) => ({
-                  ...ed,
-                  [role]: { ...ed[role], [field.key]: next },
-                }))
-              }
-            />
-          );
-        })}
-      </div>
-      <div className="mt-3">
+  const editActions = (
+    key: CardKey,
+    onSave: () => void,
+    saving: boolean,
+    saveLabel: string,
+    saveDisabled = false,
+  ) =>
+    editing[key] ? (
+      <div className="mt-3 flex flex-wrap gap-2">
         <button
           type="button"
-          onClick={() => void save(role)}
-          disabled={savingRole === role}
+          onClick={() => void onSave()}
+          disabled={saving || saveDisabled}
           className={primaryBtn}
         >
-          {savingRole === role ? 'Saving…' : `Save ${role}`}
+          {saving ? 'Saving…' : saveLabel}
+        </button>
+        <button type="button" onClick={() => cancelEdit(key)} className={secondaryBtn} disabled={saving}>
+          Cancel
         </button>
       </div>
-    </section>
-  );
+    ) : (
+      <div className="mt-3">
+        <button type="button" onClick={() => startEdit(key)} className={secondaryBtn}>
+          Edit
+        </button>
+      </div>
+    );
 
   return (
     <div className="mx-auto max-w-xl space-y-3">
@@ -393,7 +424,7 @@ export default function ProfilePage() {
         <h1 className="font-display text-2xl font-extrabold tracking-tight text-navy sm:text-3xl">
           Profile
         </h1>
-        <p className="mt-0.5 text-sm text-muted">Your account and player details.</p>
+        <p className="mt-0.5 text-sm text-muted">Tap a section to expand. Edit when you need to change it.</p>
         <div className="mt-2 flex flex-wrap items-center gap-1.5" aria-label="Your roles">
           {loading ? null : profile.roles.length === 0 ? (
             <span className="text-sm text-muted">No roles yet.</span>
@@ -425,82 +456,200 @@ export default function ProfilePage() {
       ) : (
         <>
           {user ? (
-            <section className={cardClass} aria-label="Account">
-              <h2 className="font-display text-base font-bold text-navy">Account</h2>
-              <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                <label htmlFor={nameId} className="block sm:col-span-2">
-                  <span className={labelClass}>Name</span>
-                  <input
-                    id={nameId}
-                    className={fieldClass}
-                    value={account.name}
-                    onChange={(e) => setAccount((a) => ({ ...a, name: e.target.value }))}
-                  />
-                </label>
-                <label htmlFor={emailId} className="block sm:col-span-2">
-                  <span className={labelClass}>Email</span>
-                  <input
-                    id={emailId}
-                    type="email"
-                    className={fieldClass}
-                    value={account.email}
-                    onChange={(e) => setAccount((a) => ({ ...a, email: e.target.value }))}
-                  />
-                </label>
-                <label htmlFor={birthId} className="block">
-                  <span className={labelClass}>Birth date</span>
-                  <input
-                    id={birthId}
-                    type="date"
-                    max={MAX_BIRTH_DATE}
-                    className={fieldClass}
-                    value={account.birth_date}
-                    onChange={(e) => setAccount((a) => ({ ...a, birth_date: e.target.value }))}
-                  />
-                </label>
-                <label htmlFor={genderId} className="block">
-                  <span className={labelClass}>Gender</span>
+            <CollapsibleCard
+              id="account"
+              title="Account"
+              open={openCard === 'account'}
+              onToggle={() => toggleCard('account')}
+              summary={
+                <>
+                  <Chip>{user.name}</Chip>
+                  <span className="truncate text-xs text-muted">{user.email}</span>
+                </>
+              }
+            >
+              {editing.account ? (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label htmlFor={nameId} className="block sm:col-span-2">
+                    <span className={labelClass}>Name</span>
+                    <input
+                      id={nameId}
+                      className={fieldClass}
+                      value={account.name}
+                      onChange={(e) => setAccount((a) => ({ ...a, name: e.target.value }))}
+                    />
+                  </label>
+                  <label htmlFor={emailId} className="block sm:col-span-2">
+                    <span className={labelClass}>Email</span>
+                    <input
+                      id={emailId}
+                      type="email"
+                      className={fieldClass}
+                      value={account.email}
+                      onChange={(e) => setAccount((a) => ({ ...a, email: e.target.value }))}
+                    />
+                  </label>
+                  <label htmlFor={birthId} className="block">
+                    <span className={labelClass}>Birth date</span>
+                    <input
+                      id={birthId}
+                      type="date"
+                      max={MAX_BIRTH_DATE}
+                      className={fieldClass}
+                      value={account.birth_date}
+                      onChange={(e) => setAccount((a) => ({ ...a, birth_date: e.target.value }))}
+                    />
+                  </label>
+                  <label htmlFor={genderId} className="block">
+                    <span className={labelClass}>Gender</span>
+                    <select
+                      id={genderId}
+                      className={fieldClass}
+                      value={account.gender}
+                      onChange={(e) =>
+                        setAccount((a) => ({ ...a, gender: e.target.value as Gender | '' }))
+                      }
+                    >
+                      <option value="">Select…</option>
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </label>
+                </div>
+              ) : (
+                <dl className="space-y-2 text-sm">
+                  <div>
+                    <dt className={labelClass}>Name</dt>
+                    <dd className="mt-0.5 text-navy">{user.name}</dd>
+                  </div>
+                  <div>
+                    <dt className={labelClass}>Email</dt>
+                    <dd className="mt-0.5 text-navy">{user.email}</dd>
+                  </div>
+                  <div>
+                    <dt className={labelClass}>Birth date</dt>
+                    <dd className="mt-0.5 text-navy">{user.birth_date}</dd>
+                  </div>
+                  <div>
+                    <dt className={labelClass}>Gender</dt>
+                    <dd className="mt-0.5 capitalize text-navy">{user.gender}</dd>
+                  </div>
+                </dl>
+              )}
+              {editActions('account', () => void saveAccount(), savingAccount, 'Save account', !accountValid)}
+            </CollapsibleCard>
+          ) : null}
+
+          <CollapsibleCard
+            id="player"
+            title="Player details"
+            emoji={ROLE_META.player.emoji}
+            open={openCard === 'player'}
+            onToggle={() => toggleCard('player')}
+            summary={
+              viewPositions.length === 0 && !viewSkill ? (
+                <span className="text-xs text-muted">Not set</span>
+              ) : (
+                <>
+                  {viewPositions.map((p) => (
+                    <Chip key={p}>{positionLabel(p)}</Chip>
+                  ))}
+                  {viewSkill ? <Chip>{titleCase(viewSkill)}</Chip> : null}
+                </>
+              )
+            }
+          >
+            {editing.player ? (
+              <>
+                <fieldset>
+                  <legend className={labelClass}>Positions</legend>
+                  <p className="mt-1 text-xs text-muted">Select all that apply.</p>
+                  <div className="mt-2 grid gap-2 sm:grid-cols-2" role="group" aria-label="Positions">
+                    {PLAYER_POSITIONS.map((p) => {
+                      const id = `player-pos-${p.value}`;
+                      return (
+                        <label
+                          key={p.value}
+                          htmlFor={id}
+                          className="flex cursor-pointer items-center gap-2 rounded-xl border border-border/80 bg-surface px-3 py-2 text-sm text-navy"
+                        >
+                          <input
+                            id={id}
+                            type="checkbox"
+                            className="h-4 w-4 rounded border-border text-cobalt focus:ring-cobalt/30"
+                            checked={playerDraft.positions.includes(p.value)}
+                            onChange={() => togglePosition(p.value)}
+                          />
+                          <span>{p.label}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </fieldset>
+                <label htmlFor="edit-player-skill_level" className="mt-3 block">
+                  <span className={labelClass}>Skill level</span>
                   <select
-                    id={genderId}
+                    id="edit-player-skill_level"
                     className={fieldClass}
-                    value={account.gender}
+                    value={playerDraft.skill_level}
                     onChange={(e) =>
-                      setAccount((a) => ({ ...a, gender: e.target.value as Gender | '' }))
+                      setPlayerDraft((d) => ({
+                        ...d,
+                        skill_level: e.target.value as SkillLevel | '',
+                      }))
                     }
                   >
                     <option value="">Select…</option>
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                    <option value="other">Other</option>
+                    {SKILL_OPTIONS.map((o) => (
+                      <option key={o} value={o}>
+                        {titleCase(o)}
+                      </option>
+                    ))}
                   </select>
                 </label>
+              </>
+            ) : (
+              <div className="space-y-3">
+                <div>
+                  <p className={labelClass}>Positions</p>
+                  <div className="mt-1.5 flex flex-wrap gap-1.5">
+                    {viewPositions.length === 0 ? (
+                      <span className="text-sm text-muted">None selected</span>
+                    ) : (
+                      viewPositions.map((p) => <Chip key={p}>{positionLabel(p)}</Chip>)
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <p className={labelClass}>Skill level</p>
+                  <div className="mt-1.5">
+                    {viewSkill ? (
+                      <Chip>{titleCase(viewSkill)}</Chip>
+                    ) : (
+                      <span className="text-sm text-muted">Not set</span>
+                    )}
+                  </div>
+                </div>
               </div>
-              <div className="mt-3">
-                <button
-                  type="button"
-                  onClick={() => void saveAccount()}
-                  disabled={savingAccount || !accountValid}
-                  className={primaryBtn}
-                >
-                  {savingAccount ? 'Saving…' : 'Save account'}
-                </button>
-              </div>
-            </section>
-          ) : null}
+            )}
+            {editActions('player', () => void savePlayer(), savingRole === 'player', 'Save player')}
+          </CollapsibleCard>
 
-          {renderPlayerCard()}
-
-          <section className={cardClass} aria-label="Elevated roles">
-            <h2 className="font-display text-base font-bold text-navy">Elevated access</h2>
-            <p className="mt-1 text-sm text-muted">
-              Coach and organizer require admin approval.
-            </p>
+          <CollapsibleCard
+            id="elevated"
+            title="Elevated access"
+            open={openCard === 'elevated'}
+            onToggle={() => toggleCard('elevated')}
+            summary={<span className="text-xs text-muted">Coach & organizer requests</span>}
+          >
+            <p className="text-sm text-muted">Coach and organizer require admin approval.</p>
             <ul className="mt-3 space-y-3">
               {ELEVATED.map((role) => {
                 if (profile.roles.includes(role)) {
                   return (
                     <li key={role} className="text-sm text-muted">
-                      {ROLE_META[role].emoji} {ROLE_META[role].label} granted — edit below.
+                      {ROLE_META[role].emoji} {ROLE_META[role].label} granted — open that card below.
                     </li>
                   );
                 }
@@ -567,11 +716,158 @@ export default function ProfilePage() {
                 );
               })}
             </ul>
-          </section>
+          </CollapsibleCard>
 
-          {ELEVATED.filter((r) => profile.roles.includes(r)).map((role) =>
-            renderElevatedRoleCard(role),
-          )}
+          {profile.roles.includes('coach') ? (
+            <CollapsibleCard
+              id="coach"
+              title="Coach details"
+              emoji={ROLE_META.coach.emoji}
+              open={openCard === 'coach'}
+              onToggle={() => toggleCard('coach')}
+              summary={
+                profile.coach?.bootcamp_name || profile.coach?.achievements ? (
+                  <>
+                    {profile.coach?.bootcamp_name ? (
+                      <Chip>{profile.coach.bootcamp_name}</Chip>
+                    ) : null}
+                    {profile.coach?.achievements ? (
+                      <span className="line-clamp-1 text-xs text-muted">
+                        {profile.coach.achievements}
+                      </span>
+                    ) : null}
+                  </>
+                ) : (
+                  <span className="text-xs text-muted">Not set</span>
+                )
+              }
+            >
+              {editing.coach ? (
+                <div className="space-y-3">
+                  <label htmlFor="edit-coach-achievements" className="block">
+                    <span className={labelClass}>Achievements</span>
+                    <input
+                      id="edit-coach-achievements"
+                      className={fieldClass}
+                      value={coachDraft.achievements}
+                      onChange={(e) =>
+                        setCoachDraft((d) => ({ ...d, achievements: e.target.value }))
+                      }
+                    />
+                  </label>
+                  <label htmlFor="edit-coach-bootcamp_name" className="block">
+                    <span className={labelClass}>Bootcamp name</span>
+                    <input
+                      id="edit-coach-bootcamp_name"
+                      className={fieldClass}
+                      value={coachDraft.bootcamp_name}
+                      onChange={(e) =>
+                        setCoachDraft((d) => ({ ...d, bootcamp_name: e.target.value }))
+                      }
+                    />
+                  </label>
+                </div>
+              ) : (
+                <dl className="space-y-2 text-sm">
+                  <div>
+                    <dt className={labelClass}>Achievements</dt>
+                    <dd className="mt-0.5 text-navy">
+                      {profile.coach?.achievements || (
+                        <span className="text-muted">Not set</span>
+                      )}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className={labelClass}>Bootcamp name</dt>
+                    <dd className="mt-0.5 text-navy">
+                      {profile.coach?.bootcamp_name || (
+                        <span className="text-muted">Not set</span>
+                      )}
+                    </dd>
+                  </div>
+                </dl>
+              )}
+              {editActions('coach', () => void saveCoach(), savingRole === 'coach', 'Save coach')}
+            </CollapsibleCard>
+          ) : null}
+
+          {profile.roles.includes('organizer') ? (
+            <CollapsibleCard
+              id="organizer"
+              title="Organizer details"
+              emoji={ROLE_META.organizer.emoji}
+              open={openCard === 'organizer'}
+              onToggle={() => toggleCard('organizer')}
+              summary={
+                viewCourts.length === 0 ? (
+                  <span className="text-xs text-muted">No courts</span>
+                ) : (
+                  viewCourts.map((c) => <Chip key={c}>{c}</Chip>)
+                )
+              }
+            >
+              {editing.organizer ? (
+                <div className="space-y-2">
+                  <span className={labelClass}>Managed courts</span>
+                  {courtsDraft.map((court, index) => (
+                    <div key={index} className="flex gap-2">
+                      <label className="block min-w-0 flex-1" htmlFor={`managed-court-${index}`}>
+                        <span className="sr-only">Managed courts {index + 1}</span>
+                        <input
+                          id={`managed-court-${index}`}
+                          className={fieldClass}
+                          value={court}
+                          placeholder="Court name"
+                          onChange={(e) =>
+                            setCourtsDraft((list) =>
+                              list.map((c, i) => (i === index ? e.target.value : c)),
+                            )
+                          }
+                        />
+                      </label>
+                      {courtsDraft.length > 1 ? (
+                        <button
+                          type="button"
+                          className={secondaryBtn}
+                          aria-label={`Remove court ${index + 1}`}
+                          onClick={() =>
+                            setCourtsDraft((list) => list.filter((_, i) => i !== index))
+                          }
+                        >
+                          −
+                        </button>
+                      ) : null}
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    className={secondaryBtn}
+                    aria-label="Add managed court"
+                    onClick={() => setCourtsDraft((list) => [...list, ''])}
+                  >
+                    +
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  <p className={labelClass}>Managed courts</p>
+                  <div className="mt-1.5 flex flex-wrap gap-1.5">
+                    {viewCourts.length === 0 ? (
+                      <span className="text-sm text-muted">None</span>
+                    ) : (
+                      viewCourts.map((c) => <Chip key={c}>{c}</Chip>)
+                    )}
+                  </div>
+                </div>
+              )}
+              {editActions(
+                'organizer',
+                () => void saveOrganizer(),
+                savingRole === 'organizer',
+                'Save organizer',
+              )}
+            </CollapsibleCard>
+          ) : null}
         </>
       )}
     </div>
