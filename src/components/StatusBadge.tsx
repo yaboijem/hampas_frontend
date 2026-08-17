@@ -7,9 +7,9 @@ const LABEL: Record<ApplicationStatus, string> = {
 };
 
 const STYLES: Record<ApplicationStatus, string> = {
-  pending: 'bg-amber-100 text-amber-900',
-  approved: 'bg-green-100 text-green-900',
-  rejected: 'bg-red-100 text-red-900',
+  pending: 'border border-amber-500/25 bg-amber-100 text-amber-950 dark:bg-amber-950/40 dark:text-amber-100',
+  approved: 'border border-cobalt/20 bg-sky-tint text-chip-text',
+  rejected: 'border border-border bg-ice text-muted',
 };
 
 export default function StatusBadge({ status }: { status: ApplicationStatus }) {

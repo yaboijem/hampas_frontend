@@ -10,6 +10,14 @@ interface Applicant {
   status: ApplicationStatus;
 }
 
+const BTN_BASE =
+  'inline-flex min-h-11 items-center justify-center rounded-[var(--radius-control)] px-4 py-2 text-sm font-semibold transition disabled:cursor-default';
+
+const APPROVE_ACTIVE = `${BTN_BASE} bg-cobalt text-white shadow-soft hover:bg-electric`;
+const APPROVE_CURRENT = `${BTN_BASE} bg-cobalt text-white shadow-soft ring-2 ring-cobalt/30 ring-offset-2 ring-offset-surface`;
+const REJECT_ACTIVE = `${BTN_BASE} border border-border bg-surface text-navy hover:border-cobalt hover:bg-sky-tint`;
+const REJECT_CURRENT = `${BTN_BASE} border border-cobalt/40 bg-sky-tint text-chip-text ring-2 ring-cobalt/20 ring-offset-2 ring-offset-surface`;
+
 function RowSkeleton() {
   return (
     <div className="rounded-[var(--radius-card)] border border-border bg-surface p-4 shadow-soft">
@@ -27,6 +35,7 @@ export default function EventApplicationsPage() {
   const [applicants, setApplicants] = useState<Applicant[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -51,6 +60,7 @@ export default function EventApplicationsPage() {
 
   const decide = async (applicationId: number, status: 'approved' | 'rejected') => {
     setError(null);
+    setBusyId(applicationId);
     try {
       if (status === 'approved') {
         await approveApplication(eventId, applicationId);
@@ -61,6 +71,8 @@ export default function EventApplicationsPage() {
       setApplicants(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not update application.');
+    } finally {
+      setBusyId(null);
     }
   };
 
@@ -88,13 +100,13 @@ export default function EventApplicationsPage() {
 
       <header className="space-y-1">
         <h1 className="font-display text-3xl font-extrabold tracking-tight text-navy">Applications</h1>
-        <p className="text-sm text-muted">Review who wants to join</p>
+        <p className="text-sm text-muted">Review who wants to join — you can change a decision anytime</p>
       </header>
 
       {error && (
         <p
           role="alert"
-          className="rounded-[var(--radius-control)] border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700"
+          className="rounded-[var(--radius-control)] border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200"
         >
           {error}
         </p>
@@ -106,35 +118,41 @@ export default function EventApplicationsPage() {
         </div>
       ) : (
         <ul className="space-y-3">
-          {applicants.map((a) => (
-            <li
-              key={a.id}
-              className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-card)] border border-border bg-surface p-4 shadow-soft"
-            >
-              <span className="font-semibold text-navy">{a.user.name}</span>
-              <div className="flex flex-wrap items-center gap-3">
-                <StatusBadge status={a.status} />
-                {a.status === 'pending' && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => decide(a.id, 'approved')}
-                      className="inline-flex min-h-11 items-center rounded-[var(--radius-control)] bg-cobalt px-4 py-2 text-sm font-semibold text-white shadow-soft hover:bg-electric"
-                    >
-                      Approve
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => decide(a.id, 'rejected')}
-                      className="inline-flex min-h-11 items-center rounded-[var(--radius-control)] border border-red-300 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50"
-                    >
-                      Reject
-                    </button>
-                  </>
-                )}
-              </div>
-            </li>
-          ))}
+          {applicants.map((a) => {
+            const busy = busyId === a.id;
+            const isApproved = a.status === 'approved';
+            const isRejected = a.status === 'rejected';
+
+            return (
+              <li
+                key={a.id}
+                className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-card)] border border-border bg-surface p-4 shadow-soft"
+              >
+                <span className="font-semibold text-navy">{a.user.name}</span>
+                <div className="flex flex-wrap items-center gap-3">
+                  <StatusBadge status={a.status} />
+                  <button
+                    type="button"
+                    disabled={busy || isApproved}
+                    aria-pressed={isApproved}
+                    onClick={() => decide(a.id, 'approved')}
+                    className={isApproved ? APPROVE_CURRENT : APPROVE_ACTIVE}
+                  >
+                    Approve
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busy || isRejected}
+                    aria-pressed={isRejected}
+                    onClick={() => decide(a.id, 'rejected')}
+                    className={isRejected ? REJECT_CURRENT : REJECT_ACTIVE}
+                  >
+                    Reject
+                  </button>
+                </div>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>

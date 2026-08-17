@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { describe, expect, test, vi } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import ApplyButton from '../components/ApplyButton';
 import EventApplicationsPage from '../pages/Applications/EventApplicationsPage';
 import MyApplicationsPage from '../pages/Applications/MyApplicationsPage';
@@ -24,6 +24,10 @@ vi.mock('../auth/AuthContext', () => ({
     signOut: vi.fn(),
   }),
 }));
+
+beforeEach(() => {
+  vi.clearAllMocks();
+});
 
 describe('ApplyButton', () => {
   test('applies to a live event', async () => {
@@ -92,13 +96,42 @@ describe('EventApplicationsPage', () => {
     expect(await screen.findByText('Ana')).toBeInTheDocument();
     expect(screen.getByText('Ben')).toBeInTheDocument();
     expect(screen.getByText('Pending')).toBeInTheDocument();
-    expect(screen.getByText('Approved')).toBeInTheDocument();
+    expect(screen.getAllByText('Approved').length).toBeGreaterThan(0);
 
-    await user.click(screen.getAllByRole('button', { name: /approve/i })[0]);
+    await user.click(screen.getAllByRole('button', { name: /^approve$/i })[0]);
 
     await waitFor(() => expect(applicationsApi.approveApplication).toHaveBeenCalledWith(1, 3));
     expect(await screen.findByText('Ana')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /approve/i })).not.toBeInTheDocument();
+    const approveButtons = screen.getAllByRole('button', { name: /^approve$/i });
+    expect(approveButtons.every((btn) => (btn as HTMLButtonElement).disabled)).toBe(true);
+  });
+
+  test('organizer can change an approved decision to rejected', async () => {
+    const user = userEvent.setup();
+    vi.mocked(applicationsApi.listEventApplications)
+      .mockResolvedValueOnce({
+        data: [{ id: 3, user: { id: 7, name: 'Ana' }, status: 'approved' }],
+      })
+      .mockResolvedValueOnce({
+        data: [{ id: 3, user: { id: 7, name: 'Ana' }, status: 'rejected' }],
+      });
+    vi.mocked(applicationsApi.rejectApplication).mockResolvedValue({
+      application: { id: 3, event_id: 1, user_id: 7, status: 'rejected' },
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/events/1/applications']}>
+        <Routes>
+          <Route path="/events/:id/applications" element={<EventApplicationsPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByRole('button', { name: /^approve$/i })).toBeDisabled();
+    await user.click(screen.getByRole('button', { name: /^reject$/i }));
+    await waitFor(() => expect(applicationsApi.rejectApplication).toHaveBeenCalledWith(1, 3));
+    expect(screen.getByRole('button', { name: /^reject$/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /^approve$/i })).not.toBeDisabled();
   });
 
   test('shows empty state when no applicants', async () => {
