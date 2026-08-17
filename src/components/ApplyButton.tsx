@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { apply, cancelApplication } from '../api/applications';
 import { useAuth } from '../auth/AuthContext';
 import StatusBadge from './StatusBadge';
@@ -15,6 +15,7 @@ interface Props {
 export default function ApplyButton({ eventId, isOwner, visibility, myApplication }: Props) {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [application, setApplication] = useState(myApplication);
   const [error, setError] = useState<string | null>(null);
 
@@ -22,7 +23,7 @@ export default function ApplyButton({ eventId, isOwner, visibility, myApplicatio
 
   const handleApply = async () => {
     if (!user) {
-      navigate('/login');
+      navigate('/login', { state: { from: location } });
       return;
     }
     setError(null);

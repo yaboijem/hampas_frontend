@@ -1,5 +1,5 @@
 import { useEffect, useId, useState } from "react";
-import { Link, NavLink, useLocation } from "react-router-dom";
+import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import ThemeToggle from "./ThemeToggle";
 
@@ -20,6 +20,7 @@ const menuLinkClass = ({ isActive }: { isActive: boolean }) =>
 export default function AppHeader() {
   const { user, loading, signOut } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuId = useId();
 
@@ -39,6 +40,7 @@ export default function AppHeader() {
   const handleSignOut = () => {
     setMenuOpen(false);
     signOut();
+    navigate("/events", { replace: true });
   };
 
   return (
@@ -54,9 +56,9 @@ export default function AppHeader() {
           >
             🏐
           </span>
-          <div className="flex min-w-0 shrink-0 flex-col justify-center">
+          <div className="flex min-w-0 shrink-0 flex-col justify-center pl-1">
             <Link
-              to={user ? "/events" : "/"}
+              to="/events"
               className="font-display flex shrink-0 items-center gap-3 text-3xl leading-tight font-extrabold tracking-tight text-navy"
             >
               HAMPAS
@@ -98,7 +100,7 @@ export default function AppHeader() {
               </Link>
               <button
                 type="button"
-                onClick={signOut}
+                onClick={handleSignOut}
                 className="rounded-[var(--radius-control)] border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-100 hover:text-red-800"
               >
                 Log out

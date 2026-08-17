@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { getReportReasons, submitReport } from '../api/reports';
 import { useAuth } from '../auth/AuthContext';
 
@@ -21,6 +21,7 @@ const LABELS: Record<string, string> = {
 export default function ReportModal({ targetType, targetId, onClose }: Props) {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [reasons, setReasons] = useState<string[]>([]);
   const [reason, setReason] = useState('');
   const [details, setDetails] = useState('');
@@ -29,7 +30,7 @@ export default function ReportModal({ targetType, targetId, onClose }: Props) {
 
   useEffect(() => {
     if (!user) {
-      navigate('/login');
+      navigate('/login', { state: { from: location } });
       return;
     }
     getReportReasons()
@@ -38,7 +39,7 @@ export default function ReportModal({ targetType, targetId, onClose }: Props) {
         setReason(reasons[0] ?? '');
       })
       .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load reasons.'));
-  }, [user, navigate]);
+  }, [user, navigate, location]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();

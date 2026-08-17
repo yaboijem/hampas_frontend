@@ -24,7 +24,7 @@ import AppHeader from './components/AppHeader';
 import { ThemeProvider } from './theme/ThemeContext';
 
 function HomeRedirect() {
-  const { user, loading } = useAuth();
+  const { loading } = useAuth();
   if (loading) {
     return (
       <div className="mx-auto max-w-6xl px-4 py-10 text-muted" role="status">
@@ -32,7 +32,7 @@ function HomeRedirect() {
       </div>
     );
   }
-  return <Navigate to={user ? '/events' : '/login'} replace />;
+  return <Navigate to="/events" replace />;
 }
 
 export default function App() {
