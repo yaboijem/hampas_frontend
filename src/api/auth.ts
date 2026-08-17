@@ -29,6 +29,16 @@ export async function getMe(): Promise<{ user: User }> {
   return data;
 }
 
+export async function updateMe(payload: {
+  name: string;
+  email: string;
+  birth_date: string;
+  gender: Gender;
+}): Promise<{ user: User }> {
+  const { data } = await api.put('/user', payload);
+  return data;
+}
+
 export async function forgotPassword(email: string): Promise<{ message: string }> {
   const { data } = await api.post('/forgot-password', { email });
   return data;

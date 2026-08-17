@@ -7,6 +7,7 @@ interface AuthValue {
   loading: boolean;
   signIn: (token: string, user: User) => void;
   signOut: () => void;
+  updateUser: (user: User) => void;
 }
 
 const AuthContext = createContext<AuthValue>({
@@ -14,6 +15,7 @@ const AuthContext = createContext<AuthValue>({
   loading: true,
   signIn: () => {},
   signOut: () => {},
+  updateUser: () => {},
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -42,8 +44,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   };
 
+  const updateUser = (nextUser: User) => {
+    setUser(nextUser);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signOut }}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={{ user, loading, signIn, signOut, updateUser }}>
+      {children}
+    </AuthContext.Provider>
   );
 }
 
