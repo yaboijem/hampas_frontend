@@ -73,6 +73,8 @@ const secondaryBtn =
 type CardKey = 'account' | 'player' | 'coach' | 'organizer' | 'elevated';
 type PasswordPhase = 'locked' | 'code_sent' | 'unlocked';
 
+const PASSWORD_RESEND_COOLDOWN_MS = 15_000;
+
 function passwordMeetsRules(pw: string): boolean {
   return pw.length >= 8 && /[0-9]/.test(pw) && /[^A-Za-z0-9]/.test(pw);
 }
@@ -227,6 +229,16 @@ export default function ProfilePage() {
   const [passwordMessage, setPasswordMessage] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [resendAt, setResendAt] = useState(0);
+  const [nowMs, setNowMs] = useState(() => Date.now());
+
+  const resendSecondsLeft = Math.max(0, Math.ceil((resendAt - nowMs) / 1000));
+  const resendCoolingDown = resendSecondsLeft > 0;
+
+  useEffect(() => {
+    if (!resendCoolingDown) return;
+    const id = window.setInterval(() => setNowMs(Date.now()), 250);
+    return () => window.clearInterval(id);
+  }, [resendCoolingDown, resendAt]);
 
   const resetPasswordUi = (keepMessage?: string | null) => {
     setPasswordPhase('locked');
@@ -238,6 +250,7 @@ export default function ProfilePage() {
     setSavingPassword(false);
     setPasswordError(null);
     setResendAt(0);
+    setNowMs(Date.now());
     setPasswordMessage(keepMessage ?? null);
   };
 
@@ -391,7 +404,9 @@ export default function ProfilePage() {
       const { message } = await sendPasswordCode();
       setPasswordPhase('code_sent');
       setPasswordMessage(message);
-      setResendAt(Date.now() + 60_000);
+      const nextResendAt = Date.now() + PASSWORD_RESEND_COOLDOWN_MS;
+      setResendAt(nextResendAt);
+      setNowMs(Date.now());
     } catch (err) {
       setPasswordError(apiErrorMessage(err, 'Failed to send code.'));
     } finally {
@@ -552,9 +567,9 @@ export default function ProfilePage() {
     <div className="mx-auto max-w-xl space-y-3">
       <header>
         <h1 className="font-display text-2xl font-extrabold tracking-tight text-navy sm:text-3xl">
-          {user?.name ? `Hello, ${user.name}` : 'Profile'}
+          {user?.name ? `Hello! ${user.name} 👋` : 'Profile'}
         </h1>
-        <p className="mt-0.5 text-sm text-muted">Tap a section to expand. Edit when you need to change it.</p>
+        <p className="mt-0.5 text-sm text-muted">Tap a section and manage your account.</p>
         <div className="mt-2 flex flex-wrap items-center gap-1.5" aria-label="Your roles">
           {loading ? null : profile.roles.length === 0 ? (
             <span className="text-sm text-muted">No roles yet.</span>
@@ -693,14 +708,17 @@ export default function ProfilePage() {
                           <button
                             type="button"
                             className={passwordPhase === 'locked' ? primaryBtn : secondaryBtn}
-                            disabled={sendingCode || Date.now() < resendAt}
+                            disabled={sendingCode || resendCoolingDown}
                             onClick={() => void handleSendCode()}
+                            aria-live="polite"
                           >
                             {sendingCode
                               ? 'Sending…'
-                              : passwordPhase === 'code_sent'
-                                ? 'Resend code'
-                                : 'Send code'}
+                              : resendCoolingDown
+                                ? `Resend in ${resendSecondsLeft}s`
+                                : passwordPhase === 'code_sent'
+                                  ? 'Resend code'
+                                  : 'Send code'}
                           </button>
                         </div>
                       </div>

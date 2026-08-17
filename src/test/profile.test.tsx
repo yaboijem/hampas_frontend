@@ -291,6 +291,33 @@ describe('ProfilePage', () => {
     );
   });
 
+  test('resend code shows 15s countdown and stays disabled', async () => {
+    vi.mocked(profilesApi.getProfile).mockResolvedValue({
+      roles: ['player'],
+      player: {},
+      coach: null,
+      organizer: null,
+    });
+    vi.mocked(authApi.sendPasswordCode).mockResolvedValue({
+      message: 'A 4-digit code was sent to your email.',
+    });
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <ProfilePage />
+      </MemoryRouter>,
+    );
+
+    await expand(/^account/i);
+    await user.click(screen.getByRole('button', { name: /^edit$/i }));
+    await user.click(screen.getByRole('button', { name: /^send code$/i }));
+    await waitFor(() => expect(authApi.sendPasswordCode).toHaveBeenCalledTimes(1));
+
+    const resendBtn = await screen.findByRole('button', { name: /resend in \d+s/i });
+    expect(resendBtn).toBeDisabled();
+  });
+
   test('weak password keeps Save password disabled', async () => {
     vi.mocked(profilesApi.getProfile).mockResolvedValue({
       roles: ['player'],
