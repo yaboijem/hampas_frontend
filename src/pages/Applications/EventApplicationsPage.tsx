@@ -24,12 +24,55 @@ interface Applicant {
 
 const STATUS_ORDER: ApplicationStatus[] = ['pending', 'approved', 'rejected'];
 
-const BTN_BASE =
-  'inline-flex min-h-9 items-center justify-center rounded-[var(--radius-control)] px-2.5 py-1.5 text-xs font-semibold transition disabled:cursor-default disabled:opacity-60 sm:min-h-10 sm:px-3 sm:text-sm';
+const ICON_BTN =
+  'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-control)] border transition disabled:cursor-default disabled:opacity-60';
 
-const APPROVE_ACTIVE = `${BTN_BASE} bg-cobalt text-white shadow-soft hover:bg-electric`;
-const REJECT_ACTIVE = `${BTN_BASE} border border-border bg-surface text-navy hover:border-cobalt hover:bg-sky-tint`;
-const FLIP_BTN = `${BTN_BASE} border border-border bg-surface text-navy hover:border-cobalt hover:bg-sky-tint`;
+const APPROVE_ICON_BTN = `${ICON_BTN} border-emerald-500/30 bg-emerald-50 text-emerald-700 hover:border-emerald-500 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:bg-emerald-950/70`;
+const REJECT_ICON_BTN = `${ICON_BTN} border-red-500/30 bg-red-50 text-red-700 hover:border-red-500 hover:bg-red-100 dark:bg-red-950/40 dark:text-red-300 dark:hover:bg-red-950/70`;
+
+function CheckIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden
+      className={className}
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M5 13l4 4L19 7"
+        stroke="currentColor"
+        strokeWidth="2.25"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function CrossIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden
+      className={className}
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M6 6l12 12M18 6L6 18"
+        stroke="currentColor"
+        strokeWidth="2.25"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
 
 function RowSkeleton() {
   return (
@@ -186,24 +229,26 @@ export default function EventApplicationsPage() {
         <div className="flex min-w-0 flex-1 items-center gap-2 rounded-[var(--radius-card)] border border-border bg-surface px-2.5 py-1.5 shadow-soft sm:gap-3 sm:px-3 sm:py-2">
           <span className="min-w-0 flex-1 truncate text-sm font-semibold text-navy">{a.user.name}</span>
           <StatusBadge status={a.status} />
-          <div className="flex shrink-0 items-center gap-1.5">
+          <div className="flex shrink-0 items-center gap-1">
             {isPending && (
               <>
                 <button
                   type="button"
                   disabled={busy}
+                  aria-label="Approve"
                   onClick={() => void decide(a.id, 'approved', a.user.name)}
-                  className={APPROVE_ACTIVE}
+                  className={APPROVE_ICON_BTN}
                 >
-                  Approve
+                  <CheckIcon />
                 </button>
                 <button
                   type="button"
                   disabled={busy}
+                  aria-label="Reject"
                   onClick={() => void decide(a.id, 'rejected', a.user.name)}
-                  className={REJECT_ACTIVE}
+                  className={REJECT_ICON_BTN}
                 >
-                  Reject
+                  <CrossIcon />
                 </button>
               </>
             )}
@@ -213,10 +258,9 @@ export default function EventApplicationsPage() {
                 disabled={busy}
                 aria-label="Change to Rejected"
                 onClick={() => void decide(a.id, 'rejected', a.user.name)}
-                className={FLIP_BTN}
+                className={REJECT_ICON_BTN}
               >
-                <span className="sm:hidden">Reject</span>
-                <span className="hidden sm:inline">Change to Rejected</span>
+                <CrossIcon />
               </button>
             )}
             {isRejected && (
@@ -225,10 +269,9 @@ export default function EventApplicationsPage() {
                 disabled={busy}
                 aria-label="Change to Approved"
                 onClick={() => void decide(a.id, 'approved', a.user.name)}
-                className={FLIP_BTN}
+                className={APPROVE_ICON_BTN}
               >
-                <span className="sm:hidden">Approve</span>
-                <span className="hidden sm:inline">Change to Approved</span>
+                <CheckIcon />
               </button>
             )}
             <button
