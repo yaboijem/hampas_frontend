@@ -21,6 +21,7 @@ import EventApplicationsPage from './pages/Applications/EventApplicationsPage';
 import HostedEventsPage from './pages/Events/HostedEventsPage';
 import NotificationsPage from './pages/Notifications/NotificationsPage';
 import InstallPrompt from './components/InstallPrompt';
+import OnboardingGate from './components/OnboardingGate';
 import OfflinePage from './pages/OfflinePage';
 import ErrorBoundary from './components/ErrorBoundary';
 import AppHeader from './components/AppHeader';
@@ -49,6 +50,7 @@ export default function App() {
               <AppHeader />
               <ToastHost />
               <InstallPrompt />
+              <OnboardingGate />
               <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
                 <ErrorBoundary>
                   <Routes>

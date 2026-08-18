@@ -1,10 +1,14 @@
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, test } from 'vitest';
+import OnboardingGate from '../components/OnboardingGate';
+import { ONBOARDING_SLIDES } from '../onboarding/slides';
 import {
   ONBOARDING_STORAGE_KEY,
   readOnboardingDone,
   writeOnboardingDone,
 } from '../onboarding/storage';
-import { ONBOARDING_SLIDES } from '../onboarding/slides';
 
 beforeEach(() => {
   localStorage.clear();
@@ -52,5 +56,56 @@ describe('onboarding slides', () => {
     if (policies.kind !== 'policies') throw new Error('expected policies slide');
     expect(policies.features.length).toBeGreaterThan(0);
     expect(policies.policies.length).toBeGreaterThan(0);
+  });
+});
+
+function renderGate() {
+  return render(
+    <MemoryRouter>
+      <OnboardingGate />
+    </MemoryRouter>,
+  );
+}
+
+describe('OnboardingGate', () => {
+  test('shows first slide when onboarding not done', () => {
+    renderGate();
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /discover and play/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^skip$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^next$/i })).toBeInTheDocument();
+  });
+
+  test('renders nothing when onboarding already done', () => {
+    localStorage.setItem(ONBOARDING_STORAGE_KEY, '1');
+    renderGate();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  test('Next advances to the next slide', async () => {
+    const user = userEvent.setup();
+    renderGate();
+    await user.click(screen.getByRole('button', { name: /^next$/i }));
+    expect(screen.getByRole('heading', { name: /find friendship/i })).toBeInTheDocument();
+  });
+
+  test('Skip jumps to policies slide', async () => {
+    const user = userEvent.setup();
+    renderGate();
+    await user.click(screen.getByRole('button', { name: /^skip$/i }));
+    expect(screen.getByRole('heading', { name: /before you play/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^skip$/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /terms/i })).toHaveAttribute('href', '/terms');
+    expect(screen.getByRole('link', { name: /privacy/i })).toHaveAttribute('href', '/privacy');
+    expect(screen.getByRole('button', { name: /get started/i })).toBeInTheDocument();
+  });
+
+  test('Get Started persists flag and dismisses overlay', async () => {
+    const user = userEvent.setup();
+    renderGate();
+    await user.click(screen.getByRole('button', { name: /^skip$/i }));
+    await user.click(screen.getByRole('button', { name: /get started/i }));
+    expect(localStorage.getItem(ONBOARDING_STORAGE_KEY)).toBe('1');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 });
