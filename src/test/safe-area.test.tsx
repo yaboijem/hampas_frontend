@@ -88,10 +88,12 @@ describe('safe-area floating chrome', () => {
     expect(el.className).not.toMatch(/\bright-4\b/);
   });
 
-  test('EventDetail sticky CTA uses shared pb-safe-max-3', () => {
+  test('EventDetail sticky CTA uses safe-area edge offsets', () => {
     const src = read('src/pages/Events/EventDetailPage.tsx');
-    expect(src).toContain('pb-safe-max-3');
-    expect(src).not.toMatch(/pb-\[max\(0\.75rem,\s*env\(safe-area-inset-bottom\)\)\]/);
+    expect(src).toContain('safe-area-inset-bottom');
+    expect(src).toContain('safe-area-inset-left');
+    expect(src).toContain('safe-area-inset-right');
+    expect(src).toContain('glass-panel');
   });
 
   test('InstallPrompt uses safe-area offset utilities', () => {

@@ -35,9 +35,41 @@ const field =
   'mt-1 block w-full rounded-xl border border-border/80 bg-surface px-3 py-2 text-sm text-navy shadow-sm outline-none transition placeholder:text-muted/70 focus:border-cobalt focus:ring-2 focus:ring-cobalt/20';
 const label = 'text-xs font-bold uppercase tracking-wide text-chip-text';
 
+function toLocalDatetimeValue(date: Date): string {
+  return date.toLocaleString('sv-SE').replace(' ', 'T').slice(0, 16);
+}
+
+/** Local `datetime-local` value for start of today (00:00). */
+export function minStartsAtLocal(now = new Date()): string {
+  const d = new Date(now);
+  d.setHours(0, 0, 0, 0);
+  return toLocalDatetimeValue(d);
+}
+
+/** Default create value: next full hour (avoids empty `--:--` browser placeholder). */
+export function defaultStartsAtLocal(now = new Date()): string {
+  const d = new Date(now);
+  d.setSeconds(0, 0);
+  d.setMinutes(0, 0, 0);
+  d.setHours(d.getHours() + 1);
+  const min = minStartsAtLocal(now);
+  const value = toLocalDatetimeValue(d);
+  return value < min ? min : value;
+}
+
+/** True when value is today or a future local day/time. */
+export function isStartsAtAllowed(value: string, now = new Date()): boolean {
+  if (!value) return false;
+  const selected = new Date(value);
+  if (Number.isNaN(selected.getTime())) return false;
+  const startOfToday = new Date(now);
+  startOfToday.setHours(0, 0, 0, 0);
+  return selected.getTime() >= startOfToday.getTime();
+}
+
 export default function EventForm({ initial = null, onSubmit, submitLabel }: Props) {
   const toLocal = (iso: string | undefined) =>
-    iso ? new Date(iso).toLocaleString('sv-SE').replace(' ', 'T').slice(0, 16) : '';
+    iso ? toLocalDatetimeValue(new Date(iso)) : '';
 
   const fileRef = useRef<HTMLInputElement>(null);
   const titleId = useId();
@@ -59,7 +91,9 @@ export default function EventForm({ initial = null, onSubmit, submitLabel }: Pro
     initial?.city && !(PAMPANGA_CITIES as readonly string[]).includes(initial.city)
       ? [initial.city, ...PAMPANGA_CITIES]
       : [...PAMPANGA_CITIES];
-  const [startsAt, setStartsAt] = useState(toLocal(initial?.starts_at));
+  const [startsAt, setStartsAt] = useState(
+    () => toLocal(initial?.starts_at) || defaultStartsAtLocal(),
+  );
   const [photo, setPhoto] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(initial?.photo_url ?? null);
   const [removePhoto, setRemovePhoto] = useState(false);
@@ -122,6 +156,10 @@ export default function EventForm({ initial = null, onSubmit, submitLabel }: Pro
     e.preventDefault();
     if (!title.trim() || !description.trim() || !startsAt || !city.trim()) {
       setError('Please fill in title, description, city, and start time.');
+      return;
+    }
+    if (!isStartsAtAllowed(startsAt)) {
+      setError('Start time must be today or later.');
       return;
     }
     const form = new FormData();
@@ -250,6 +288,7 @@ export default function EventForm({ initial = null, onSubmit, submitLabel }: Pro
                 type="datetime-local"
                 className={field}
                 value={startsAt}
+                min={minStartsAtLocal()}
                 onChange={(e) => setStartsAt(e.target.value)}
                 required
               />

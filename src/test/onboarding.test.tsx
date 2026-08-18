@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
-import { beforeEach, describe, expect, test } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import OnboardingGate from '../components/OnboardingGate';
 import { ONBOARDING_SLIDES } from '../onboarding/slides';
 import {
@@ -12,6 +12,7 @@ import {
 
 beforeEach(() => {
   localStorage.clear();
+  vi.useRealTimers();
 });
 
 describe('onboarding storage', () => {
@@ -59,21 +60,22 @@ describe('onboarding slides', () => {
   });
 });
 
-function renderGate() {
+function renderGate(initialPath = '/') {
   return render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[initialPath]}>
       <OnboardingGate />
     </MemoryRouter>,
   );
 }
 
 describe('OnboardingGate', () => {
-  test('shows first slide when onboarding not done', () => {
+  test('shows first slide with welcome and discover title', () => {
     renderGate();
     expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByLabelText(/welcome to hampas app/i)).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /discover and play/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^skip$/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /^next$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /next slide/i })).toBeInTheDocument();
   });
 
   test('renders nothing when onboarding already done', () => {
@@ -85,8 +87,17 @@ describe('OnboardingGate', () => {
   test('Next advances to the next slide', async () => {
     const user = userEvent.setup();
     renderGate();
-    await user.click(screen.getByRole('button', { name: /^next$/i }));
+    await user.click(screen.getByRole('button', { name: /next slide/i }));
     expect(screen.getByRole('heading', { name: /find friendship/i })).toBeInTheDocument();
+    expect(screen.queryByLabelText(/welcome to hampas app/i)).not.toBeInTheDocument();
+  });
+
+  test('Prev returns to the previous slide', async () => {
+    const user = userEvent.setup();
+    renderGate();
+    await user.click(screen.getByRole('button', { name: /next slide/i }));
+    await user.click(screen.getByRole('button', { name: /previous slide/i }));
+    expect(screen.getByRole('heading', { name: /discover and play/i })).toBeInTheDocument();
   });
 
   test('Skip jumps to policies slide', async () => {
@@ -97,14 +108,18 @@ describe('OnboardingGate', () => {
     expect(screen.queryByRole('button', { name: /^skip$/i })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: /terms/i })).toHaveAttribute('href', '/terms');
     expect(screen.getByRole('link', { name: /privacy/i })).toHaveAttribute('href', '/privacy');
+    expect(screen.getByRole('link', { name: /terms/i })).toHaveAttribute('target', '_blank');
+    expect(screen.getByRole('link', { name: /privacy/i })).toHaveAttribute('target', '_blank');
     expect(screen.getByRole('button', { name: /get started/i })).toBeInTheDocument();
   });
 
   test('Get Started persists flag and dismisses overlay', async () => {
-    const user = userEvent.setup();
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     renderGate();
     await user.click(screen.getByRole('button', { name: /^skip$/i }));
     await user.click(screen.getByRole('button', { name: /get started/i }));
+    await vi.advanceTimersByTimeAsync(500);
     expect(localStorage.getItem(ONBOARDING_STORAGE_KEY)).toBe('1');
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });

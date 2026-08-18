@@ -61,7 +61,7 @@ export default function LoginPage() {
   return (
     <div className={cardClass}>
       <h1 className="font-display text-2xl font-extrabold tracking-tight text-navy">Log in</h1>
-      <p className="mt-1 text-sm text-muted">Find games across Pampanga.</p>
+      <p className="mt-1 text-sm text-muted">Find Volleyball games across Pampanga.</p>
       <form onSubmit={submit} className="mt-5 space-y-3">
         {error ? (
           <p

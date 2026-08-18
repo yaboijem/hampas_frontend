@@ -217,19 +217,12 @@ describe('EventApplicationsPage', () => {
   test('organizer can approve an applicant', async () => {
     const user = userEvent.setup();
     const toastSpy = vi.spyOn(notes, 'showToast').mockImplementation(() => {});
-    vi.mocked(applicationsApi.listEventApplications)
-      .mockResolvedValueOnce({
-        data: [
-          { id: 3, user: { id: 7, name: 'Ana' }, status: 'pending' },
-          { id: 4, user: { id: 8, name: 'Ben' }, status: 'approved' },
-        ],
-      })
-      .mockResolvedValueOnce({
-        data: [
-          { id: 3, user: { id: 7, name: 'Ana' }, status: 'approved' },
-          { id: 4, user: { id: 8, name: 'Ben' }, status: 'approved' },
-        ],
-      });
+    vi.mocked(applicationsApi.listEventApplications).mockResolvedValue({
+      data: [
+        { id: 3, user: { id: 7, name: 'Ana' }, status: 'pending' },
+        { id: 4, user: { id: 8, name: 'Ben' }, status: 'approved' },
+      ],
+    });
     vi.mocked(applicationsApi.approveApplication).mockResolvedValue({
       application: { id: 3, event_id: 1, user_id: 7, status: 'approved' },
     });
@@ -326,13 +319,9 @@ describe('EventApplicationsPage', () => {
   test('organizer can change an approved decision to rejected', async () => {
     const user = userEvent.setup();
     const toastSpy = vi.spyOn(notes, 'showToast').mockImplementation(() => {});
-    vi.mocked(applicationsApi.listEventApplications)
-      .mockResolvedValueOnce({
-        data: [{ id: 3, user: { id: 7, name: 'Ana' }, status: 'approved' }],
-      })
-      .mockResolvedValueOnce({
-        data: [{ id: 3, user: { id: 7, name: 'Ana' }, status: 'rejected' }],
-      });
+    vi.mocked(applicationsApi.listEventApplications).mockResolvedValue({
+      data: [{ id: 3, user: { id: 7, name: 'Ana' }, status: 'approved' }],
+    });
     vi.mocked(applicationsApi.rejectApplication).mockResolvedValue({
       application: { id: 3, event_id: 1, user_id: 7, status: 'rejected' },
     });

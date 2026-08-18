@@ -50,8 +50,8 @@ const SKILL_SELECT_CLASS: Record<PlayerSkill, { idle: string; active: string }> 
     active: 'border-emerald-600 bg-emerald-100 text-emerald-900 ring-2 ring-emerald-500/30',
   },
   intermediate: {
-    idle: 'border-blue-200/80 bg-surface text-navy hover:border-blue-400 hover:bg-blue-50',
-    active: 'border-blue-600 bg-blue-100 text-blue-900 ring-2 ring-blue-500/30',
+    idle: 'border-border bg-surface text-navy hover:border-cobalt/50 hover:bg-sky-tint/60',
+    active: 'border-cobalt bg-sky-tint text-chip-text ring-2 ring-cobalt/30',
   },
   advanced: {
     idle: 'border-border bg-surface text-navy hover:border-red-400 hover:bg-red-50',

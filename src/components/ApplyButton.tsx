@@ -83,11 +83,11 @@ export default function ApplyButton({ eventId, isOwner, visibility, myApplicatio
         <div
           data-testid="application-status-card"
           className={[
-            'flex w-full flex-col gap-3 rounded-[var(--radius-card)] border p-3 shadow-soft sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:p-4',
+            'flex w-full flex-col gap-2 rounded-[var(--radius-card)] border px-2.5 py-2 shadow-soft sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-3 sm:py-2.5',
             STATUS_CARD_CLASS[application.status],
           ].join(' ')}
         >
-          <div className="flex min-w-0 flex-1 flex-col items-start gap-2">
+          <div className="flex min-w-0 flex-1 flex-col items-start gap-1">
             <StatusBadge status={application.status} />
             <p className="text-sm leading-snug text-navy">{STATUS_HELP[application.status]}</p>
           </div>
@@ -95,7 +95,7 @@ export default function ApplyButton({ eventId, isOwner, visibility, myApplicatio
             <button
               type="button"
               onClick={handleCancel}
-              className="inline-flex min-h-11 w-full shrink-0 items-center justify-center rounded-[var(--radius-control)] border border-border bg-surface px-4 py-2 text-sm font-semibold text-navy shadow-soft transition hover:border-cobalt hover:bg-ice sm:w-auto"
+              className="inline-flex min-h-10 w-full shrink-0 items-center justify-center rounded-[var(--radius-control)] border border-border bg-surface px-3 py-1.5 text-sm font-semibold text-navy shadow-soft transition hover:border-cobalt hover:bg-ice sm:w-auto"
             >
               {application.status === 'pending' ? 'Cancel application' : 'Leave event'}
             </button>
@@ -115,7 +115,7 @@ export default function ApplyButton({ eventId, isOwner, visibility, myApplicatio
       <button
         type="button"
         onClick={handleApply}
-        className="inline-flex min-h-11 w-full items-center justify-center rounded-[var(--radius-control)] bg-cobalt px-4 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:bg-electric"
+        className="inline-flex min-h-10 w-full items-center justify-center rounded-[var(--radius-control)] bg-cobalt px-4 py-2 text-sm font-semibold text-white shadow-soft transition hover:bg-electric"
       >
         Apply
       </button>

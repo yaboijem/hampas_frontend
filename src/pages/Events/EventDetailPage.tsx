@@ -132,12 +132,25 @@ export default function EventDetailPage() {
   };
 
   return (
-    <article className={`relative mx-auto max-w-3xl ${showApplyChrome ? 'pb-36 md:pb-8' : 'pb-8'}`}>
+    <article className={`relative mx-auto max-w-3xl ${showApplyChrome ? 'pb-32 md:pb-8' : 'pb-8'}`}>
       <Link
         to="/events"
         className="mb-4 inline-flex min-h-9 items-center gap-1.5 rounded-full bg-sky-tint px-3 py-1.5 text-sm font-semibold text-chip-text transition hover:bg-cobalt/15"
       >
-        <span aria-hidden>←</span>
+        <svg
+          width={16}
+          height={16}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="shrink-0"
+          aria-hidden
+        >
+          <path d="M15 18l-6-6 6-6" />
+        </svg>
         Back to events
       </Link>
 
@@ -294,9 +307,11 @@ export default function EventDetailPage() {
         <div
           data-testid="event-sticky-cta"
           className={[
-            'fixed inset-x-0 bottom-0 z-30 border-t border-border px-4 px-safe pt-3 glass-panel',
-            'pb-safe-max-3',
-            'md:static md:z-auto md:mb-6 md:border-0 md:bg-transparent md:p-0 md:pt-0 md:shadow-none md:backdrop-blur-none',
+            'fixed z-30 rounded-[var(--radius-card)] px-2.5 py-2 shadow-soft glass-panel',
+            'bottom-[max(0.75rem,env(safe-area-inset-bottom,0px))]',
+            'left-[max(1rem,env(safe-area-inset-left,0px))]',
+            'right-[max(1rem,env(safe-area-inset-right,0px))]',
+            'md:static md:inset-auto md:z-auto md:mb-6 md:rounded-none md:bg-transparent md:p-0 md:shadow-none md:backdrop-blur-none',
           ].join(' ')}
         >
           <div className="mx-auto w-full max-w-3xl md:mx-0">

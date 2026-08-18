@@ -4,6 +4,7 @@ import { useAdminPendingCountsContext } from "../admin/AdminPendingCountsContext
 import { useAuth } from "../auth/AuthContext";
 import { showToast } from "../lib/adminNotifications";
 import AdminPendingBadge from "./AdminPendingBadge";
+import CreateEventControl from "./CreateEventControl";
 import NotificationsBell from "./NotificationsBell";
 import ThemeToggle from "./ThemeToggle";
 
@@ -20,6 +21,27 @@ const menuLinkClass = ({ isActive }: { isActive: boolean }) =>
     "block w-full rounded-[var(--radius-control)] px-3 py-3 text-sm font-medium transition-colors",
     isActive ? "bg-sky-tint text-chip-text" : "text-navy hover:bg-ice",
   ].join(" ");
+
+function LogoutIcon({ size = 20 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.75}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="shrink-0"
+      aria-hidden
+    >
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <polyline points="16 17 21 12 16 7" />
+      <line x1="21" y1="12" x2="9" y2="12" />
+    </svg>
+  );
+}
 
 export default function AppHeader() {
   const { user, loading, signOut } = useAuth();
@@ -106,18 +128,15 @@ export default function AppHeader() {
                   </span>
                 </NavLink>
               ) : null}
-              <Link
-                to="/events/new"
-                className="rounded-[var(--radius-control)] bg-cobalt px-3 py-2 text-sm font-semibold text-white shadow-soft hover:bg-electric"
-              >
-                Create event
-              </Link>
+              <CreateEventControl variant="header" />
               <button
                 type="button"
                 onClick={handleSignOut}
-                className="rounded-[var(--radius-control)] border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-100 hover:text-red-800"
+                aria-label="Log out"
+                title="Log out"
+                className="logout-btn inline-flex h-10 w-10 items-center justify-center rounded-[var(--radius-control)] border border-solid transition sm:h-11 sm:w-11"
               >
-                Log out
+                <LogoutIcon />
               </button>
             </>
           )}
@@ -213,19 +232,15 @@ export default function AppHeader() {
                           </span>
                         </NavLink>
                       ) : null}
-                      <Link
-                        to="/events/new"
-                        role="menuitem"
-                        className="mt-1 block w-full rounded-[var(--radius-control)] bg-cobalt px-3 py-3 text-center text-sm font-semibold text-white hover:bg-electric"
-                      >
-                        Create event
-                      </Link>
+                      <CreateEventControl variant="menu" />
                       <button
                         type="button"
                         role="menuitem"
                         onClick={handleSignOut}
-                        className="mt-1 block w-full rounded-[var(--radius-control)] border border-red-100 bg-red-50 px-3 py-3 text-center text-sm font-medium text-red-700 hover:bg-red-200 hover:text-red-800"
+                        aria-label="Log out"
+                        className="logout-btn mt-1 inline-flex w-full items-center justify-center gap-2 rounded-[var(--radius-control)] border border-solid px-3 py-3 text-sm font-medium transition"
                       >
+                        <LogoutIcon size={18} />
                         Log out
                       </button>
                     </>

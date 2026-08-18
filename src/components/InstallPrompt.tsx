@@ -36,7 +36,7 @@ export default function InstallPrompt() {
   return (
     <div className="fixed bottom-safe-offset-4 right-safe-offset-4 flex items-center gap-3 rounded-[var(--radius-card)] border border-border bg-surface p-4 text-navy shadow-soft">
       <span>Install Hampas on your device.</span>
-      <button onClick={install} className="bg-blue-700 px-3 py-1 text-white">Install app</button>
+      <button onClick={install} className="rounded-[var(--radius-control)] bg-cobalt px-3 py-1 text-white hover:bg-electric">Install app</button>
       <button onClick={() => setDismissed(true)} className="px-2 text-muted">Dismiss</button>
     </div>
   );

@@ -1,17 +1,18 @@
 @import "tailwindcss";
 
 @theme {
-  --color-ice: #f0f4f8;
+  /* Warm parchment / amber-stone palette */
+  --color-ice: #fffbf0;
   --color-surface: #ffffff;
-  --color-navy: #0f172a;
-  --color-cobalt: #2563eb;
-  --color-electric: #3b82f6;
-  --color-sky: #38bdf8;
-  --color-sky-tint: #e0f2fe;
-  --color-muted: #64748b;
-  --color-border: #e2e8f0;
-  --color-cyan: #06b6d4;
-  --color-chip-text: #1d4ed8;
+  --color-navy: #2a2013;
+  --color-cobalt: #d97706;
+  --color-electric: #f59e0b;
+  --color-sky: #d97706;
+  --color-sky-tint: #fef3c7;
+  --color-muted: #7a6b4e;
+  --color-border: #e8dfc8;
+  --color-cyan: #78716c;
+  --color-chip-text: #b45309;
 
   --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Archivo Black", "DM Sans", ui-sans-serif, system-ui, sans-serif;
@@ -19,35 +20,61 @@
   --radius-control: 12px;
   --radius-card: 16px;
 
-  --shadow-soft: 0 8px 30px rgb(37 99 235 / 0.08);
+  --shadow-soft: 0 8px 30px rgb(217 119 6 / 0.1);
 }
 
 :root {
-  --glass-bg: rgb(255 255 255 / 0.72);
-  --skeleton-a: #e2e8f0;
-  --skeleton-b: #f8fafc;
+  --glass-bg: rgb(255 255 255 / 0.78);
+  --skeleton-a: #e8dfc8;
+  --skeleton-b: #fffbf0;
   /* Ground ellipse under ball (light from above) */
-  --ball-ground: rgb(71 85 105 / 0.55);
+  --ball-ground: rgb(122 107 78 / 0.55);
+  /* Logout control — warm brick danger (amber family) */
+  --logout-bg: #fdf0ed;
+  --logout-fg: #c1440e;
+  --logout-border: #f5d5c8;
+  --logout-bg-hover: #fbe4dd;
 }
 
 html.dark {
   color-scheme: dark;
-  --color-ice: #0b1220;
-  --color-surface: #111827;
-  --color-navy: #e2e8f0;
-  --color-muted: #94a3b8;
-  --color-border: #1e293b;
-  --color-sky-tint: #1e3a5f;
-  --color-chip-text: #93c5fd;
-  --color-cobalt: #3b82f6;
-  --color-electric: #60a5fa;
-  --color-sky: #38bdf8;
-  --color-cyan: #22d3ee;
-  --shadow-soft: 0 8px 30px rgb(2 6 23 / 0.45);
-  --glass-bg: rgb(17 24 39 / 0.72);
-  --skeleton-a: #1e293b;
-  --skeleton-b: #334155;
-  --ball-ground: rgb(148 163 184 / 0.55);
+  --color-ice: #181410;
+  --color-surface: #231d16;
+  --color-navy: #f5eddc;
+  --color-muted: #a69b85;
+  --color-border: #3a3228;
+  --color-sky-tint: #3d2e14;
+  --color-chip-text: #fcd34d;
+  --color-cobalt: #fbbf24;
+  --color-electric: #fcd34d;
+  --color-sky: #fbbf24;
+  --color-cyan: #a8a29e;
+  --shadow-soft: 0 8px 30px rgb(0 0 0 / 0.45);
+  --glass-bg: rgb(35 29 22 / 0.78);
+  --skeleton-a: #3a3228;
+  --skeleton-b: #2a241c;
+  --ball-ground: rgb(166 155 133 / 0.55);
+  --logout-bg: #2a1712;
+  --logout-fg: #f0876a;
+  --logout-border: #3d2018;
+  --logout-bg-hover: #3a1f18;
+}
+
+/* Outside @layer so it wins over Tailwind utility border/bg/text classes */
+.logout-btn {
+  border-color: var(--logout-border) !important;
+  background-color: var(--logout-bg) !important;
+  color: var(--logout-fg) !important;
+}
+
+.logout-btn:hover {
+  background-color: var(--logout-bg-hover) !important;
+  color: var(--logout-fg) !important;
+}
+
+.logout-btn svg {
+  color: inherit;
+  stroke: currentColor;
 }
 
 @layer base {
@@ -551,7 +578,7 @@ html.dark {
   .onboarding-welcome__rule {
     position: relative;
     z-index: 1;
-    width: 3.75rem;
+    width: 8rem;
     height: 2px;
     border-radius: 9999px;
     background: linear-gradient(

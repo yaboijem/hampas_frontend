@@ -124,7 +124,7 @@ export default function OnboardingGate({ onFinished }: Props) {
             <div className="onboarding-image-scrim absolute inset-0" aria-hidden />
 
             {isFirst ? (
-              <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center px-5">
+              <div className="pointer-events-none absolute inset-0 z-10 flex -translate-y-[5%] items-center justify-center px-5">
                 <div
                   className="onboarding-welcome"
                   role="group"
@@ -138,21 +138,31 @@ export default function OnboardingGate({ onFinished }: Props) {
               </div>
             ) : null}
 
-            <div className="onboarding-copy relative z-10 mt-auto flex flex-col gap-3 px-6 px-safe pb-24 pt-16 sm:px-10 sm:pb-28">
-              <h1 id="onboarding-title" className="onboarding-slide-title">
-                {slide.title}
-              </h1>
-              <p className="onboarding-slide-body max-w-md">{slide.body}</p>
+            <div className="onboarding-copy relative z-10 mt-auto w-full pb-24 pt-16 sm:pb-28">
+              <div className="mx-auto flex w-full max-w-lg flex-col items-center gap-3 pl-[max(1.5rem,env(safe-area-inset-left,0px))] pr-[max(1.5rem,env(safe-area-inset-right,0px))] text-center sm:pl-[max(2.5rem,env(safe-area-inset-left,0px))] sm:pr-[max(2.5rem,env(safe-area-inset-right,0px))]">
+                <h1 id="onboarding-title" className="onboarding-slide-title">
+                  {slide.title}
+                </h1>
+                <p className="onboarding-slide-body max-w-md">{slide.body}</p>
+              </div>
             </div>
           </>
         ) : (
           <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-ice text-navy pt-safe">
-            <div className="mx-auto flex w-full max-w-lg flex-1 flex-col gap-6 px-6 px-safe py-10 pb-28 sm:px-8 sm:py-12">
-              <h1 id="onboarding-title" className="onboarding-slide-title onboarding-slide-title--dark">
-                {slide.title}
-              </h1>
+            <div className="mx-auto flex w-full max-w-lg flex-1 flex-col gap-6 pl-[max(1.5rem,env(safe-area-inset-left,0px))] pr-[max(1.5rem,env(safe-area-inset-right,0px))] py-10 pb-28 text-center sm:pl-[max(2rem,env(safe-area-inset-left,0px))] sm:pr-[max(2rem,env(safe-area-inset-right,0px))] sm:py-12">
+              <div className="space-y-1">
+                <p className="text-xs font-bold uppercase tracking-wider text-chip-text">
+                  IMPORTANT NOTICE
+                </p>
+                <h1
+                  id="onboarding-title"
+                  className="onboarding-slide-title onboarding-slide-title--dark"
+                >
+                  {slide.title}
+                </h1>
+              </div>
 
-              <section className="space-y-2">
+              <section className="space-y-2 text-left">
                 <h2 className="text-xs font-bold uppercase tracking-wide text-chip-text">
                   Features
                 </h2>
@@ -163,7 +173,7 @@ export default function OnboardingGate({ onFinished }: Props) {
                 </ul>
               </section>
 
-              <section className="space-y-2">
+              <section className="space-y-2 text-left">
                 <h2 className="text-xs font-bold uppercase tracking-wide text-chip-text">
                   Policies
                 </h2>
@@ -191,7 +201,7 @@ export default function OnboardingGate({ onFinished }: Props) {
                   rel="noopener noreferrer"
                   className="font-semibold text-cobalt underline"
                 >
-                  Privacy Policy
+                  Privacy&nbsp;Policy
                 </a>
                 .
               </p>
@@ -200,7 +210,7 @@ export default function OnboardingGate({ onFinished }: Props) {
                 type="button"
                 onClick={complete}
                 data-no-nav
-                className={`${ghostBtnDark} w-full border border-navy/25 sm:w-auto`}
+                className={`${ghostBtnDark} mx-auto w-full border border-navy/25 sm:w-auto`}
               >
                 Get Started
               </button>
@@ -209,7 +219,7 @@ export default function OnboardingGate({ onFinished }: Props) {
         )}
 
         <div
-          className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex items-center justify-between gap-3 px-5 px-safe pt-5 pb-safe-max-5 sm:px-10"
+          className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex items-center justify-between gap-3 pl-[max(1.25rem,env(safe-area-inset-left,0px))] pr-[max(1.25rem,env(safe-area-inset-right,0px))] pt-5 pb-safe-max-5 sm:pl-[max(2.5rem,env(safe-area-inset-left,0px))] sm:pr-[max(2.5rem,env(safe-area-inset-right,0px))]"
           data-no-nav
         >
           {slide.kind === 'image' ? (
@@ -217,11 +227,16 @@ export default function OnboardingGate({ onFinished }: Props) {
               <button
                 type="button"
                 onClick={skipToPolicies}
-                className={`${ghostBtn} pointer-events-auto text-white/90 hover:text-white`}
+                className={`${ghostBtn} pointer-events-auto text-white/50 hover:text-white ${
+                  isFirst ? 'invisible' : ''
+                }`}
               >
                 Skip
               </button>
-              <div className="flex items-center gap-2" aria-label="Progress">
+              <div
+                className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-2"
+                aria-label="Progress"
+              >
                 {ONBOARDING_SLIDES.map((s, i) => (
                   <span
                     key={s.id}
@@ -239,7 +254,9 @@ export default function OnboardingGate({ onFinished }: Props) {
                   type="button"
                   onClick={goPrev}
                   disabled={isFirst}
-                  className={`${ghostBtn} text-white/90 hover:text-white disabled:opacity-30`}
+                  className={`${ghostBtn} text-white/50 hover:text-white disabled:opacity-30 ${
+                    isFirst ? 'invisible' : ''
+                  }`}
                   aria-label="Previous slide"
                 >
                   Prev
@@ -248,7 +265,7 @@ export default function OnboardingGate({ onFinished }: Props) {
                   type="button"
                   onClick={goNext}
                   disabled={isLast}
-                  className={`${ghostBtn} text-white hover:text-white disabled:opacity-30`}
+                  className={`${ghostBtn} text-white/60 hover:text-white disabled:opacity-30`}
                   aria-label="Next slide"
                 >
                   Next
@@ -260,7 +277,7 @@ export default function OnboardingGate({ onFinished }: Props) {
               <button
                 type="button"
                 onClick={goPrev}
-                className={`${ghostBtnDark} pointer-events-auto`}
+                className={`${ghostBtnDark} pointer-events-auto opacity-55 hover:opacity-100`}
                 aria-label="Previous slide"
               >
                 Prev

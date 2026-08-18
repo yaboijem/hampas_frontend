@@ -248,13 +248,19 @@ export default function EventApplicationsPage() {
     setError(null);
     setBusyId(applicationId);
     try {
-      if (status === 'approved') {
-        await approveApplication(eventId, applicationId);
-      } else {
-        await rejectApplication(eventId, applicationId);
-      }
-      const { data } = await listEventApplications(eventId);
-      setApplicants(sortApplicants(data));
+      const { application } =
+        status === 'approved'
+          ? await approveApplication(eventId, applicationId)
+          : await rejectApplication(eventId, applicationId);
+      const nextStatus = application.status;
+      setApplicants((prev) =>
+        sortApplicants(
+          prev.map((a) => (a.id === applicationId ? { ...a, status: nextStatus } : a)),
+        ),
+      );
+      setSelected((sel) =>
+        sel?.id === applicationId ? { ...sel, status: nextStatus } : sel,
+      );
       showToast(status === 'approved' ? `${name} approved` : `${name} rejected`);
       requestEventDetailRefresh(eventId);
     } catch (err) {
