@@ -8,6 +8,7 @@ vi.mock('../api/notifications', () => ({
   listNotifications: vi.fn(),
   unreadNotificationCount: vi.fn(),
   markNotificationsRead: vi.fn(),
+  deleteNotification: vi.fn(),
 }));
 
 const auth = vi.hoisted(() => ({
@@ -131,7 +132,7 @@ describe('NotificationsProvider', () => {
     await waitFor(() => expect(screen.getByTestId('count')).toHaveTextContent('0'));
 
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(30_000);
+      await vi.advanceTimersByTimeAsync(8_000);
     });
 
     await waitFor(() =>

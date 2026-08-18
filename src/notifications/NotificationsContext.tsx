@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from 'react';
 import {
+  deleteNotification,
   listNotifications,
   markNotificationsRead,
   unreadNotificationCount,
@@ -17,7 +18,7 @@ import type { AppNotification } from '../api/types';
 import { useAuth } from '../auth/AuthContext';
 import { showToast } from '../lib/adminNotifications';
 
-const POLL_MS = 30_000;
+const POLL_MS = 8_000;
 
 type Ctx = {
   unreadCount: number;
@@ -26,6 +27,7 @@ type Ctx = {
   refresh: () => Promise<void>;
   markRead: (ids: number[]) => Promise<void>;
   markAllRead: () => Promise<void>;
+  removeNotification: (id: number) => Promise<void>;
 };
 
 const NotificationsContext = createContext<Ctx | null>(null);
@@ -80,30 +82,77 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     void refresh();
     const id = window.setInterval(() => void refresh(), POLL_MS);
     const onFocus = () => void refresh();
+    const onVis = () => {
+      if (document.visibilityState === 'visible') void refresh();
+    };
     window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVis);
     return () => {
       window.clearInterval(id);
       window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVis);
     };
   }, [user, refresh]);
 
   const markRead = useCallback(
     async (ids: number[]) => {
       if (!ids.length) return;
-      await markNotificationsRead({ ids });
-      await refresh();
+      setItems((prev) =>
+        prev.map((n) =>
+          ids.includes(n.id) && !n.read_at
+            ? { ...n, read_at: new Date().toISOString() }
+            : n,
+        ),
+      );
+      setUnreadCount((c) => Math.max(0, c - ids.length));
+      try {
+        await markNotificationsRead({ ids });
+      } catch {
+        await refresh();
+      }
     },
     [refresh],
   );
 
   const markAllRead = useCallback(async () => {
-    await markNotificationsRead({ all: true });
-    await refresh();
+    setItems((prev) =>
+      prev.map((n) => (n.read_at ? n : { ...n, read_at: new Date().toISOString() })),
+    );
+    setUnreadCount(0);
+    try {
+      await markNotificationsRead({ all: true });
+    } catch {
+      await refresh();
+    }
   }, [refresh]);
 
+  const removeNotification = useCallback(
+    async (id: number) => {
+      const target = items.find((n) => n.id === id);
+      setItems((prev) => prev.filter((n) => n.id !== id));
+      if (target && !target.read_at) {
+        setUnreadCount((c) => Math.max(0, c - 1));
+      }
+      try {
+        await deleteNotification(id);
+      } catch {
+        await refresh();
+      }
+    },
+    [items, refresh],
+  );
+
   const value = useMemo(
-    () => ({ unreadCount, items, loading, refresh, markRead, markAllRead }),
-    [unreadCount, items, loading, refresh, markRead, markAllRead],
+    () => ({
+      unreadCount,
+      items,
+      loading,
+      refresh,
+      markRead,
+      markAllRead,
+      removeNotification,
+    }),
+    [unreadCount, items, loading, refresh, markRead, markAllRead, removeNotification],
   );
 
   return (

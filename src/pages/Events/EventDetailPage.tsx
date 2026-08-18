@@ -171,16 +171,13 @@ export default function EventDetailPage() {
             >
               Players
             </h2>
-            <ul className="flex flex-wrap gap-2">
+            <ol className="list-decimal space-y-1.5 pl-5 text-sm text-navy">
               {event.approved_participants.map((p) => (
-                <li
-                  key={p.id}
-                  className="rounded-full border border-border bg-sky-tint px-3 py-1 text-sm font-medium text-chip-text"
-                >
+                <li key={p.id} className="pl-1 font-medium">
                   {p.name}
                 </li>
               ))}
-            </ul>
+            </ol>
           </section>
         )}
 

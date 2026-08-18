@@ -9,10 +9,10 @@ import {
 } from 'react';
 import {
   applyResolvedTheme,
-  cyclePreference as nextPreference,
   getSystemDark,
   readStoredPreference,
   resolveTheme,
+  toggleResolvedTheme,
   writeStoredPreference,
   type ResolvedTheme,
   type ThemePreference,
@@ -23,6 +23,7 @@ interface ThemeValue {
   resolvedTheme: ResolvedTheme;
   setPreference: (preference: ThemePreference) => void;
   cyclePreference: () => void;
+  toggleTheme: () => void;
 }
 
 const ThemeContext = createContext<ThemeValue | null>(null);
@@ -56,17 +57,19 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     writeStoredPreference(next);
   }, []);
 
-  const cyclePreference = useCallback(() => {
-    setPreferenceState((current) => {
-      const next = nextPreference(current);
+  const toggleTheme = useCallback(() => {
+    setPreferenceState(() => {
+      const next = toggleResolvedTheme(resolvedTheme);
       writeStoredPreference(next);
       return next;
     });
-  }, []);
+  }, [resolvedTheme]);
+
+  const cyclePreference = toggleTheme;
 
   const value = useMemo(
-    () => ({ preference, resolvedTheme, setPreference, cyclePreference }),
-    [preference, resolvedTheme, setPreference, cyclePreference],
+    () => ({ preference, resolvedTheme, setPreference, cyclePreference, toggleTheme }),
+    [preference, resolvedTheme, setPreference, cyclePreference, toggleTheme],
   );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;

@@ -28,6 +28,8 @@ function RowSkeleton() {
 export default function MyApplicationsPage() {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
+  const [busyId, setBusyId] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const load = () =>
     myApplications()
@@ -38,9 +40,17 @@ export default function MyApplicationsPage() {
     void load();
   }, []);
 
-  const cancel = async (eventId: number) => {
-    await cancelApplication(eventId);
-    await load();
+  const remove = async (eventId: number, applicationId: number) => {
+    setError(null);
+    setBusyId(applicationId);
+    try {
+      await cancelApplication(eventId);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not delete application.');
+    } finally {
+      setBusyId(null);
+    }
   };
 
   if (loading) {
@@ -61,6 +71,15 @@ export default function MyApplicationsPage() {
         <h1 className="font-display text-3xl font-extrabold tracking-tight text-navy">My Applications</h1>
         <p className="text-sm text-muted">Events you’ve applied to</p>
       </header>
+
+      {error && (
+        <p
+          role="alert"
+          className="rounded-[var(--radius-control)] border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200"
+        >
+          {error}
+        </p>
+      )}
 
       {rows.length === 0 ? (
         <div className="rounded-[var(--radius-card)] border border-dashed border-border bg-surface px-6 py-16 text-center">
@@ -90,15 +109,14 @@ export default function MyApplicationsPage() {
               </div>
               <div className="flex flex-wrap items-center gap-3">
                 <StatusBadge status={row.status} />
-                {row.status === 'pending' && (
-                  <button
-                    type="button"
-                    onClick={() => cancel(row.event.id)}
-                    className="inline-flex min-h-11 items-center rounded-[var(--radius-control)] border border-border bg-surface px-4 py-2 text-sm font-medium text-muted hover:text-navy"
-                  >
-                    Cancel
-                  </button>
-                )}
+                <button
+                  type="button"
+                  disabled={busyId === row.id}
+                  onClick={() => void remove(row.event.id, row.id)}
+                  className="inline-flex min-h-11 items-center rounded-[var(--radius-control)] border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-100 disabled:opacity-60"
+                >
+                  Delete
+                </button>
               </div>
             </li>
           ))}

@@ -41,6 +41,11 @@ export function cyclePreference(current: ThemePreference): ThemePreference {
   return 'system';
 }
 
+/** One-click flip: light ↔ dark (ignores system middle step). */
+export function toggleResolvedTheme(resolved: ResolvedTheme): ThemePreference {
+  return resolved === 'dark' ? 'light' : 'dark';
+}
+
 export function applyResolvedTheme(
   resolved: ResolvedTheme,
   root: HTMLElement = document.documentElement,

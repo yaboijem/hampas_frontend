@@ -265,10 +265,45 @@ describe('MyApplicationsPage', () => {
     expect(screen.getByRole('link', { name: /friday league/i })).toHaveAttribute('href', '/events/11');
     expect(screen.getByText('Pending')).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: /^cancel$/i }));
+    await user.click(screen.getByRole('button', { name: /^delete$/i }));
     await waitFor(() => expect(applicationsApi.cancelApplication).toHaveBeenCalledWith(11));
     expect(await screen.findByText(/not applied to any events/i)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /browse events/i })).toHaveAttribute('href', '/events');
+  });
+
+  test('can delete an approved application from the list', async () => {
+    const user = userEvent.setup();
+    const event = {
+      id: 12,
+      title: 'Saturday Cup',
+      description: 'x',
+      event_type: 'open_play' as const,
+      skill_level: 'all_levels' as const,
+      barangay: null,
+      city: 'Angeles City',
+      starts_at: '2026-09-02T18:00:00.000Z',
+      photo_url: null,
+      visibility: 'live' as const,
+      is_owner: false,
+      my_application: null,
+      created_by: { id: 1, name: 'Org' },
+    };
+    vi.mocked(applicationsApi.myApplications)
+      .mockResolvedValueOnce({ data: [{ id: 21, status: 'approved', event }] })
+      .mockResolvedValueOnce({ data: [] });
+    vi.mocked(applicationsApi.cancelApplication).mockResolvedValue(undefined);
+
+    render(
+      <MemoryRouter initialEntries={['/me/applications']}>
+        <Routes>
+          <Route path="/me/applications" element={<MyApplicationsPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    await user.click(await screen.findByRole('button', { name: /^delete$/i }));
+    await waitFor(() => expect(applicationsApi.cancelApplication).toHaveBeenCalledWith(12));
+    expect(await screen.findByText(/not applied to any events/i)).toBeInTheDocument();
   });
 
   test('shows empty state when none', async () => {

@@ -204,6 +204,8 @@ describe('EventDetailPage', () => {
     });
     renderDetail();
     expect(await screen.findByRole('heading', { name: /^players$/i })).toBeInTheDocument();
+    const players = screen.getByRole('heading', { name: /^players$/i }).closest('section');
+    expect(players?.querySelector('ol')).not.toBeNull();
     expect(screen.getByText('Ana')).toBeInTheDocument();
     expect(screen.getByText('Ben')).toBeInTheDocument();
   });

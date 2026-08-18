@@ -9,6 +9,7 @@ import {
   isThemePreference,
   readStoredPreference,
   resolveTheme,
+  toggleResolvedTheme,
   writeStoredPreference,
 } from '../theme/theme';
 import { ThemeProvider, useTheme } from '../theme/ThemeContext';
@@ -70,6 +71,11 @@ test('cyclePreference order is system → light → dark → system', () => {
   expect(cyclePreference('dark')).toBe('system');
 });
 
+test('toggleResolvedTheme flips light and dark in one step', () => {
+  expect(toggleResolvedTheme('light')).toBe('dark');
+  expect(toggleResolvedTheme('dark')).toBe('light');
+});
+
 test('applyResolvedTheme toggles html.dark', () => {
   applyResolvedTheme('dark');
   expect(document.documentElement.classList.contains('dark')).toBe(true);
@@ -86,14 +92,14 @@ test('ThemeProvider defaults to system and applies resolved class', () => {
   expect(document.documentElement.classList.contains('dark')).toBe(true);
 });
 
-test('cyclePreference updates storage and class', async () => {
+test('toggleTheme flips resolved theme in one click', async () => {
   mockMatchMedia(false);
 
   function Probe() {
-    const { preference, cyclePreference: cycle } = useTheme();
+    const { resolvedTheme, toggleTheme } = useTheme();
     return (
-      <button type="button" onClick={cycle}>
-        Theme: {preference[0].toUpperCase() + preference.slice(1)}
+      <button type="button" onClick={toggleTheme}>
+        Resolved: {resolvedTheme}
       </button>
     );
   }
@@ -105,13 +111,13 @@ test('cyclePreference updates storage and class', async () => {
     </ThemeProvider>,
   );
 
-  const button = screen.getByRole('button', { name: /theme: system/i });
-  await user.click(button);
-  expect(screen.getByRole('button', { name: /theme: light/i })).toBeInTheDocument();
-  expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe('light');
-  expect(document.documentElement.classList.contains('dark')).toBe(false);
-
-  await user.click(screen.getByRole('button', { name: /theme: light/i }));
+  expect(screen.getByRole('button', { name: /resolved: light/i })).toBeInTheDocument();
+  await user.click(screen.getByRole('button', { name: /resolved: light/i }));
   expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe('dark');
   expect(document.documentElement.classList.contains('dark')).toBe(true);
+  expect(screen.getByRole('button', { name: /resolved: dark/i })).toBeInTheDocument();
+
+  await user.click(screen.getByRole('button', { name: /resolved: dark/i }));
+  expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe('light');
+  expect(document.documentElement.classList.contains('dark')).toBe(false);
 });

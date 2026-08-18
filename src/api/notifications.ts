@@ -16,3 +16,7 @@ export async function markNotificationsRead(
 ): Promise<void> {
   await api.post('/me/notifications/read', body);
 }
+
+export async function deleteNotification(id: number): Promise<void> {
+  await api.delete(`/me/notifications/${id}`);
+}

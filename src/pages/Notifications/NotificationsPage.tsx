@@ -2,7 +2,8 @@ import { useNavigate } from 'react-router-dom';
 import { useNotifications } from '../../notifications/NotificationsContext';
 
 export default function NotificationsPage() {
-  const { items, unreadCount, markRead, markAllRead, loading } = useNotifications();
+  const { items, unreadCount, markRead, markAllRead, removeNotification, loading } =
+    useNotifications();
   const navigate = useNavigate();
 
   const openItem = async (id: number, eventId?: number) => {
@@ -41,21 +42,38 @@ export default function NotificationsPage() {
       ) : (
         <ul className="space-y-2">
           {items.map((n) => (
-            <li key={n.id}>
+            <li
+              key={n.id}
+              className={[
+                'flex items-start gap-2 rounded-[var(--radius-card)] border border-border bg-surface px-3 py-3 shadow-soft sm:px-4',
+                n.read_at ? 'opacity-80' : '',
+              ].join(' ')}
+            >
               <button
                 type="button"
                 onClick={() => void openItem(n.id, n.data?.event_id)}
-                className={[
-                  'w-full rounded-[var(--radius-card)] border border-border bg-surface px-4 py-3 text-left shadow-soft transition hover:border-cobalt',
-                  n.read_at ? 'opacity-80' : '',
-                ].join(' ')}
+                className="min-w-0 flex-1 text-left"
               >
-                <p className={n.read_at ? 'text-sm text-muted' : 'text-sm font-medium text-navy'}>
+                <p
+                  className={
+                    n.read_at
+                      ? 'text-sm break-words text-muted'
+                      : 'text-sm font-medium break-words text-navy'
+                  }
+                >
                   {n.message}
                 </p>
                 <p className="mt-1 text-xs text-muted">
                   {new Date(n.created_at).toLocaleString()}
                 </p>
+              </button>
+              <button
+                type="button"
+                aria-label="Delete notification"
+                onClick={() => void removeNotification(n.id)}
+                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-control)] text-xl leading-none text-muted hover:bg-ice hover:text-navy"
+              >
+                ×
               </button>
             </li>
           ))}

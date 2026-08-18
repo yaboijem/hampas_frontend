@@ -62,24 +62,24 @@ export default function AppHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-border glass-panel">
       <nav
-        className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-4 py-3 sm:gap-3 sm:px-6"
+        className="mx-auto flex max-w-6xl items-center gap-2 px-3 py-3 sm:gap-3 sm:px-6"
         aria-label="Main"
       >
-        <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
+        <div className="flex min-w-0 flex-1 items-center gap-1.5 sm:gap-3">
           <span
-            className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-cobalt text-4xl text-white"
+            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-cobalt text-2xl text-white sm:h-8 sm:w-8 sm:text-4xl"
             aria-hidden
           >
             🏐
           </span>
-          <div className="flex min-w-0 shrink-0 flex-col justify-center pl-1">
+          <div className="min-w-0 flex-1 flex-col justify-center pl-0.5 sm:pl-1">
             <Link
               to="/events"
-              className="font-display flex shrink-0 items-center gap-3 text-3xl leading-tight font-extrabold tracking-tight text-navy"
+              className="font-display block truncate text-xl leading-tight font-extrabold tracking-tight text-navy sm:text-3xl"
             >
               HAMPAS
             </Link>
-            <span className="font-display block text-xs font-extrabold leading-tight tracking-wider text-muted">
+            <span className="font-display hidden text-xs font-extrabold leading-tight tracking-wider text-muted sm:block">
               FIND · PLAY · ENJOY
             </span>
           </div>
@@ -134,15 +134,15 @@ export default function AppHeader() {
           )}
         </div>
 
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
           {!loading && user ? <NotificationsBell /> : null}
-          <ThemeToggle />
+          <ThemeToggle className="!h-10 !w-10 !px-0 sm:!h-11 sm:!w-11" />
 
           {/* Mobile hamburger */}
           <div className="relative md:hidden">
             <button
               type="button"
-              className="inline-flex h-11 w-11 items-center justify-center rounded-[var(--radius-control)] border border-border bg-surface text-navy"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-[var(--radius-control)] border border-border bg-surface text-navy sm:h-11 sm:w-11"
               aria-expanded={menuOpen}
               aria-controls={menuId}
               aria-label={menuOpen ? "Close menu" : "Open menu"}
