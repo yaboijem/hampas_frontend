@@ -345,29 +345,26 @@ export default function EventApplicationsPage() {
             </p>
           </div>
         </div>
-        <div
+        <p
           role="note"
           aria-label="Action icon legend"
-          className="flex flex-wrap items-center gap-2 rounded-[var(--radius-card)] border border-border/80 bg-ice/70 px-3 py-2.5 sm:gap-3 sm:px-4"
+          className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted"
         >
-          <p className="w-full text-[11px] font-semibold uppercase tracking-wide text-muted sm:w-auto sm:mr-1">
-            Actions
-          </p>
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-surface px-2.5 py-1 text-xs font-medium text-navy shadow-soft">
+          <span className="inline-flex items-center gap-1">
             <CheckIcon className="text-emerald-600 dark:text-emerald-400" />
             Approve
           </span>
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-red-500/20 bg-surface px-2.5 py-1 text-xs font-medium text-navy shadow-soft">
+          <span className="inline-flex items-center gap-1">
             <CrossIcon className="text-red-600 dark:text-red-400" />
             Reject
           </span>
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 py-1 text-xs font-medium text-navy shadow-soft">
-            <span className="inline-flex h-[18px] w-[18px] items-center justify-center text-base leading-none text-muted" aria-hidden>
+          <span className="inline-flex items-center gap-1">
+            <span className="inline-flex h-[18px] w-4 items-center justify-center text-sm leading-none" aria-hidden>
               ×
             </span>
             Remove
           </span>
-        </div>
+        </p>
       </header>
 
       {error && (
