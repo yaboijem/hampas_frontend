@@ -76,7 +76,9 @@ export default function EventApplicationsPage() {
       setApplicants(data);
       showToast(status === 'approved' ? `${name} approved` : `${name} rejected`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not update application.');
+      const msg = err instanceof Error ? err.message : 'Could not update application.';
+      setError(msg);
+      showToast(msg, 'error');
     } finally {
       setBusyId(null);
     }
@@ -89,8 +91,15 @@ export default function EventApplicationsPage() {
     try {
       const res = await setParticipantsVisibility(eventId, next);
       setShowPublic(res.show_participants_publicly);
+      showToast(
+        res.show_participants_publicly
+          ? 'Approved players are now public.'
+          : 'Approved players are now private.',
+      );
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not update visibility.');
+      const msg = err instanceof Error ? err.message : 'Could not update visibility.';
+      setError(msg);
+      showToast(msg, 'error');
     } finally {
       setVisibilityBusy(false);
     }

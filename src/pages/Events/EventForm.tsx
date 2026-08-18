@@ -7,6 +7,7 @@ import {
   PAMPANGA_CITIES,
   cityCenter,
 } from '../../data/pampanga';
+import { showToast } from '../../lib/adminNotifications';
 
 interface Props {
   initial?: EventItem | null;
@@ -143,8 +144,11 @@ export default function EventForm({ initial = null, onSubmit, submitLabel }: Pro
     setSubmitting(true);
     try {
       await onSubmit(form);
+      showToast(initial ? 'Event updated.' : 'Event created.');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save event.');
+      const msg = err instanceof Error ? err.message : 'Failed to save event.';
+      setError(msg);
+      showToast(msg, 'error');
     } finally {
       setSubmitting(false);
     }

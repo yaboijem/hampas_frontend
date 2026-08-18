@@ -67,7 +67,8 @@ export default function AppHeader() {
       >
         <div className="flex min-w-0 flex-1 items-center gap-1.5 sm:gap-3">
           <span
-            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-cobalt text-2xl text-white sm:h-8 sm:w-8 sm:text-4xl"
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center text-[1.75rem] leading-none sm:h-9 sm:w-9 sm:text-4xl"
+            style={{ filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.28))' }}
             aria-hidden
           >
             🏐
@@ -79,7 +80,7 @@ export default function AppHeader() {
             >
               HAMPAS
             </Link>
-            <span className="font-display hidden text-xs font-extrabold leading-tight tracking-wider text-muted sm:block">
+            <span className="font-display block truncate text-[0.65rem] font-extrabold leading-tight tracking-wider text-muted sm:text-xs">
               FIND · PLAY · ENJOY
             </span>
           </div>

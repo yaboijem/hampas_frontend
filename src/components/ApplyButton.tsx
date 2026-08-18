@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { apply, cancelApplication } from '../api/applications';
 import { useAuth } from '../auth/AuthContext';
+import { showToast } from '../lib/adminNotifications';
 import StatusBadge from './StatusBadge';
 import type { ApplicationStatus } from '../api/types';
 
@@ -30,8 +31,11 @@ export default function ApplyButton({ eventId, isOwner, visibility, myApplicatio
     try {
       const { application: next } = await apply(eventId);
       setApplication(next);
+      showToast('Application submitted.');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Apply failed.');
+      const msg = err instanceof Error ? err.message : 'Apply failed.';
+      setError(msg);
+      showToast(msg, 'error');
     }
   };
 
@@ -40,8 +44,11 @@ export default function ApplyButton({ eventId, isOwner, visibility, myApplicatio
     try {
       await cancelApplication(eventId);
       setApplication(null);
+      showToast('Application cancelled.');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Cancel failed.');
+      const msg = err instanceof Error ? err.message : 'Cancel failed.';
+      setError(msg);
+      showToast(msg, 'error');
     }
   };
 

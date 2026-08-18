@@ -5,6 +5,13 @@ export type AdminPendingCounts = {
   total: number;
 };
 
+export type ToastKind = 'success' | 'error';
+
+export type ToastPayload = {
+  message: string;
+  kind: ToastKind;
+};
+
 export function emptyCounts(): AdminPendingCounts {
   return { coach: 0, organizer: 0, events: 0, total: 0 };
 }
@@ -33,7 +40,7 @@ export function buildIncreaseMessages(
   return parts.length ? parts.join(', ') : null;
 }
 
-type Listener = (message: string | null) => void;
+type Listener = (toast: ToastPayload | null) => void;
 const listeners = new Set<Listener>();
 
 export function subscribeToasts(listener: Listener): () => void {
@@ -43,6 +50,7 @@ export function subscribeToasts(listener: Listener): () => void {
   };
 }
 
-export function showToast(message: string): void {
-  for (const l of listeners) l(message);
+export function showToast(message: string, kind: ToastKind = 'success'): void {
+  const payload: ToastPayload = { message, kind };
+  for (const l of listeners) l(payload);
 }

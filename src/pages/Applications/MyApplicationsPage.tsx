@@ -4,6 +4,7 @@ import { cancelApplication, myApplications } from '../../api/applications';
 import StatusBadge from '../../components/StatusBadge';
 import type { ApplicationStatus, EventItem } from '../../api/types';
 import { formatEventWhen } from '../../events/eventLabels';
+import { showToast } from '../../lib/adminNotifications';
 
 interface Row {
   id: number;
@@ -46,8 +47,11 @@ export default function MyApplicationsPage() {
     try {
       await cancelApplication(eventId);
       await load();
+      showToast('Application removed.');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not delete application.');
+      const msg = err instanceof Error ? err.message : 'Could not delete application.';
+      setError(msg);
+      showToast(msg, 'error');
     } finally {
       setBusyId(null);
     }

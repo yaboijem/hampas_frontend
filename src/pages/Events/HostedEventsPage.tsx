@@ -6,7 +6,7 @@ import { formatEventPlace, formatEventWhen } from '../../events/eventLabels';
 
 function RowSkeleton() {
   return (
-    <div className="rounded-[var(--radius-card)] border border-border bg-surface p-4 shadow-soft">
+    <div className="rounded-[var(--radius-card)] border border-border bg-surface p-3 shadow-soft sm:p-4">
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0 flex-1 space-y-2">
           <div className="skeleton-shimmer h-5 w-2/3 rounded" />
@@ -17,6 +17,9 @@ function RowSkeleton() {
     </div>
   );
 }
+
+const actionClass =
+  'inline-flex min-h-11 w-full items-center justify-center rounded-[var(--radius-control)] border border-border bg-surface px-3 py-2 text-sm font-medium text-navy hover:border-cobalt sm:w-auto';
 
 export default function HostedEventsPage() {
   const [events, setEvents] = useState<EventItem[]>([]);
@@ -46,7 +49,11 @@ export default function HostedEventsPage() {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-3xl space-y-3 p-6" aria-busy="true" aria-label="Loading hosted events">
+      <div
+        className="mx-auto max-w-3xl space-y-3 px-0 py-2 sm:p-6"
+        aria-busy="true"
+        aria-label="Loading hosted events"
+      >
         <div className="skeleton-shimmer mb-2 h-8 w-48 rounded" />
         <div className="skeleton-shimmer mb-4 h-4 w-40 rounded" />
         <RowSkeleton />
@@ -57,9 +64,11 @@ export default function HostedEventsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-4 p-6">
+    <div className="mx-auto max-w-3xl space-y-4 px-0 py-2 sm:p-6">
       <header className="space-y-1">
-        <h1 className="font-display text-3xl font-extrabold tracking-tight text-navy">Hosted events</h1>
+        <h1 className="font-display text-2xl font-extrabold tracking-tight text-navy sm:text-3xl">
+          Hosted events
+        </h1>
         <p className="text-sm text-muted">Events you created</p>
       </header>
 
@@ -90,17 +99,17 @@ export default function HostedEventsPage() {
             return (
               <li
                 key={event.id}
-                className="rounded-[var(--radius-card)] border border-border bg-surface p-4 shadow-soft"
+                className="rounded-[var(--radius-card)] border border-border bg-surface p-3 shadow-soft sm:p-4"
               >
-                <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0 flex-1 space-y-1">
                     <Link
                       to={`/events/${event.id}`}
-                      className="font-semibold text-navy hover:text-cobalt hover:underline"
+                      className="block break-words font-semibold text-navy hover:text-cobalt hover:underline"
                     >
                       {event.title}
                     </Link>
-                    <p className="text-sm text-muted">
+                    <p className="text-sm text-muted break-words">
                       {when}
                       {place ? ` · ${place}` : ''}
                     </p>
@@ -110,24 +119,18 @@ export default function HostedEventsPage() {
                       </p>
                     )}
                   </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Link
-                      to={`/events/${event.id}`}
-                      className="inline-flex min-h-11 items-center rounded-[var(--radius-control)] border border-border bg-surface px-3 py-2 text-sm font-medium text-navy hover:border-cobalt"
-                    >
+                  <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center">
+                    <Link to={`/events/${event.id}`} className={actionClass}>
                       View
+                    </Link>
+                    <Link to={`/events/${event.id}/edit`} className={actionClass}>
+                      Edit
                     </Link>
                     <Link
                       to={`/events/${event.id}/applications`}
-                      className="inline-flex min-h-11 items-center rounded-[var(--radius-control)] border border-border bg-surface px-3 py-2 text-sm font-medium text-navy hover:border-cobalt"
+                      className={`${actionClass} col-span-2 sm:col-span-1`}
                     >
                       Manage applications
-                    </Link>
-                    <Link
-                      to={`/events/${event.id}/edit`}
-                      className="inline-flex min-h-11 items-center rounded-[var(--radius-control)] border border-border bg-surface px-3 py-2 text-sm font-medium text-navy hover:border-cobalt"
-                    >
-                      Edit
                     </Link>
                   </div>
                 </div>

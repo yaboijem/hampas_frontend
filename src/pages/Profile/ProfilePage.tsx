@@ -25,6 +25,7 @@ import { PLAYER_POSITIONS } from '../../api/types';
 import PasswordField from '../../components/PasswordField';
 import PasswordRules from '../../components/PasswordRules';
 import { SKILL_BADGE_CLASS, SKILL_LABEL } from '../../events/eventLabels';
+import { showToast } from '../../lib/adminNotifications';
 import { passwordFormValid } from '../../lib/passwordRules';
 
 const ROLE_META: Record<Role, { label: string; emoji: string }> = {
@@ -403,8 +404,11 @@ export default function ProfilePage() {
       updateUser(next);
       resetPasswordUi();
       setEditing((e) => ({ ...e, account: false }));
+      showToast('Account updated.');
     } catch (err) {
-      setError(apiErrorMessage(err, 'Failed to save account.'));
+      const msg = apiErrorMessage(err, 'Failed to save account.');
+      setError(msg);
+      showToast(msg, 'error');
     } finally {
       setSavingAccount(false);
     }
@@ -475,8 +479,11 @@ export default function ProfilePage() {
       });
       await load();
       setEditing((e) => ({ ...e, player: false }));
+      showToast('Player details saved.');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save.');
+      const msg = err instanceof Error ? err.message : 'Failed to save.';
+      setError(msg);
+      showToast(msg, 'error');
     } finally {
       setSavingRole(null);
     }
@@ -492,8 +499,11 @@ export default function ProfilePage() {
       });
       await load();
       setEditing((e) => ({ ...e, coach: false }));
+      showToast('Coach details saved.');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save.');
+      const msg = err instanceof Error ? err.message : 'Failed to save.';
+      setError(msg);
+      showToast(msg, 'error');
     } finally {
       setSavingRole(null);
     }
@@ -513,8 +523,11 @@ export default function ProfilePage() {
       });
       await load();
       setEditing((e) => ({ ...e, organizer: false }));
+      showToast('Organizer details saved.');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save.');
+      const msg = err instanceof Error ? err.message : 'Failed to save.';
+      setError(msg);
+      showToast(msg, 'error');
     } finally {
       setSavingRole(null);
     }
@@ -526,8 +539,15 @@ export default function ProfilePage() {
     try {
       const created = await createRoleRequest({ role });
       setRequests((rs) => [...rs, created]);
+      showToast(
+        role === 'coach'
+          ? 'Coach request submitted.'
+          : 'Organizer request submitted.',
+      );
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to request role.');
+      const msg = err instanceof Error ? err.message : 'Failed to request role.';
+      setError(msg);
+      showToast(msg, 'error');
     } finally {
       setRequesting(null);
     }

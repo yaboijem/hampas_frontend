@@ -197,7 +197,7 @@ describe('EventApplicationsPage', () => {
 
     await user.click(await screen.findByRole('button', { name: /approve/i }));
     expect(await screen.findByRole('alert')).toHaveTextContent(/approve failed/i);
-    expect(toastSpy).not.toHaveBeenCalled();
+    expect(toastSpy).toHaveBeenCalledWith('Approve failed.', 'error');
   });
 
   test('toggles show approved players publicly', async () => {
