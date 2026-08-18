@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { deleteEvent, getEvent } from '../../api/events';
 import type { EventItem } from '../../api/types';
@@ -12,6 +12,10 @@ import {
 } from '../../components/ContactIcons';
 import ReportModal from '../../components/ReportModal';
 import {
+  EVENT_DETAIL_REFRESH,
+  eventIdFromDetailRefresh,
+} from '../../events/eventDetailRefresh';
+import {
   SKILL_BADGE_CLASS,
   SKILL_LABEL,
   typeEmoji,
@@ -19,6 +23,8 @@ import {
   formatEventPlace,
   formatEventWhen,
 } from '../../events/eventLabels';
+
+const PLAYERS_POLL_MS = 8_000;
 
 function nonEmpty(v: string | null | undefined): v is string {
   return typeof v === 'string' && v.trim() !== '';
@@ -34,12 +40,52 @@ export default function EventDetailPage() {
   const [event, setEvent] = useState<EventItem | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showReport, setShowReport] = useState(false);
+  const eventId = Number(id);
+
+  const load = useCallback(
+    async (opts?: { silent?: boolean; hardFail?: boolean }) => {
+      if (!Number.isFinite(eventId) || eventId <= 0) return;
+      const silent = opts?.silent === true;
+      const hardFail = opts?.hardFail !== false && !silent;
+      try {
+        const next = await getEvent(eventId);
+        setEvent(next);
+      } catch {
+        if (hardFail) navigate('/events', { replace: true });
+      }
+    },
+    [eventId, navigate],
+  );
 
   useEffect(() => {
-    getEvent(Number(id))
-      .then(setEvent)
-      .catch(() => navigate('/events', { replace: true }));
-  }, [id, navigate]);
+    void load({ hardFail: true });
+  }, [load]);
+
+  useEffect(() => {
+    const refresh = () => void load({ silent: true, hardFail: false });
+    const onFocus = () => refresh();
+    const onVis = () => {
+      if (document.visibilityState === 'visible') refresh();
+    };
+    const onNotify = (e: Event) => {
+      const id = eventIdFromDetailRefresh(e);
+      if (id === eventId) refresh();
+    };
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVis);
+    window.addEventListener(EVENT_DETAIL_REFRESH, onNotify);
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVis);
+      window.removeEventListener(EVENT_DETAIL_REFRESH, onNotify);
+    };
+  }, [eventId, load]);
+
+  useEffect(() => {
+    if (!event?.show_participants_publicly) return;
+    const id = window.setInterval(() => void load({ silent: true, hardFail: false }), PLAYERS_POLL_MS);
+    return () => window.clearInterval(id);
+  }, [event?.show_participants_publicly, load]);
 
   if (!event) {
     return (

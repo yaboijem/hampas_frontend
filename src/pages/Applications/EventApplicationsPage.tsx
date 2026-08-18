@@ -9,6 +9,7 @@ import {
 import { getEvent, setParticipantsVisibility } from '../../api/events';
 import StatusBadge from '../../components/StatusBadge';
 import { showToast } from '../../lib/adminNotifications';
+import { requestEventDetailRefresh } from '../../events/eventDetailRefresh';
 import {
   EVENT_APPLICATIONS_REFRESH,
   eventIdFromApplicationsRefresh,
@@ -111,6 +112,7 @@ export default function EventApplicationsPage() {
       const { data } = await listEventApplications(eventId);
       setApplicants(data);
       showToast(status === 'approved' ? `${name} approved` : `${name} rejected`);
+      requestEventDetailRefresh(eventId);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Could not update application.';
       setError(msg);
@@ -127,6 +129,7 @@ export default function EventApplicationsPage() {
       await deleteEventApplication(eventId, applicationId);
       setApplicants((prev) => prev.filter((a) => a.id !== applicationId));
       showToast(`${name} removed`);
+      requestEventDetailRefresh(eventId);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Could not remove application.';
       setError(msg);
@@ -148,6 +151,7 @@ export default function EventApplicationsPage() {
           ? 'Approved players are now public.'
           : 'Approved players are now private.',
       );
+      requestEventDetailRefresh(eventId);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Could not update visibility.';
       setError(msg);

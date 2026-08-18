@@ -1,9 +1,10 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import EventDetailPage from '../pages/Events/EventDetailPage';
 import * as eventsApi from '../api/events';
 import type { EventItem } from '../api/types';
+import { requestEventDetailRefresh } from '../events/eventDetailRefresh';
 
 const authState = vi.hoisted(() => ({
   user: {
@@ -208,6 +209,29 @@ describe('EventDetailPage', () => {
     expect(players?.querySelector('ol')).not.toBeNull();
     expect(screen.getByText('Ana')).toBeInTheDocument();
     expect(screen.getByText('Ben')).toBeInTheDocument();
+  });
+
+  test('refreshes players list when event detail refresh is requested', async () => {
+    vi.mocked(eventsApi.getEvent)
+      .mockResolvedValueOnce({
+        ...baseEvent,
+        show_participants_publicly: true,
+        approved_participants: [{ id: 1, name: 'Ana' }],
+      })
+      .mockResolvedValueOnce({
+        ...baseEvent,
+        show_participants_publicly: true,
+        approved_participants: [
+          { id: 1, name: 'Ana' },
+          { id: 2, name: 'Ben' },
+        ],
+      });
+    renderDetail();
+    expect(await screen.findByText('Ana')).toBeInTheDocument();
+    expect(screen.queryByText('Ben')).not.toBeInTheDocument();
+    requestEventDetailRefresh(7);
+    expect(await screen.findByText('Ben')).toBeInTheDocument();
+    await waitFor(() => expect(eventsApi.getEvent).toHaveBeenCalledTimes(2));
   });
 
   test('hides players when roster is private', async () => {
