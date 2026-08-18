@@ -1,11 +1,22 @@
 import { api } from './client';
-import type { ApplicationStatus, EventItem } from './types';
+import type { ApplicationStatus, EventItem, PlayerPosition, SkillLevel } from './types';
 
 export interface Application {
   id: number;
   event_id: number;
   user_id: number;
   status: ApplicationStatus;
+}
+
+export interface EventApplicant {
+  id: number;
+  status: ApplicationStatus;
+  user: {
+    id: number;
+    name: string;
+    positions?: PlayerPosition[] | string[];
+    skill_level?: SkillLevel | string | null;
+  };
 }
 
 export async function apply(eventId: number): Promise<{ application: Application }> {
@@ -17,7 +28,9 @@ export async function cancelApplication(eventId: number): Promise<void> {
   await api.delete(`/events/${eventId}/apply`);
 }
 
-export async function listEventApplications(eventId: number): Promise<{ data: Array<{ id: number; user: { id: number; name: string }; status: ApplicationStatus }> }> {
+export async function listEventApplications(
+  eventId: number,
+): Promise<{ data: EventApplicant[] }> {
   const { data } = await api.get(`/events/${eventId}/applications`);
   return data;
 }

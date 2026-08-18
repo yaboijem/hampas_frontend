@@ -212,6 +212,41 @@ describe('EventApplicationsPage', () => {
     void names;
   });
 
+  test('opens applicant detail modal with name and positions only', async () => {
+    const user = userEvent.setup();
+    vi.mocked(applicationsApi.listEventApplications).mockResolvedValue({
+      data: [
+        {
+          id: 3,
+          user: {
+            id: 7,
+            name: 'Ana',
+            positions: ['setter', 'libero'],
+            skill_level: 'intermediate',
+          },
+          status: 'pending',
+        },
+      ],
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/events/1/applications']}>
+        <Routes>
+          <Route path="/events/:id/applications" element={<EventApplicationsPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    await user.click(await screen.findByText('Ana'));
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog).toHaveTextContent('Ana');
+    expect(dialog).toHaveTextContent('Setter');
+    expect(dialog).toHaveTextContent('Libero');
+    expect(dialog).toHaveTextContent(/intermediate/i);
+    expect(dialog).not.toHaveTextContent(/gender/i);
+    expect(dialog).not.toHaveTextContent(/age|birth/i);
+  });
+
   test('organizer can change an approved decision to rejected', async () => {
     const user = userEvent.setup();
     const toastSpy = vi.spyOn(notes, 'showToast').mockImplementation(() => {});
