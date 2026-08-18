@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { approveApplication, listEventApplications, rejectApplication } from '../../api/applications';
+import {
+  approveApplication,
+  deleteEventApplication,
+  listEventApplications,
+  rejectApplication,
+} from '../../api/applications';
 import { getEvent, setParticipantsVisibility } from '../../api/events';
 import StatusBadge from '../../components/StatusBadge';
 import { showToast } from '../../lib/adminNotifications';
@@ -108,6 +113,22 @@ export default function EventApplicationsPage() {
       showToast(status === 'approved' ? `${name} approved` : `${name} rejected`);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Could not update application.';
+      setError(msg);
+      showToast(msg, 'error');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const remove = async (applicationId: number, name: string) => {
+    setError(null);
+    setBusyId(applicationId);
+    try {
+      await deleteEventApplication(eventId, applicationId);
+      setApplicants((prev) => prev.filter((a) => a.id !== applicationId));
+      showToast(`${name} removed`);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Could not remove application.';
       setError(msg);
       showToast(msg, 'error');
     } finally {
@@ -263,6 +284,15 @@ export default function EventApplicationsPage() {
                       Change to Approved
                     </button>
                   )}
+                  <button
+                    type="button"
+                    disabled={busy}
+                    aria-label={`Remove ${a.user.name}`}
+                    onClick={() => void remove(a.id, a.user.name)}
+                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-control)] text-xl leading-none text-muted hover:bg-ice hover:text-navy disabled:opacity-60"
+                  >
+                    ×
+                  </button>
                 </div>
               </li>
             );

@@ -32,6 +32,10 @@ export async function rejectApplication(eventId: number, applicationId: number):
   return data;
 }
 
+export async function deleteEventApplication(eventId: number, applicationId: number): Promise<void> {
+  await api.delete(`/events/${eventId}/applications/${applicationId}`);
+}
+
 export async function myApplications(): Promise<{ data: Array<{ id: number; status: ApplicationStatus; event: EventItem }> }> {
   const { data } = await api.get('/me/applications');
   return data;

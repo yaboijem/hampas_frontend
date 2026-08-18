@@ -16,6 +16,7 @@ vi.mock('../api/applications', () => ({
   listEventApplications: vi.fn(),
   approveApplication: vi.fn(),
   rejectApplication: vi.fn(),
+  deleteEventApplication: vi.fn(),
   myApplications: vi.fn(),
 }));
 
@@ -177,6 +178,29 @@ describe('EventApplicationsPage', () => {
 
     expect(await screen.findByText(/no applications yet/i)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /back to event/i })).toHaveAttribute('href', '/events/2');
+  });
+
+  test('organizer can remove an applicant with x', async () => {
+    const user = userEvent.setup();
+    const toastSpy = vi.spyOn(notes, 'showToast').mockImplementation(() => {});
+    vi.mocked(applicationsApi.listEventApplications).mockResolvedValue({
+      data: [{ id: 3, user: { id: 7, name: 'Ana' }, status: 'pending' }],
+    });
+    vi.mocked(applicationsApi.deleteEventApplication).mockResolvedValue(undefined);
+
+    render(
+      <MemoryRouter initialEntries={['/events/1/applications']}>
+        <Routes>
+          <Route path="/events/:id/applications" element={<EventApplicationsPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText('Ana')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /remove ana/i }));
+    await waitFor(() => expect(applicationsApi.deleteEventApplication).toHaveBeenCalledWith(1, 3));
+    expect(screen.queryByText('Ana')).not.toBeInTheDocument();
+    expect(toastSpy).toHaveBeenCalledWith('Ana removed');
   });
 
   test('reloads applicants when application_received refresh is requested', async () => {
