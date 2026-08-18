@@ -15,7 +15,7 @@ const STYLES: Record<ApplicationStatus, string> = {
 export default function StatusBadge({ status }: { status: ApplicationStatus }) {
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${STYLES[status]}`}
+      className={`inline-flex h-7 min-w-[5.5rem] items-center justify-center rounded-full px-2.5 text-xs font-semibold ${STYLES[status]}`}
     >
       {LABEL[status]}
     </span>
