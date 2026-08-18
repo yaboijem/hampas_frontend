@@ -172,7 +172,7 @@ export default function EventDetailPage() {
         )}
       </div>
 
-      <header className="mb-6 space-y-3">
+      <header className="mb-4 space-y-3">
         <h1 className="font-display text-3xl font-extrabold tracking-tight text-navy">
           {event.title}
         </h1>
@@ -187,6 +187,13 @@ export default function EventDetailPage() {
           </span>
         </div>
       </header>
+
+      <section className="mb-6">
+        <h2 className="mb-2 font-display text-sm font-semibold uppercase tracking-wide text-muted">
+          About
+        </h2>
+        <p className="whitespace-pre-wrap text-base leading-relaxed text-navy">{event.description}</p>
+      </section>
 
       <dl className="mb-6 divide-y divide-border rounded-[var(--radius-card)] border border-border bg-surface shadow-soft">
         <div className="flex justify-between gap-4 px-4 py-3">
@@ -208,13 +215,6 @@ export default function EventDetailPage() {
           <dd className="text-right text-sm font-medium text-navy">{event.created_by.name}</dd>
         </div>
       </dl>
-
-      <section className="mb-8">
-        <h2 className="mb-2 font-display text-sm font-semibold uppercase tracking-wide text-muted">
-          About
-        </h2>
-        <p className="whitespace-pre-wrap text-base leading-relaxed text-navy">{event.description}</p>
-      </section>
 
       {event.show_participants_publicly &&
         event.approved_participants &&
