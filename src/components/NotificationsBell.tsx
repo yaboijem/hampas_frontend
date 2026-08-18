@@ -77,7 +77,7 @@ export default function NotificationsBell() {
         <div
           id={panelId}
           role="menu"
-          className="fixed inset-x-3 top-[4.5rem] z-50 max-h-[min(24rem,calc(100dvh-5.5rem))] w-auto origin-top overflow-hidden rounded-[var(--radius-card)] border border-border bg-surface p-2 shadow-soft sm:absolute sm:inset-x-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-80 sm:max-h-96"
+          className="fixed inset-x-3 top-safe-below-header z-50 max-h-safe-notif w-auto origin-top overflow-hidden rounded-[var(--radius-card)] border border-border bg-surface p-2 shadow-soft sm:absolute sm:inset-x-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-80 sm:max-h-96"
         >
           <div className="mb-2 flex items-center justify-between gap-2 px-2 pt-1">
             <p className="text-sm font-semibold text-navy">Notifications</p>

@@ -39,7 +39,7 @@ export default function EventDetailPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [event, setEvent] = useState<EventItem | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error] = useState<string | null>(null);
   const [showReport, setShowReport] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
   const [deleteBusy, setDeleteBusy] = useState(false);
@@ -172,7 +172,7 @@ export default function EventDetailPage() {
         )}
       </div>
 
-      <header className="mb-4 space-y-3">
+      <header className="mb-2 space-y-3">
         <h1 className="font-display text-3xl font-extrabold tracking-tight text-navy">
           {event.title}
         </h1>
@@ -188,7 +188,7 @@ export default function EventDetailPage() {
         </div>
       </header>
 
-      <section className="mb-6">
+      <section className="mb-4">
         <h2 className="mb-2 font-display text-sm font-semibold uppercase tracking-wide text-muted">
           About
         </h2>
@@ -237,7 +237,7 @@ export default function EventDetailPage() {
         )}
 
       {hasContact ? (
-        <section className="mb-8" aria-label="Organizer contact">
+        <section className="mb-3" aria-label="Organizer contact">
           <h2 className="mb-3 font-display text-sm font-semibold uppercase tracking-wide text-muted">
             Contact Details
           </h2>
@@ -294,8 +294,8 @@ export default function EventDetailPage() {
         <div
           data-testid="event-sticky-cta"
           className={[
-            'fixed inset-x-0 bottom-0 z-30 border-t border-border px-4 pt-3 glass-panel',
-            'pb-[max(0.75rem,env(safe-area-inset-bottom))]',
+            'fixed inset-x-0 bottom-0 z-30 border-t border-border px-4 px-safe pt-3 glass-panel',
+            'pb-safe-max-3',
             'md:static md:z-auto md:mb-6 md:border-0 md:bg-transparent md:p-0 md:shadow-none md:backdrop-blur-none',
           ].join(' ')}
         >

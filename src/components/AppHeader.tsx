@@ -60,18 +60,14 @@ export default function AppHeader() {
   };
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border glass-panel">
+    <header className="sticky top-0 z-40 border-b border-border glass-panel pt-safe">
       <nav
-        className="mx-auto flex max-w-6xl items-center gap-2 px-3 py-3 sm:gap-3 sm:px-6"
+        className="mx-auto flex max-w-6xl items-center gap-2 px-header-safe py-3 sm:gap-3"
         aria-label="Main"
       >
         <div className="flex min-w-0 flex-1 items-center gap-1.5 sm:gap-3">
-          <span
-            className="inline-flex h-8 w-8 shrink-0 items-center justify-center text-[1.75rem] leading-none sm:h-9 sm:w-9 sm:text-4xl"
-            style={{ filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.28))' }}
-            aria-hidden
-          >
-            🏐
+          <span className="brand-ball shrink-0" aria-hidden>
+            <span className="brand-ball__glyph">🏐</span>
           </span>
           <div className="min-w-0 flex-1 flex-col justify-center pl-0.5 sm:pl-1">
             <Link

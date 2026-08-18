@@ -25,7 +25,7 @@ export default function DeleteEventModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-navy/45 p-4 sm:items-center"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-navy/45 p-safe-max-4 sm:items-center"
       role="presentation"
       onClick={() => {
         if (!busy) onCancel();

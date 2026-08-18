@@ -56,7 +56,7 @@ export default function ReportModal({ targetType, targetId, onClose }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black/50" role="dialog" aria-label="Report">
+    <div className="fixed inset-0 flex items-center justify-center bg-black/50 p-safe-max-4" role="dialog" aria-label="Report">
       <form onSubmit={submit} className="w-full max-w-md space-y-3 rounded-[var(--radius-card)] border border-border bg-surface p-6 text-navy shadow-soft">
         <h2 className="text-lg font-bold">Report this {targetType}</h2>
         {error && <p role="alert" className="text-red-600">{error}</p>}

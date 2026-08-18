@@ -26,6 +26,8 @@
   --glass-bg: rgb(255 255 255 / 0.72);
   --skeleton-a: #e2e8f0;
   --skeleton-b: #f8fafc;
+  /* Ground ellipse under ball (light from above) */
+  --ball-ground: rgb(71 85 105 / 0.55);
 }
 
 html.dark {
@@ -45,6 +47,7 @@ html.dark {
   --glass-bg: rgb(17 24 39 / 0.72);
   --skeleton-a: #1e293b;
   --skeleton-b: #334155;
+  --ball-ground: rgb(148 163 184 / 0.55);
 }
 
 @layer base {
@@ -88,6 +91,264 @@ html.dark {
 }
 
 @layer utilities {
+  /* Safe areas: Dynamic Island / notch / home indicator (env = 0 when unsupported) */
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .px-safe {
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+  }
+
+  .pb-safe-max-3 {
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+  }
+
+  .pb-safe-max-5 {
+    padding-bottom: max(1.25rem, env(safe-area-inset-bottom, 0px));
+  }
+
+  .p-safe-max-4 {
+    padding-top: max(1rem, env(safe-area-inset-top, 0px));
+    padding-right: max(1rem, env(safe-area-inset-right, 0px));
+    padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+    padding-left: max(1rem, env(safe-area-inset-left, 0px));
+  }
+
+  .px-header-safe {
+    padding-left: max(0.75rem, env(safe-area-inset-left, 0px));
+    padding-right: max(0.75rem, env(safe-area-inset-right, 0px));
+  }
+
+  .px-main-safe {
+    padding-left: max(1rem, env(safe-area-inset-left, 0px));
+    padding-right: max(1rem, env(safe-area-inset-right, 0px));
+  }
+
+  @media (min-width: 640px) {
+    .px-header-safe {
+      padding-left: max(1.5rem, env(safe-area-inset-left, 0px));
+      padding-right: max(1.5rem, env(safe-area-inset-right, 0px));
+    }
+
+    .px-main-safe {
+      padding-left: max(1.5rem, env(safe-area-inset-left, 0px));
+      padding-right: max(1.5rem, env(safe-area-inset-right, 0px));
+    }
+  }
+
+  .top-safe-offset-4 {
+    top: calc(1rem + env(safe-area-inset-top, 0px));
+  }
+
+  .right-safe-offset-4 {
+    right: calc(1rem + env(safe-area-inset-right, 0px));
+  }
+
+  .bottom-safe-offset-4 {
+    bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .top-safe-below-header {
+    top: calc(4.5rem + env(safe-area-inset-top, 0px));
+  }
+
+  .max-h-safe-notif {
+    max-height: min(
+      24rem,
+      calc(
+        100dvh - 5.5rem - env(safe-area-inset-top, 0px) -
+          env(safe-area-inset-bottom, 0px)
+      )
+    );
+  }
+
+  /*
+   * Parent owns X travel so glyph + ground shadow stay locked together.
+   * Glyph: bounce Y + center spin. Shadow: squash only (rides parent X).
+   */
+  .brand-ball {
+    position: relative;
+    display: inline-flex;
+    height: 2.25rem;
+    width: 2.25rem;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    animation: brand-ball-x 5s linear infinite;
+  }
+
+  .brand-ball__glyph {
+    position: relative;
+    z-index: 1;
+    display: inline-block;
+    font-size: 1.75rem;
+    line-height: 1;
+    transform-origin: center center;
+    animation: brand-ball-glyph 5s linear infinite;
+  }
+
+  .brand-ball::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: 0.05rem;
+    z-index: 0;
+    width: 1.35rem;
+    height: 0.38rem;
+    margin-left: -0.675rem;
+    border-radius: 9999px;
+    background: var(--ball-ground);
+    filter: blur(1.5px);
+    pointer-events: none;
+    transform-origin: center center;
+    animation: brand-ball-shadow 5s linear infinite;
+  }
+
+  /* Shared horizontal path (parent) — 0–16% still, then roll */
+  @keyframes brand-ball-x {
+    0%,
+    16% {
+      transform: translateX(0);
+    }
+    28% {
+      transform: translateX(0.22rem);
+    }
+    40% {
+      transform: translateX(0.38rem);
+    }
+    52% {
+      transform: translateX(0.12rem);
+    }
+    64% {
+      transform: translateX(-0.22rem);
+    }
+    76% {
+      transform: translateX(-0.38rem);
+    }
+    88% {
+      transform: translateX(-0.12rem);
+    }
+    100% {
+      transform: translateX(0);
+    }
+  }
+
+  /*
+   * Bounce + spin share the same % stops as the shadow.
+   * Airborne → shadow smaller/fainter. Impact → shadow wider/stronger.
+   */
+  @keyframes brand-ball-glyph {
+    0% {
+      transform: translateY(0) scale(1) rotate(0deg);
+    }
+    /* peak — up */
+    3% {
+      transform: translateY(-0.85rem) scale(0.98, 1.04) rotate(-6deg);
+    }
+    /* impact — down */
+    7% {
+      transform: translateY(0) scale(1.1, 0.88) rotate(0deg);
+    }
+    /* small peak */
+    10% {
+      transform: translateY(-0.3rem) scale(0.99, 1.02) rotate(5deg);
+    }
+    /* settle impact */
+    13% {
+      transform: translateY(0) scale(1.05, 0.94) rotate(0deg);
+    }
+    16% {
+      transform: translateY(0) scale(1) rotate(0deg);
+    }
+    28% {
+      transform: translateY(0) scale(1) rotate(90deg);
+    }
+    40% {
+      transform: translateY(0) scale(1) rotate(180deg);
+    }
+    52% {
+      transform: translateY(0) scale(1) rotate(250deg);
+    }
+    64% {
+      transform: translateY(0) scale(1) rotate(320deg);
+    }
+    76% {
+      transform: translateY(0) scale(1) rotate(400deg);
+    }
+    88% {
+      transform: translateY(0) scale(1) rotate(480deg);
+    }
+    100% {
+      transform: translateY(0) scale(1) rotate(540deg);
+    }
+  }
+
+  /* Same % as glyph bounce stops — inverted size vs height */
+  @keyframes brand-ball-shadow {
+    0% {
+      transform: scaleX(1) scaleY(1);
+      opacity: 1;
+    }
+    /* ball at peak → tight faint shadow */
+    3% {
+      transform: scaleX(0.4) scaleY(0.75);
+      opacity: 0.25;
+    }
+    /* ball impact → wide strong shadow */
+    7% {
+      transform: scaleX(1.35) scaleY(1.1);
+      opacity: 1;
+    }
+    /* small peak */
+    10% {
+      transform: scaleX(0.55) scaleY(0.85);
+      opacity: 0.4;
+    }
+    /* settle impact */
+    13% {
+      transform: scaleX(1.15) scaleY(1.05);
+      opacity: 0.95;
+    }
+    16%,
+    100% {
+      transform: scaleX(1) scaleY(1);
+      opacity: 1;
+    }
+  }
+
+  @media (min-width: 640px) {
+    .brand-ball {
+      height: 2.5rem;
+      width: 2.5rem;
+    }
+
+    .brand-ball__glyph {
+      font-size: 2.25rem;
+    }
+
+    .brand-ball::after {
+      bottom: 0;
+      width: 1.65rem;
+      height: 0.45rem;
+      margin-left: -0.825rem;
+      filter: blur(2px);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .brand-ball,
+    .brand-ball__glyph,
+    .brand-ball::after {
+      animation: none;
+    }
+  }
+
   .glass-panel {
     background-color: var(--glass-bg);
     backdrop-filter: blur(12px);
@@ -166,6 +427,257 @@ html.dark {
     }
   }
 
+  /* Onboarding — Poppins scoped (app chrome stays DM Sans / Archivo) */
+  .onboarding-shell {
+    --font-onboard: "Poppins", ui-sans-serif, system-ui, sans-serif;
+    font-family: var(--font-onboard);
+    background: #0b1220;
+  }
+
+  .onboarding-enter {
+    animation: page-fade-in 0.35s ease both;
+  }
+
+  .onboarding-exit {
+    animation: page-fade-out 0.4s ease both;
+    pointer-events: none;
+  }
+
+  .onboarding-bg-image {
+    transform: scale(1.08);
+    filter: blur(1.5px);
+  }
+
+  /* Photo → bottom panel: soft bridge with teal/violet tint */
+  .onboarding-image-scrim {
+    background:
+      linear-gradient(
+        180deg,
+        rgb(11 18 32 / 0.42) 0%,
+        rgb(11 18 32 / 0.18) 28%,
+        rgb(15 23 42 / 0.12) 48%,
+        rgb(30 27 75 / 0.28) 68%,
+        rgb(15 23 42 / 0.72) 84%,
+        rgb(11 18 32 / 0.92) 100%
+      ),
+      radial-gradient(
+        120% 70% at 50% 100%,
+        rgb(45 212 191 / 0.14) 0%,
+        transparent 55%
+      );
+  }
+
+  .onboarding-copy {
+    background: linear-gradient(
+      180deg,
+      transparent 0%,
+      rgb(11 18 32 / 0.35) 35%,
+      rgb(11 18 32 / 0.55) 100%
+    );
+  }
+
+  .onboarding-slide-title {
+    font-family: var(--font-onboard);
+    font-size: clamp(1.75rem, 5vw, 2.25rem);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+    color: #fff;
+    text-shadow: 0 2px 16px rgb(0 0 0 / 0.35);
+  }
+
+  .onboarding-slide-title--dark {
+    color: var(--color-navy);
+    text-shadow: none;
+  }
+
+  .onboarding-slide-body {
+    font-family: var(--font-onboard);
+    font-size: clamp(0.9375rem, 2.4vw, 1.0625rem);
+    font-weight: 400;
+    line-height: 1.55;
+    color: rgb(255 255 255 / 0.88);
+    text-shadow: 0 1px 10px rgb(0 0 0 / 0.35);
+  }
+
+  .onboarding-welcome {
+    position: relative;
+    display: flex;
+    width: min(100%, 22rem);
+    flex-direction: column;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 1.75rem 1.25rem 1.5rem;
+    text-align: center;
+    animation: onboarding-welcome-stage 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  @media (min-width: 640px) {
+    .onboarding-welcome {
+      width: min(100%, 30rem);
+      gap: 0.7rem;
+      padding: 2.25rem 2rem 1.75rem;
+    }
+  }
+
+  .onboarding-welcome__kicker {
+    position: relative;
+    z-index: 1;
+    font-family: var(--font-onboard);
+    font-size: clamp(1.123rem, 3.37vw, 1.334rem);
+    font-weight: 600;
+    letter-spacing: 0.38em;
+    text-indent: 0.38em;
+    text-transform: uppercase;
+    color: rgb(255 255 255 / 0.92);
+    text-shadow: 0 1px 12px rgb(0 0 0 / 0.55);
+    animation: onboarding-welcome-kicker 1s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both;
+  }
+
+  .onboarding-welcome__brand {
+    position: relative;
+    z-index: 1;
+    font-family: var(--font-onboard);
+    font-size: clamp(4.914rem, 19.656vw, 9.126rem);
+    font-weight: 800;
+    line-height: 0.95;
+    letter-spacing: -0.035em;
+    text-transform: uppercase;
+    color: #fff;
+    text-shadow: 0 4px 28px rgb(0 0 0 / 0.45);
+    animation: onboarding-welcome-brand 1.05s cubic-bezier(0.22, 1, 0.36, 1) 0.14s both;
+  }
+
+  .onboarding-welcome__rule {
+    position: relative;
+    z-index: 1;
+    width: 3.75rem;
+    height: 2px;
+    border-radius: 9999px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgb(255 255 255 / 0.75),
+      transparent
+    );
+    animation: onboarding-welcome-rule 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.28s both;
+  }
+
+  .onboarding-welcome__tag {
+    position: relative;
+    z-index: 1;
+    font-family: var(--font-onboard);
+    font-size: clamp(1.011rem, 2.948vw, 1.236rem);
+    font-weight: 500;
+    letter-spacing: 0.28em;
+    text-indent: 0.28em;
+    color: rgb(255 255 255 / 0.9);
+    text-shadow: 0 1px 12px rgb(0 0 0 / 0.55);
+    animation: onboarding-welcome-tag 0.95s cubic-bezier(0.22, 1, 0.36, 1) 0.34s both;
+  }
+
+  @keyframes onboarding-welcome-stage {
+    from {
+      opacity: 0;
+      transform: translateY(14px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @keyframes onboarding-welcome-kicker {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+      letter-spacing: 0.55em;
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+      letter-spacing: 0.38em;
+    }
+  }
+
+  @keyframes onboarding-welcome-brand {
+    from {
+      opacity: 0;
+      transform: translateY(16px) scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @keyframes onboarding-welcome-rule {
+    from {
+      opacity: 0;
+      transform: scaleX(0.25);
+    }
+    to {
+      opacity: 1;
+      transform: scaleX(1);
+    }
+  }
+
+  @keyframes onboarding-welcome-tag {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Route transitions */
+  .page-fade-enter {
+    animation: page-fade-in 0.32s ease both;
+  }
+
+  .page-fade-exit {
+    animation: page-fade-out 0.18s ease both;
+    pointer-events: none;
+  }
+
+  .page-auth-enter {
+    animation: page-auth-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  @keyframes page-fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes page-fade-out {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
+  }
+
+  @keyframes page-auth-in {
+    from {
+      opacity: 0;
+      transform: translateY(18px) scale(0.98);
+      filter: blur(4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      filter: blur(0);
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .skeleton-shimmer {
       animation: none;
@@ -175,8 +687,20 @@ html.dark {
     .skeleton-card-enter,
     .event-card-enter,
     .hero-enter,
-    .hero-enter-item {
+    .hero-enter-item,
+    .onboarding-enter,
+    .onboarding-exit,
+    .onboarding-welcome,
+    .onboarding-welcome__kicker,
+    .onboarding-welcome__brand,
+    .onboarding-welcome__rule,
+    .onboarding-welcome__tag,
+    .page-fade-enter,
+    .page-fade-exit,
+    .page-auth-enter {
       animation: none;
+      filter: none;
+      transform: none;
     }
   }
 }
