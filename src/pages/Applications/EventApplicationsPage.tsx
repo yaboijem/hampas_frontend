@@ -25,10 +25,10 @@ interface Applicant {
 const STATUS_ORDER: ApplicationStatus[] = ['pending', 'approved', 'rejected'];
 
 const ICON_BTN =
-  'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-control)] border transition disabled:cursor-default disabled:opacity-60';
+  'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-control)] bg-transparent transition disabled:cursor-default disabled:opacity-60';
 
-const APPROVE_ICON_BTN = `${ICON_BTN} border-emerald-500/30 bg-emerald-50 text-emerald-700 hover:border-emerald-500 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:bg-emerald-950/70`;
-const REJECT_ICON_BTN = `${ICON_BTN} border-red-500/30 bg-red-50 text-red-700 hover:border-red-500 hover:bg-red-100 dark:bg-red-950/40 dark:text-red-300 dark:hover:bg-red-950/70`;
+const APPROVE_ICON_BTN = `${ICON_BTN} text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300`;
+const REJECT_ICON_BTN = `${ICON_BTN} text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300`;
 
 function CheckIcon({ className }: { className?: string }) {
   return (
