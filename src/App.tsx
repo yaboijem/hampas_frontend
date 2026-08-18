@@ -17,6 +17,7 @@ import EventDetailPage from './pages/Events/EventDetailPage';
 import EventsPage from './pages/Events/EventsPage';
 import MyApplicationsPage from './pages/Applications/MyApplicationsPage';
 import EventApplicationsPage from './pages/Applications/EventApplicationsPage';
+import HostedEventsPage from './pages/Events/HostedEventsPage';
 import InstallPrompt from './components/InstallPrompt';
 import OfflinePage from './pages/OfflinePage';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -79,6 +80,7 @@ export default function App() {
                   <Route path="/events/:id/edit" element={<RequireAuth><EditEventPage /></RequireAuth>} />
                   <Route path="/events/:id/applications" element={<RequireAuth><EventApplicationsPage /></RequireAuth>} />
                   <Route path="/me/applications" element={<RequireAuth><MyApplicationsPage /></RequireAuth>} />
+                  <Route path="/me/hosted-events" element={<RequireAuth><HostedEventsPage /></RequireAuth>} />
                   <Route path="/events/:id" element={<EventDetailPage />} />
                   <Route path="/offline" element={<OfflinePage />} />
                 </Routes>

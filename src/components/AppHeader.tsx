@@ -94,6 +94,9 @@ export default function AppHeader() {
               <NavLink to="/me/applications" className={linkClass}>
                 My applications
               </NavLink>
+              <NavLink to="/me/hosted-events" className={linkClass}>
+                Hosted events
+              </NavLink>
               <NavLink to="/profile" className={linkClass}>
                 Profile
               </NavLink>
@@ -184,6 +187,13 @@ export default function AppHeader() {
                         className={menuLinkClass}
                       >
                         My applications
+                      </NavLink>
+                      <NavLink
+                        to="/me/hosted-events"
+                        role="menuitem"
+                        className={menuLinkClass}
+                      >
+                        Hosted events
                       </NavLink>
                       <NavLink
                         to="/profile"
