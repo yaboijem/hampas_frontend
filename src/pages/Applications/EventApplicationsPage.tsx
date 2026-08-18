@@ -239,18 +239,33 @@ export default function EventApplicationsPage() {
             return (
               <li
                 key={a.id}
-                className="flex items-center gap-2 rounded-[var(--radius-card)] border border-border bg-surface px-3 py-2 shadow-soft"
+                className="flex flex-col gap-2 rounded-[var(--radius-card)] border border-border bg-surface px-3 py-3 shadow-soft sm:flex-row sm:items-center sm:gap-3 sm:py-2"
               >
-                <span className="min-w-0 flex-1 truncate text-sm font-semibold text-navy">{a.user.name}</span>
-                <StatusBadge status={a.status} />
-                <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                <div className="flex min-w-0 flex-1 items-start gap-2">
+                  <span className="min-w-0 flex-1 break-words text-sm font-semibold leading-snug text-navy sm:truncate sm:leading-normal">
+                    {a.user.name}
+                  </span>
+                  <div className="flex shrink-0 items-center gap-1 pt-0.5 sm:pt-0">
+                    <StatusBadge status={a.status} />
+                    <button
+                      type="button"
+                      disabled={busy}
+                      aria-label={`Remove ${a.user.name}`}
+                      onClick={() => void remove(a.id, a.user.name)}
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-[var(--radius-control)] text-xl leading-none text-muted hover:bg-ice hover:text-navy disabled:opacity-60"
+                    >
+                      ×
+                    </button>
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 sm:shrink-0 sm:justify-end">
                   {isPending && (
                     <>
                       <button
                         type="button"
                         disabled={busy}
                         onClick={() => void decide(a.id, 'approved', a.user.name)}
-                        className={APPROVE_ACTIVE}
+                        className={`${APPROVE_ACTIVE} flex-1 sm:flex-none`}
                       >
                         Approve
                       </button>
@@ -258,7 +273,7 @@ export default function EventApplicationsPage() {
                         type="button"
                         disabled={busy}
                         onClick={() => void decide(a.id, 'rejected', a.user.name)}
-                        className={REJECT_ACTIVE}
+                        className={`${REJECT_ACTIVE} flex-1 sm:flex-none`}
                       >
                         Reject
                       </button>
@@ -268,31 +283,26 @@ export default function EventApplicationsPage() {
                     <button
                       type="button"
                       disabled={busy}
+                      aria-label="Change to Rejected"
                       onClick={() => void decide(a.id, 'rejected', a.user.name)}
-                      className={FLIP_BTN}
+                      className={`${FLIP_BTN} w-full sm:w-auto`}
                     >
-                      Change to Rejected
+                      <span className="sm:hidden">Reject</span>
+                      <span className="hidden sm:inline">Change to Rejected</span>
                     </button>
                   )}
                   {isRejected && (
                     <button
                       type="button"
                       disabled={busy}
+                      aria-label="Change to Approved"
                       onClick={() => void decide(a.id, 'approved', a.user.name)}
-                      className={FLIP_BTN}
+                      className={`${FLIP_BTN} w-full sm:w-auto`}
                     >
-                      Change to Approved
+                      <span className="sm:hidden">Approve</span>
+                      <span className="hidden sm:inline">Change to Approved</span>
                     </button>
                   )}
-                  <button
-                    type="button"
-                    disabled={busy}
-                    aria-label={`Remove ${a.user.name}`}
-                    onClick={() => void remove(a.id, a.user.name)}
-                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-control)] text-xl leading-none text-muted hover:bg-ice hover:text-navy disabled:opacity-60"
-                  >
-                    ×
-                  </button>
                 </div>
               </li>
             );
