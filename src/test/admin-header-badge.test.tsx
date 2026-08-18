@@ -6,12 +6,23 @@ import { AdminPendingCountsProvider } from '../admin/AdminPendingCountsContext';
 import AppHeader from '../components/AppHeader';
 import * as adminApi from '../api/admin';
 import * as notes from '../lib/adminNotifications';
+import { NotificationsProvider } from '../notifications/NotificationsContext';
 import { ThemeProvider } from '../theme/ThemeContext';
 import { pageOf } from './adminPaginated';
 
 vi.mock('../api/admin', () => ({
   listAdminRoleRequests: vi.fn(),
   listAdminEvents: vi.fn(),
+}));
+
+vi.mock('../api/notifications', () => ({
+  listNotifications: vi.fn().mockResolvedValue({
+    data: [],
+    links: { first: null, last: null, prev: null, next: null },
+    meta: { current_page: 1, last_page: 1, per_page: 15, total: 0 },
+  }),
+  unreadNotificationCount: vi.fn().mockResolvedValue({ count: 0 }),
+  markNotificationsRead: vi.fn(),
 }));
 
 vi.mock('../auth/AuthContext', () => ({
@@ -49,9 +60,11 @@ describe('AppHeader admin badge', () => {
     render(
       <ThemeProvider>
         <MemoryRouter>
-          <AdminPendingCountsProvider>
-            <AppHeader />
-          </AdminPendingCountsProvider>
+          <NotificationsProvider>
+            <AdminPendingCountsProvider>
+              <AppHeader />
+            </AdminPendingCountsProvider>
+          </NotificationsProvider>
         </MemoryRouter>
       </ThemeProvider>,
     );
@@ -77,9 +90,11 @@ describe('AppHeader admin badge', () => {
     render(
       <ThemeProvider>
         <MemoryRouter>
-          <AdminPendingCountsProvider>
-            <AppHeader />
-          </AdminPendingCountsProvider>
+          <NotificationsProvider>
+            <AdminPendingCountsProvider>
+              <AppHeader />
+            </AdminPendingCountsProvider>
+          </NotificationsProvider>
         </MemoryRouter>
       </ThemeProvider>,
     );

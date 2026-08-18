@@ -6,6 +6,9 @@ import ApplyButton from '../components/ApplyButton';
 import EventApplicationsPage from '../pages/Applications/EventApplicationsPage';
 import MyApplicationsPage from '../pages/Applications/MyApplicationsPage';
 import * as applicationsApi from '../api/applications';
+import * as eventsApi from '../api/events';
+import * as notes from '../lib/adminNotifications';
+import type { EventItem } from '../api/types';
 
 vi.mock('../api/applications', () => ({
   apply: vi.fn(),
@@ -14,6 +17,11 @@ vi.mock('../api/applications', () => ({
   approveApplication: vi.fn(),
   rejectApplication: vi.fn(),
   myApplications: vi.fn(),
+}));
+
+vi.mock('../api/events', () => ({
+  getEvent: vi.fn(),
+  setParticipantsVisibility: vi.fn(),
 }));
 
 vi.mock('../auth/AuthContext', () => ({
@@ -25,8 +33,26 @@ vi.mock('../auth/AuthContext', () => ({
   }),
 }));
 
+const baseEvent: EventItem = {
+  id: 1,
+  title: 'Game',
+  description: '',
+  event_type: 'open_play',
+  skill_level: 'all_levels',
+  barangay: null,
+  city: 'Angeles City',
+  starts_at: '2026-09-01T18:00:00+08:00',
+  photo_url: null,
+  visibility: 'live',
+  is_owner: true,
+  my_application: null,
+  created_by: { id: 1, name: 'Org' },
+  show_participants_publicly: false,
+};
+
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(eventsApi.getEvent).mockResolvedValue(baseEvent);
 });
 
 describe('ApplyButton', () => {
@@ -66,6 +92,7 @@ describe('ApplyButton', () => {
 describe('EventApplicationsPage', () => {
   test('organizer can approve an applicant', async () => {
     const user = userEvent.setup();
+    const toastSpy = vi.spyOn(notes, 'showToast').mockImplementation(() => {});
     vi.mocked(applicationsApi.listEventApplications)
       .mockResolvedValueOnce({
         data: [
@@ -97,17 +124,20 @@ describe('EventApplicationsPage', () => {
     expect(screen.getByText('Ben')).toBeInTheDocument();
     expect(screen.getByText('Pending')).toBeInTheDocument();
     expect(screen.getAllByText('Approved').length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: /change to rejected/i })).toBeInTheDocument();
 
-    await user.click(screen.getAllByRole('button', { name: /^approve$/i })[0]);
+    await user.click(screen.getByRole('button', { name: /^approve$/i }));
 
     await waitFor(() => expect(applicationsApi.approveApplication).toHaveBeenCalledWith(1, 3));
     expect(await screen.findByText('Ana')).toBeInTheDocument();
-    const approveButtons = screen.getAllByRole('button', { name: /^approve$/i });
-    expect(approveButtons.every((btn) => (btn as HTMLButtonElement).disabled)).toBe(true);
+    expect(screen.getAllByRole('button', { name: /change to rejected/i }).length).toBe(2);
+    expect(screen.queryByRole('button', { name: /^approve$/i })).not.toBeInTheDocument();
+    expect(toastSpy).toHaveBeenCalledWith('Ana approved');
   });
 
   test('organizer can change an approved decision to rejected', async () => {
     const user = userEvent.setup();
+    const toastSpy = vi.spyOn(notes, 'showToast').mockImplementation(() => {});
     vi.mocked(applicationsApi.listEventApplications)
       .mockResolvedValueOnce({
         data: [{ id: 3, user: { id: 7, name: 'Ana' }, status: 'approved' }],
@@ -127,11 +157,11 @@ describe('EventApplicationsPage', () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByRole('button', { name: /^approve$/i })).toBeDisabled();
-    await user.click(screen.getByRole('button', { name: /^reject$/i }));
+    await user.click(await screen.findByRole('button', { name: /change to rejected/i }));
     await waitFor(() => expect(applicationsApi.rejectApplication).toHaveBeenCalledWith(1, 3));
-    expect(screen.getByRole('button', { name: /^reject$/i })).toBeDisabled();
-    expect(screen.getByRole('button', { name: /^approve$/i })).not.toBeDisabled();
+    expect(await screen.findByRole('button', { name: /change to approved/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^approve$/i })).not.toBeInTheDocument();
+    expect(toastSpy).toHaveBeenCalledWith('Ana rejected');
   });
 
   test('shows empty state when no applicants', async () => {
@@ -151,6 +181,7 @@ describe('EventApplicationsPage', () => {
 
   test('surfaces approve failure', async () => {
     const user = userEvent.setup();
+    const toastSpy = vi.spyOn(notes, 'showToast').mockImplementation(() => {});
     vi.mocked(applicationsApi.listEventApplications).mockResolvedValue({
       data: [{ id: 3, user: { id: 7, name: 'Ana' }, status: 'pending' }],
     });
@@ -166,6 +197,31 @@ describe('EventApplicationsPage', () => {
 
     await user.click(await screen.findByRole('button', { name: /approve/i }));
     expect(await screen.findByRole('alert')).toHaveTextContent(/approve failed/i);
+    expect(toastSpy).not.toHaveBeenCalled();
+  });
+
+  test('toggles show approved players publicly', async () => {
+    const user = userEvent.setup();
+    vi.mocked(applicationsApi.listEventApplications).mockResolvedValue({ data: [] });
+    vi.mocked(eventsApi.setParticipantsVisibility).mockResolvedValue({
+      show_participants_publicly: true,
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/events/1/applications']}>
+        <Routes>
+          <Route path="/events/:id/applications" element={<EventApplicationsPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    const toggle = await screen.findByRole('switch', { name: /show approved players publicly/i });
+    expect(toggle).toHaveAttribute('aria-checked', 'false');
+    await user.click(toggle);
+    await waitFor(() =>
+      expect(eventsApi.setParticipantsVisibility).toHaveBeenCalledWith(1, true),
+    );
+    expect(toggle).toHaveAttribute('aria-checked', 'true');
   });
 });
 

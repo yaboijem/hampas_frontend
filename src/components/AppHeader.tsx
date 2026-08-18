@@ -4,6 +4,7 @@ import { useAdminPendingCountsContext } from "../admin/AdminPendingCountsContext
 import { useAuth } from "../auth/AuthContext";
 import { showToast } from "../lib/adminNotifications";
 import AdminPendingBadge from "./AdminPendingBadge";
+import NotificationsBell from "./NotificationsBell";
 import ThemeToggle from "./ThemeToggle";
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
@@ -134,6 +135,7 @@ export default function AppHeader() {
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
+          {!loading && user ? <NotificationsBell /> : null}
           <ThemeToggle />
 
           {/* Mobile hamburger */}

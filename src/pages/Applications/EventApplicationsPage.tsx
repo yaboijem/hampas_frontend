@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { approveApplication, listEventApplications, rejectApplication } from '../../api/applications';
+import { getEvent, setParticipantsVisibility } from '../../api/events';
 import StatusBadge from '../../components/StatusBadge';
+import { showToast } from '../../lib/adminNotifications';
 import type { ApplicationStatus } from '../../api/types';
 
 interface Applicant {
@@ -11,18 +13,17 @@ interface Applicant {
 }
 
 const BTN_BASE =
-  'inline-flex min-h-11 items-center justify-center rounded-[var(--radius-control)] px-4 py-2 text-sm font-semibold transition disabled:cursor-default';
+  'inline-flex min-h-11 items-center justify-center rounded-[var(--radius-control)] px-3 py-2 text-sm font-semibold transition disabled:cursor-default disabled:opacity-60';
 
 const APPROVE_ACTIVE = `${BTN_BASE} bg-cobalt text-white shadow-soft hover:bg-electric`;
-const APPROVE_CURRENT = `${BTN_BASE} bg-cobalt text-white shadow-soft ring-2 ring-cobalt/30 ring-offset-2 ring-offset-surface`;
 const REJECT_ACTIVE = `${BTN_BASE} border border-border bg-surface text-navy hover:border-cobalt hover:bg-sky-tint`;
-const REJECT_CURRENT = `${BTN_BASE} border border-cobalt/40 bg-sky-tint text-chip-text ring-2 ring-cobalt/20 ring-offset-2 ring-offset-surface`;
+const FLIP_BTN = `${BTN_BASE} border border-border bg-surface text-navy hover:border-cobalt hover:bg-sky-tint`;
 
 function RowSkeleton() {
   return (
-    <div className="rounded-[var(--radius-card)] border border-border bg-surface p-4 shadow-soft">
-      <div className="flex items-center justify-between gap-3">
-        <div className="skeleton-shimmer h-5 w-1/3 rounded" />
+    <div className="rounded-[var(--radius-card)] border border-border bg-surface px-3 py-2 shadow-soft">
+      <div className="flex items-center justify-between gap-2">
+        <div className="skeleton-shimmer h-4 w-1/3 rounded" />
         <div className="skeleton-shimmer h-7 w-20 rounded-full" />
       </div>
     </div>
@@ -36,14 +37,18 @@ export default function EventApplicationsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<number | null>(null);
+  const [showPublic, setShowPublic] = useState(false);
+  const [visibilityBusy, setVisibilityBusy] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setError(null);
-    listEventApplications(eventId)
-      .then(({ data }) => {
-        if (!cancelled) setApplicants(data);
+    Promise.all([listEventApplications(eventId), getEvent(eventId)])
+      .then(([{ data }, event]) => {
+        if (cancelled) return;
+        setApplicants(data);
+        setShowPublic(event.show_participants_publicly === true);
       })
       .catch((err) => {
         if (!cancelled) {
@@ -58,7 +63,7 @@ export default function EventApplicationsPage() {
     };
   }, [eventId]);
 
-  const decide = async (applicationId: number, status: 'approved' | 'rejected') => {
+  const decide = async (applicationId: number, status: 'approved' | 'rejected', name: string) => {
     setError(null);
     setBusyId(applicationId);
     try {
@@ -69,10 +74,25 @@ export default function EventApplicationsPage() {
       }
       const { data } = await listEventApplications(eventId);
       setApplicants(data);
+      showToast(status === 'approved' ? `${name} approved` : `${name} rejected`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not update application.');
     } finally {
       setBusyId(null);
+    }
+  };
+
+  const onToggleVisibility = async () => {
+    const next = !showPublic;
+    setVisibilityBusy(true);
+    setError(null);
+    try {
+      const res = await setParticipantsVisibility(eventId, next);
+      setShowPublic(res.show_participants_publicly);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not update visibility.');
+    } finally {
+      setVisibilityBusy(false);
     }
   };
 
@@ -98,9 +118,40 @@ export default function EventApplicationsPage() {
         Back to event
       </Link>
 
-      <header className="space-y-1">
-        <h1 className="font-display text-3xl font-extrabold tracking-tight text-navy">Applications</h1>
-        <p className="text-sm text-muted">Review who wants to join — you can change a decision anytime</p>
+      <header className="space-y-3">
+        <div className="space-y-1">
+          <h1 className="font-display text-3xl font-extrabold tracking-tight text-navy">Applications</h1>
+          <p className="text-sm text-muted">Review who wants to join — you can change a decision anytime</p>
+        </div>
+        <div className="flex items-start gap-3">
+          <button
+            type="button"
+            role="switch"
+            aria-checked={showPublic}
+            aria-label="Show approved players publicly"
+            disabled={visibilityBusy}
+            onClick={() => void onToggleVisibility()}
+            className={[
+              'relative mt-0.5 inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition',
+              showPublic ? 'border-cobalt bg-cobalt' : 'border-border bg-ice',
+              visibilityBusy ? 'opacity-60' : '',
+            ].join(' ')}
+          >
+            <span
+              aria-hidden
+              className={[
+                'inline-block h-4 w-4 rounded-full bg-white shadow transition',
+                showPublic ? 'translate-x-6' : 'translate-x-1',
+              ].join(' ')}
+            />
+          </button>
+          <div className="min-w-0 text-sm">
+            <p className="font-medium text-navy">Show approved players publicly</p>
+            <p className="mt-0.5 text-xs text-muted">
+              When on, anyone viewing the event can see approved names.
+            </p>
+          </div>
+        </div>
       </header>
 
       {error && (
@@ -117,38 +168,61 @@ export default function EventApplicationsPage() {
           <p className="text-sm text-muted">No applications yet.</p>
         </div>
       ) : (
-        <ul className="space-y-3">
+        <ul className="space-y-2">
           {applicants.map((a) => {
             const busy = busyId === a.id;
+            const isPending = a.status === 'pending';
             const isApproved = a.status === 'approved';
             const isRejected = a.status === 'rejected';
 
             return (
               <li
                 key={a.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-card)] border border-border bg-surface p-4 shadow-soft"
+                className="flex items-center gap-2 rounded-[var(--radius-card)] border border-border bg-surface px-3 py-2 shadow-soft"
               >
-                <span className="font-semibold text-navy">{a.user.name}</span>
-                <div className="flex flex-wrap items-center gap-3">
-                  <StatusBadge status={a.status} />
-                  <button
-                    type="button"
-                    disabled={busy || isApproved}
-                    aria-pressed={isApproved}
-                    onClick={() => decide(a.id, 'approved')}
-                    className={isApproved ? APPROVE_CURRENT : APPROVE_ACTIVE}
-                  >
-                    Approve
-                  </button>
-                  <button
-                    type="button"
-                    disabled={busy || isRejected}
-                    aria-pressed={isRejected}
-                    onClick={() => decide(a.id, 'rejected')}
-                    className={isRejected ? REJECT_CURRENT : REJECT_ACTIVE}
-                  >
-                    Reject
-                  </button>
+                <span className="min-w-0 flex-1 truncate text-sm font-semibold text-navy">{a.user.name}</span>
+                <StatusBadge status={a.status} />
+                <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                  {isPending && (
+                    <>
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => void decide(a.id, 'approved', a.user.name)}
+                        className={APPROVE_ACTIVE}
+                      >
+                        Approve
+                      </button>
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => void decide(a.id, 'rejected', a.user.name)}
+                        className={REJECT_ACTIVE}
+                      >
+                        Reject
+                      </button>
+                    </>
+                  )}
+                  {isApproved && (
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => void decide(a.id, 'rejected', a.user.name)}
+                      className={FLIP_BTN}
+                    >
+                      Change to Rejected
+                    </button>
+                  )}
+                  {isRejected && (
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => void decide(a.id, 'approved', a.user.name)}
+                      className={FLIP_BTN}
+                    >
+                      Change to Approved
+                    </button>
+                  )}
                 </div>
               </li>
             );

@@ -193,6 +193,33 @@ describe('EventDetailPage', () => {
     expect(ig).toHaveAttribute('rel', expect.stringContaining('noopener'));
   });
 
+  test('shows public approved players when enabled', async () => {
+    vi.mocked(eventsApi.getEvent).mockResolvedValue({
+      ...baseEvent,
+      show_participants_publicly: true,
+      approved_participants: [
+        { id: 1, name: 'Ana' },
+        { id: 2, name: 'Ben' },
+      ],
+    });
+    renderDetail();
+    expect(await screen.findByRole('heading', { name: /^players$/i })).toBeInTheDocument();
+    expect(screen.getByText('Ana')).toBeInTheDocument();
+    expect(screen.getByText('Ben')).toBeInTheDocument();
+  });
+
+  test('hides players when roster is private', async () => {
+    vi.mocked(eventsApi.getEvent).mockResolvedValue({
+      ...baseEvent,
+      show_participants_publicly: false,
+      approved_participants: [{ id: 1, name: 'Ana' }],
+    });
+    renderDetail();
+    await screen.findByRole('heading', { name: /friday night open play/i });
+    expect(screen.queryByRole('heading', { name: /^players$/i })).not.toBeInTheDocument();
+    expect(screen.queryByText('Ana')).not.toBeInTheDocument();
+  });
+
   test('hides contact block when organizer contact is empty', async () => {
     vi.mocked(eventsApi.getEvent).mockResolvedValue({
       ...baseEvent,

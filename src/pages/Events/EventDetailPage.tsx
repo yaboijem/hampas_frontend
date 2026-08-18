@@ -161,6 +161,29 @@ export default function EventDetailPage() {
         <p className="whitespace-pre-wrap text-base leading-relaxed text-navy">{event.description}</p>
       </section>
 
+      {event.show_participants_publicly &&
+        event.approved_participants &&
+        event.approved_participants.length > 0 && (
+          <section className="mb-8" aria-labelledby="event-players-heading">
+            <h2
+              id="event-players-heading"
+              className="mb-2 font-display text-lg font-bold text-navy"
+            >
+              Players
+            </h2>
+            <ul className="flex flex-wrap gap-2">
+              {event.approved_participants.map((p) => (
+                <li
+                  key={p.id}
+                  className="rounded-full border border-border bg-sky-tint px-3 py-1 text-sm font-medium text-chip-text"
+                >
+                  {p.name}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
       {hasContact ? (
         <section className="mb-8" aria-label="Organizer contact">
           <h2 className="mb-3 font-display text-sm font-semibold uppercase tracking-wide text-muted">
