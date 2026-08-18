@@ -113,14 +113,16 @@ export default function MyApplicationsPage() {
               </div>
               <div className="flex flex-wrap items-center gap-3">
                 <StatusBadge status={row.status} />
-                <button
-                  type="button"
-                  disabled={busyId === row.id}
-                  onClick={() => void remove(row.event.id, row.id)}
-                  className="inline-flex min-h-11 items-center rounded-[var(--radius-control)] border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-100 disabled:opacity-60"
-                >
-                  Delete
-                </button>
+                {row.status !== 'rejected' ? (
+                  <button
+                    type="button"
+                    disabled={busyId === row.id}
+                    onClick={() => void remove(row.event.id, row.id)}
+                    className="inline-flex min-h-11 items-center rounded-[var(--radius-control)] border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-100 disabled:opacity-60"
+                  >
+                    Delete
+                  </button>
+                ) : null}
               </div>
             </li>
           ))}

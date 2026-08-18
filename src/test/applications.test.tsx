@@ -88,6 +88,53 @@ describe('ApplyButton', () => {
     await user.click(screen.getByRole('button', { name: /cancel application/i }));
     await waitFor(() => expect(applicationsApi.cancelApplication).toHaveBeenCalledWith(1));
   });
+
+  test('syncs status from myApplication prop updates', async () => {
+    const { rerender } = render(
+      <MemoryRouter>
+        <ApplyButton
+          eventId={1}
+          isOwner={false}
+          visibility="live"
+          myApplication={{ id: 5, status: 'pending' }}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText('Pending')).toBeInTheDocument();
+
+    rerender(
+      <MemoryRouter>
+        <ApplyButton
+          eventId={1}
+          isOwner={false}
+          visibility="live"
+          myApplication={{ id: 5, status: 'approved' }}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText('Approved')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /leave event/i })).toBeInTheDocument();
+  });
+
+  test('rejected application cannot cancel and shows reapply notice', () => {
+    render(
+      <MemoryRouter>
+        <ApplyButton
+          eventId={1}
+          isOwner={false}
+          visibility="live"
+          myApplication={{ id: 5, status: 'rejected' }}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText('Rejected')).toBeInTheDocument();
+    expect(screen.getByText(/cannot reapply/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /cancel application/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^apply$/i })).not.toBeInTheDocument();
+  });
 });
 
 describe('EventApplicationsPage', () => {
@@ -126,6 +173,7 @@ describe('EventApplicationsPage', () => {
     expect(screen.getByText('Pending')).toBeInTheDocument();
     expect(screen.getAllByText('Approved').length).toBeGreaterThan(0);
     expect(screen.getByRole('button', { name: /change to rejected/i })).toBeInTheDocument();
+    expect(screen.getByRole('separator', { hidden: true })).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /^approve$/i }));
 
@@ -134,6 +182,34 @@ describe('EventApplicationsPage', () => {
     expect(screen.getAllByRole('button', { name: /change to rejected/i }).length).toBe(2);
     expect(screen.queryByRole('button', { name: /^approve$/i })).not.toBeInTheDocument();
     expect(toastSpy).toHaveBeenCalledWith('Ana approved');
+  });
+
+  test('groups applicants pending then approved then rejected', async () => {
+    vi.mocked(applicationsApi.listEventApplications).mockResolvedValue({
+      data: [
+        { id: 1, user: { id: 1, name: 'Zed Rejected' }, status: 'rejected' },
+        { id: 2, user: { id: 2, name: 'Amy Pending' }, status: 'pending' },
+        { id: 3, user: { id: 3, name: 'Ben Approved' }, status: 'approved' },
+      ],
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/events/1/applications']}>
+        <Routes>
+          <Route path="/events/:id/applications" element={<EventApplicationsPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText('Amy Pending')).toBeInTheDocument();
+    const names = screen.getAllByText(/Pending|Approved|Rejected|Amy|Ben|Zed/).map((n) => n.textContent);
+    const amy = screen.getByText('Amy Pending');
+    const ben = screen.getByText('Ben Approved');
+    const zed = screen.getByText('Zed Rejected');
+    expect(amy.compareDocumentPosition(ben) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(ben.compareDocumentPosition(zed) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getAllByRole('separator', { hidden: true }).length).toBe(2);
+    void names;
   });
 
   test('organizer can change an approved decision to rejected', async () => {

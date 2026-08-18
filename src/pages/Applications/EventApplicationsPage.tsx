@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
   approveApplication,
@@ -22,8 +22,10 @@ interface Applicant {
   status: ApplicationStatus;
 }
 
+const STATUS_ORDER: ApplicationStatus[] = ['pending', 'approved', 'rejected'];
+
 const BTN_BASE =
-  'inline-flex min-h-11 items-center justify-center rounded-[var(--radius-control)] px-3 py-2 text-sm font-semibold transition disabled:cursor-default disabled:opacity-60';
+  'inline-flex min-h-9 items-center justify-center rounded-[var(--radius-control)] px-2.5 py-1.5 text-xs font-semibold transition disabled:cursor-default disabled:opacity-60 sm:min-h-10 sm:px-3 sm:text-sm';
 
 const APPROVE_ACTIVE = `${BTN_BASE} bg-cobalt text-white shadow-soft hover:bg-electric`;
 const REJECT_ACTIVE = `${BTN_BASE} border border-border bg-surface text-navy hover:border-cobalt hover:bg-sky-tint`;
@@ -38,6 +40,11 @@ function RowSkeleton() {
       </div>
     </div>
   );
+}
+
+function sortApplicants(list: Applicant[]): Applicant[] {
+  const rank: Record<ApplicationStatus, number> = { pending: 0, approved: 1, rejected: 2 };
+  return [...list].sort((a, b) => rank[a.status] - rank[b.status] || a.id - b.id);
 }
 
 export default function EventApplicationsPage() {
@@ -62,7 +69,7 @@ export default function EventApplicationsPage() {
           listEventApplications(eventId),
           getEvent(eventId),
         ]);
-        setApplicants(data);
+        setApplicants(sortApplicants(data));
         setShowPublic(event.show_participants_publicly === true);
         if (silent) setError(null);
       } catch (err) {
@@ -110,7 +117,7 @@ export default function EventApplicationsPage() {
         await rejectApplication(eventId, applicationId);
       }
       const { data } = await listEventApplications(eventId);
-      setApplicants(data);
+      setApplicants(sortApplicants(data));
       showToast(status === 'approved' ? `${name} approved` : `${name} rejected`);
       requestEventDetailRefresh(eventId);
     } catch (err) {
@@ -159,6 +166,93 @@ export default function EventApplicationsPage() {
     } finally {
       setVisibilityBusy(false);
     }
+  };
+
+  const groups = useMemo(() => {
+    return STATUS_ORDER.map((status) => ({
+      status,
+      items: applicants.filter((a) => a.status === status),
+    })).filter((g) => g.items.length > 0);
+  }, [applicants]);
+
+  const renderRow = (a: Applicant) => {
+    const busy = busyId === a.id;
+    const isPending = a.status === 'pending';
+    const isApproved = a.status === 'approved';
+    const isRejected = a.status === 'rejected';
+
+    return (
+      <li key={a.id} className="flex items-center gap-1.5 sm:gap-2">
+        <div className="flex min-w-0 flex-1 items-center gap-2 rounded-[var(--radius-card)] border border-border bg-surface px-2.5 py-1.5 shadow-soft sm:gap-3 sm:px-3 sm:py-2">
+          <span className="min-w-0 flex-1 truncate text-sm font-semibold text-navy">{a.user.name}</span>
+          <StatusBadge status={a.status} />
+          <div className="flex shrink-0 items-center gap-1.5">
+            {isPending && (
+              <>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void decide(a.id, 'approved', a.user.name)}
+                  className={APPROVE_ACTIVE}
+                >
+                  Approve
+                </button>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void decide(a.id, 'rejected', a.user.name)}
+                  className={REJECT_ACTIVE}
+                >
+                  Reject
+                </button>
+              </>
+            )}
+            {isApproved && (
+              <button
+                type="button"
+                disabled={busy}
+                aria-label="Change to Rejected"
+                onClick={() => void decide(a.id, 'rejected', a.user.name)}
+                className={FLIP_BTN}
+              >
+                <span className="sm:hidden">Reject</span>
+                <span className="hidden sm:inline">Change to Rejected</span>
+              </button>
+            )}
+            {isRejected && (
+              <button
+                type="button"
+                disabled={busy}
+                aria-label="Change to Approved"
+                onClick={() => void decide(a.id, 'approved', a.user.name)}
+                className={FLIP_BTN}
+              >
+                <span className="sm:hidden">Approve</span>
+                <span className="hidden sm:inline">Change to Approved</span>
+              </button>
+            )}
+            <button
+              type="button"
+              disabled={busy}
+              aria-label={`Remove ${a.user.name}`}
+              onClick={() => void remove(a.id, a.user.name)}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-[var(--radius-control)] text-lg leading-none text-muted hover:bg-ice hover:text-navy disabled:opacity-60 sm:hidden"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+        <button
+          type="button"
+          disabled={busy}
+          aria-label={`Remove ${a.user.name}`}
+          onClick={() => void remove(a.id, a.user.name)}
+          className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-control)] text-lg leading-none text-muted hover:bg-ice hover:text-navy disabled:opacity-60 sm:inline-flex"
+        >
+          ×
+        </button>
+      </li>
+    );
   };
 
   if (loading) {
@@ -233,93 +327,16 @@ export default function EventApplicationsPage() {
           <p className="text-sm text-muted">No applications yet.</p>
         </div>
       ) : (
-        <ul className="space-y-2">
-          {applicants.map((a) => {
-            const busy = busyId === a.id;
-            const isPending = a.status === 'pending';
-            const isApproved = a.status === 'approved';
-            const isRejected = a.status === 'rejected';
-
-            return (
-              <li key={a.id} className="flex items-center gap-2">
-                <div className="flex min-w-0 flex-1 flex-col gap-2 rounded-[var(--radius-card)] border border-border bg-surface px-3 py-3 shadow-soft sm:flex-row sm:items-center sm:gap-3 sm:py-2">
-                  <div className="flex min-w-0 flex-1 items-start gap-2">
-                    <span className="min-w-0 flex-1 break-words text-sm font-semibold leading-snug text-navy sm:truncate sm:leading-normal">
-                      {a.user.name}
-                    </span>
-                    <div className="flex shrink-0 items-center gap-1 pt-0.5 sm:pt-0">
-                      <StatusBadge status={a.status} />
-                      <button
-                        type="button"
-                        disabled={busy}
-                        aria-label={`Remove ${a.user.name}`}
-                        onClick={() => void remove(a.id, a.user.name)}
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-[var(--radius-control)] text-xl leading-none text-muted hover:bg-ice hover:text-navy disabled:opacity-60 sm:hidden"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2 sm:shrink-0 sm:justify-end">
-                    {isPending && (
-                      <>
-                        <button
-                          type="button"
-                          disabled={busy}
-                          onClick={() => void decide(a.id, 'approved', a.user.name)}
-                          className={`${APPROVE_ACTIVE} flex-1 sm:flex-none`}
-                        >
-                          Approve
-                        </button>
-                        <button
-                          type="button"
-                          disabled={busy}
-                          onClick={() => void decide(a.id, 'rejected', a.user.name)}
-                          className={`${REJECT_ACTIVE} flex-1 sm:flex-none`}
-                        >
-                          Reject
-                        </button>
-                      </>
-                    )}
-                    {isApproved && (
-                      <button
-                        type="button"
-                        disabled={busy}
-                        aria-label="Change to Rejected"
-                        onClick={() => void decide(a.id, 'rejected', a.user.name)}
-                        className={`${FLIP_BTN} w-full sm:w-auto`}
-                      >
-                        <span className="sm:hidden">Reject</span>
-                        <span className="hidden sm:inline">Change to Rejected</span>
-                      </button>
-                    )}
-                    {isRejected && (
-                      <button
-                        type="button"
-                        disabled={busy}
-                        aria-label="Change to Approved"
-                        onClick={() => void decide(a.id, 'approved', a.user.name)}
-                        className={`${FLIP_BTN} w-full sm:w-auto`}
-                      >
-                        <span className="sm:hidden">Approve</span>
-                        <span className="hidden sm:inline">Change to Approved</span>
-                      </button>
-                    )}
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  disabled={busy}
-                  aria-label={`Remove ${a.user.name}`}
-                  onClick={() => void remove(a.id, a.user.name)}
-                  className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-control)] text-xl leading-none text-muted hover:bg-ice hover:text-navy disabled:opacity-60 sm:inline-flex"
-                >
-                  ×
-                </button>
-              </li>
-            );
-          })}
-        </ul>
+        <div className="space-y-0">
+          {groups.map((group, index) => (
+            <section key={group.status} aria-label={`${group.status} applications`}>
+              {index > 0 ? (
+                <div className="my-3 border-t border-border" role="separator" aria-hidden />
+              ) : null}
+              <ul className="space-y-1.5">{group.items.map(renderRow)}</ul>
+            </section>
+          ))}
+        </div>
       )}
     </div>
   );

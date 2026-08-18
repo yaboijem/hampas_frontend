@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { apply, cancelApplication } from '../api/applications';
 import { useAuth } from '../auth/AuthContext';
@@ -19,6 +19,10 @@ export default function ApplyButton({ eventId, isOwner, visibility, myApplicatio
   const location = useLocation();
   const [application, setApplication] = useState(myApplication);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setApplication(myApplication);
+  }, [myApplication]);
 
   if (isOwner || visibility !== 'live') return null;
 
@@ -56,15 +60,18 @@ export default function ApplyButton({ eventId, isOwner, visibility, myApplicatio
     return (
       <div className="flex w-full flex-wrap items-center gap-3">
         <StatusBadge status={application.status} />
-        {application.status === 'pending' && (
+        {application.status === 'pending' || application.status === 'approved' ? (
           <button
             type="button"
             onClick={handleCancel}
             className="min-h-11 rounded-[var(--radius-control)] border border-border bg-surface px-4 py-2 text-sm font-medium text-muted hover:text-navy"
           >
-            Cancel application
+            {application.status === 'pending' ? 'Cancel application' : 'Leave event'}
           </button>
-        )}
+        ) : null}
+        {application.status === 'rejected' ? (
+          <p className="text-sm text-muted">You cannot reapply to this event.</p>
+        ) : null}
       </div>
     );
   }
