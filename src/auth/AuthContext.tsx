@@ -2,6 +2,14 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 import { getMe } from '../api/auth';
 import type { User } from '../api/types';
 
+function normalizeUser(user: User): User {
+  return {
+    ...user,
+    // API may return 0/1 before boolean cast is applied
+    is_admin: Boolean(user.is_admin),
+  };
+}
+
 interface AuthValue {
   user: User | null;
   loading: boolean;
@@ -29,14 +37,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
     getMe()
-      .then(({ user }) => setUser(user))
+      .then(({ user }) => setUser(normalizeUser(user)))
       .catch(() => localStorage.removeItem('hampas_token'))
       .finally(() => setLoading(false));
   }, []);
 
   const signIn = (token: string, nextUser: User) => {
     localStorage.setItem('hampas_token', token);
-    setUser(nextUser);
+    setUser(normalizeUser(nextUser));
   };
 
   const signOut = () => {
@@ -45,7 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const updateUser = (nextUser: User) => {
-    setUser(nextUser);
+    setUser(normalizeUser(nextUser));
   };
 
   return (
