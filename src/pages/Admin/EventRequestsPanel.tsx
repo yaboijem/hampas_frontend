@@ -9,6 +9,7 @@ import {
 import { deleteEvent } from '../../api/events';
 import type { EventItem, Visibility } from '../../api/types';
 import AdminPagination from '../../components/AdminPagination';
+import DeleteEventModal from '../../components/DeleteEventModal';
 import {
   formatEventPlace,
   formatEventWhen,
@@ -234,47 +235,15 @@ export default function EventRequestsPanel({
       )}
 
       {deleteTarget ? (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="delete-event-title"
-          aria-describedby="delete-event-message"
-        >
-          <div className="w-full max-w-md space-y-4 rounded-[var(--radius-card)] border border-border bg-surface p-6 text-navy shadow-soft">
-            <h2 id="delete-event-title" className="font-display text-lg font-bold">
-              Delete event
-            </h2>
-            <p id="delete-event-message" className="text-sm text-muted">
-              Are you sure you want to delete this event
-              {deleteTarget.title ? (
-                <>
-                  {' '}
-                  <span className="font-semibold text-navy">“{deleteTarget.title}”</span>
-                </>
-              ) : null}
-              ?
-            </p>
-            <div className="flex flex-wrap justify-end gap-2">
-              <button
-                type="button"
-                disabled={busyId === deleteTarget.id}
-                onClick={() => setDeleteTarget(null)}
-                className="rounded-[var(--radius-control)] border border-border bg-surface px-4 py-2 text-sm font-semibold text-navy disabled:opacity-60"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={busyId === deleteTarget.id}
-                onClick={() => void remove(deleteTarget.id)}
-                className="rounded-[var(--radius-control)] bg-red-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
-              >
-                {busyId === deleteTarget.id ? 'Deleting…' : 'Delete'}
-              </button>
-            </div>
-          </div>
-        </div>
+        <DeleteEventModal
+          title={deleteTarget.title}
+          busy={busyId === deleteTarget.id}
+          error={error}
+          onCancel={() => {
+            if (busyId !== deleteTarget.id) setDeleteTarget(null);
+          }}
+          onConfirm={() => void remove(deleteTarget.id)}
+        />
       ) : null}
     </div>
   );

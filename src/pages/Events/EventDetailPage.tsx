@@ -10,6 +10,7 @@ import {
   InstagramIcon,
   PhoneIcon,
 } from '../../components/ContactIcons';
+import DeleteEventModal from '../../components/DeleteEventModal';
 import ReportModal from '../../components/ReportModal';
 import {
   EVENT_DETAIL_REFRESH,
@@ -40,6 +41,9 @@ export default function EventDetailPage() {
   const [event, setEvent] = useState<EventItem | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showReport, setShowReport] = useState(false);
+  const [showDelete, setShowDelete] = useState(false);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const eventId = Number(id);
 
   const load = useCallback(
@@ -113,13 +117,17 @@ export default function EventDetailPage() {
   const instagram = nonEmpty(org.instagram_url) ? org.instagram_url.trim() : null;
   const hasContact = Boolean(phone || email || facebook || instagram);
 
-  const remove = async () => {
-    if (!window.confirm('Delete this event?')) return;
+  const confirmDelete = async () => {
+    setDeleteBusy(true);
+    setDeleteError(null);
     try {
       await deleteEvent(event.id);
+      setShowDelete(false);
       navigate('/events');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Delete failed.');
+      setDeleteError(err instanceof Error ? err.message : 'Delete failed.');
+    } finally {
+      setDeleteBusy(false);
     }
   };
 
@@ -320,7 +328,10 @@ export default function EventDetailPage() {
           ) : null}
           <button
             type="button"
-            onClick={remove}
+            onClick={() => {
+              setDeleteError(null);
+              setShowDelete(true);
+            }}
             className="inline-flex min-h-11 items-center rounded-[var(--radius-control)] border border-red-300 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50"
           >
             Delete event
@@ -343,6 +354,18 @@ export default function EventDetailPage() {
           onClose={() => setShowReport(false)}
         />
       )}
+
+      {showDelete ? (
+        <DeleteEventModal
+          title={event.title}
+          busy={deleteBusy}
+          error={deleteError}
+          onCancel={() => {
+            if (!deleteBusy) setShowDelete(false);
+          }}
+          onConfirm={() => void confirmDelete()}
+        />
+      ) : null}
     </article>
   );
 }

@@ -1,4 +1,5 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import EventDetailPage from '../pages/Events/EventDetailPage';
@@ -114,6 +115,28 @@ describe('EventDetailPage', () => {
     );
     expect(screen.getByRole('button', { name: /delete event/i })).toBeInTheDocument();
     expect(screen.queryByTestId('event-sticky-cta')).not.toBeInTheDocument();
+  });
+
+  test('delete event opens confirmation modal then deletes', async () => {
+    const user = userEvent.setup();
+    vi.mocked(eventsApi.getEvent).mockResolvedValue({
+      ...baseEvent,
+      is_owner: true,
+    });
+    vi.mocked(eventsApi.deleteEvent).mockResolvedValue(undefined);
+
+    renderDetail();
+
+    await user.click(await screen.findByRole('button', { name: /delete event/i }));
+    const dialog = await screen.findByRole('dialog', { name: /delete event/i });
+    expect(
+      within(dialog).getByText(/are you sure you want to delete this event/i),
+    ).toBeInTheDocument();
+    expect(within(dialog).getByText(/friday night open play/i)).toBeInTheDocument();
+    expect(eventsApi.deleteEvent).not.toHaveBeenCalled();
+
+    await user.click(within(dialog).getByRole('button', { name: /^delete$/i }));
+    await waitFor(() => expect(eventsApi.deleteEvent).toHaveBeenCalledWith(7));
   });
 
   test('report control opens for non-owners', async () => {
