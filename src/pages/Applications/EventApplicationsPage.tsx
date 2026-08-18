@@ -25,7 +25,7 @@ interface Applicant {
 const STATUS_ORDER: ApplicationStatus[] = ['pending', 'approved', 'rejected'];
 
 const ICON_BTN =
-  'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-control)] bg-transparent transition disabled:cursor-default disabled:opacity-60';
+  'inline-flex h-9 w-8 shrink-0 items-center justify-center rounded-[var(--radius-control)] bg-transparent transition disabled:cursor-default disabled:opacity-60';
 
 const APPROVE_ICON_BTN = `${ICON_BTN} text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300`;
 const REJECT_ICON_BTN = `${ICON_BTN} text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300`;
@@ -229,7 +229,7 @@ export default function EventApplicationsPage() {
         <div className="flex min-w-0 flex-1 items-center gap-2 rounded-[var(--radius-card)] border border-border bg-surface px-2.5 py-1.5 shadow-soft sm:gap-3 sm:px-3 sm:py-2">
           <span className="min-w-0 flex-1 truncate text-sm font-semibold text-navy">{a.user.name}</span>
           <StatusBadge status={a.status} />
-          <div className="flex shrink-0 items-center gap-1">
+          <div className="flex shrink-0 items-center gap-0">
             {isPending && (
               <>
                 <button
