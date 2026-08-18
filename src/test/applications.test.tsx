@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
@@ -134,6 +134,82 @@ describe('ApplyButton', () => {
     expect(screen.getByText(/cannot reapply/i)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /cancel application/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^apply$/i })).not.toBeInTheDocument();
+  });
+
+  test('pending status card shows helper copy and cancel action', () => {
+    render(
+      <MemoryRouter>
+        <ApplyButton
+          eventId={1}
+          isOwner={false}
+          visibility="live"
+          myApplication={{ id: 5, status: 'pending' }}
+        />
+      </MemoryRouter>,
+    );
+
+    const card = screen.getByTestId('application-status-card');
+    expect(card).toBeInTheDocument();
+    expect(within(card).getByText('Pending')).toBeInTheDocument();
+    expect(
+      within(card).getByText(/waiting for organizer approval/i),
+    ).toBeInTheDocument();
+    expect(
+      within(card).getByRole('button', { name: /cancel application/i }),
+    ).toBeInTheDocument();
+  });
+
+  test('approved status card shows helper copy and leave action', () => {
+    render(
+      <MemoryRouter>
+        <ApplyButton
+          eventId={1}
+          isOwner={false}
+          visibility="live"
+          myApplication={{ id: 5, status: 'approved' }}
+        />
+      </MemoryRouter>,
+    );
+
+    const card = screen.getByTestId('application-status-card');
+    expect(within(card).getByText('Approved')).toBeInTheDocument();
+    expect(within(card).getByText(/you.?re in/i)).toBeInTheDocument();
+    expect(
+      within(card).getByRole('button', { name: /leave event/i }),
+    ).toBeInTheDocument();
+  });
+
+  test('rejected status card has no leave or cancel action', () => {
+    render(
+      <MemoryRouter>
+        <ApplyButton
+          eventId={1}
+          isOwner={false}
+          visibility="live"
+          myApplication={{ id: 5, status: 'rejected' }}
+        />
+      </MemoryRouter>,
+    );
+
+    const card = screen.getByTestId('application-status-card');
+    expect(within(card).getByText('Rejected')).toBeInTheDocument();
+    expect(within(card).getByText(/cannot reapply/i)).toBeInTheDocument();
+    expect(
+      within(card).queryByRole('button', { name: /cancel application/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(card).queryByRole('button', { name: /leave event/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  test('apply CTA is full width in empty state container', () => {
+    render(
+      <MemoryRouter>
+        <ApplyButton eventId={1} isOwner={false} visibility="live" myApplication={null} />
+      </MemoryRouter>,
+    );
+    const btn = screen.getByRole('button', { name: /^apply$/i });
+    expect(btn.className).toMatch(/\bw-full\b/);
   });
 });
 

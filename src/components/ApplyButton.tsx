@@ -13,6 +13,19 @@ interface Props {
   myApplication: { id: number; status: ApplicationStatus } | null;
 }
 
+const STATUS_HELP: Record<ApplicationStatus, string> = {
+  pending: 'Waiting for organizer approval.',
+  approved: "You're in — see you on the court.",
+  rejected: 'You cannot reapply to this event.',
+};
+
+const STATUS_CARD_CLASS: Record<ApplicationStatus, string> = {
+  pending:
+    'border-amber-500/30 bg-amber-50 dark:border-amber-500/25 dark:bg-amber-950/40',
+  approved: 'border-cobalt/25 bg-sky-tint dark:border-cobalt/30 dark:bg-sky-tint/25',
+  rejected: 'border-border bg-ice',
+};
+
 export default function ApplyButton({ eventId, isOwner, visibility, myApplication }: Props) {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -57,32 +70,52 @@ export default function ApplyButton({ eventId, isOwner, visibility, myApplicatio
   };
 
   if (application) {
+    const canWithdraw =
+      application.status === 'pending' || application.status === 'approved';
+
     return (
-      <div className="flex w-full flex-wrap items-center gap-3">
-        <StatusBadge status={application.status} />
-        {application.status === 'pending' || application.status === 'approved' ? (
-          <button
-            type="button"
-            onClick={handleCancel}
-            className="min-h-11 rounded-[var(--radius-control)] border border-border bg-surface px-4 py-2 text-sm font-medium text-muted hover:text-navy"
-          >
-            {application.status === 'pending' ? 'Cancel application' : 'Leave event'}
-          </button>
+      <div className="w-full space-y-2">
+        {error ? (
+          <p role="alert" className="text-sm text-red-600">
+            {error}
+          </p>
         ) : null}
-        {application.status === 'rejected' ? (
-          <p className="text-sm text-muted">You cannot reapply to this event.</p>
-        ) : null}
+        <div
+          data-testid="application-status-card"
+          className={[
+            'flex w-full flex-col gap-3 rounded-[var(--radius-card)] border p-3 shadow-soft sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:p-4',
+            STATUS_CARD_CLASS[application.status],
+          ].join(' ')}
+        >
+          <div className="flex min-w-0 flex-1 flex-col items-start gap-2">
+            <StatusBadge status={application.status} />
+            <p className="text-sm leading-snug text-navy">{STATUS_HELP[application.status]}</p>
+          </div>
+          {canWithdraw ? (
+            <button
+              type="button"
+              onClick={handleCancel}
+              className="inline-flex min-h-11 w-full shrink-0 items-center justify-center rounded-[var(--radius-control)] border border-border bg-surface px-4 py-2 text-sm font-semibold text-navy shadow-soft transition hover:border-cobalt hover:bg-ice sm:w-auto"
+            >
+              {application.status === 'pending' ? 'Cancel application' : 'Leave event'}
+            </button>
+          ) : null}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="w-full">
-      {error && <p role="alert" className="mb-2 text-sm text-red-600">{error}</p>}
+    <div className="w-full space-y-2">
+      {error ? (
+        <p role="alert" className="text-sm text-red-600">
+          {error}
+        </p>
+      ) : null}
       <button
         type="button"
         onClick={handleApply}
-        className="inline-flex min-h-11 w-full items-center justify-center rounded-[var(--radius-control)] bg-cobalt px-4 py-2.5 text-sm font-semibold text-white shadow-soft hover:bg-electric sm:w-auto"
+        className="inline-flex min-h-11 w-full items-center justify-center rounded-[var(--radius-control)] bg-cobalt px-4 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:bg-electric"
       >
         Apply
       </button>
