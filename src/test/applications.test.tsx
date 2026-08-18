@@ -273,7 +273,7 @@ describe('EventApplicationsPage', () => {
     );
 
     expect(await screen.findByText('Ana')).toBeInTheDocument();
-    await user.click(screen.getAllByRole('button', { name: /remove ana/i })[0]!);
+    await user.click(screen.getByRole('button', { name: /remove ana/i }));
     await waitFor(() => expect(applicationsApi.deleteEventApplication).toHaveBeenCalledWith(1, 3));
     expect(screen.queryByText('Ana')).not.toBeInTheDocument();
     expect(toastSpy).toHaveBeenCalledWith('Ana removed');

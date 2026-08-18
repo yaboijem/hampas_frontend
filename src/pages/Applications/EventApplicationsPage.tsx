@@ -274,15 +274,6 @@ export default function EventApplicationsPage() {
                 <CheckIcon />
               </button>
             )}
-            <button
-              type="button"
-              disabled={busy}
-              aria-label={`Remove ${a.user.name}`}
-              onClick={() => void remove(a.id, a.user.name)}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-[var(--radius-control)] text-lg leading-none text-muted hover:bg-ice hover:text-navy disabled:opacity-60 sm:hidden"
-            >
-              ×
-            </button>
           </div>
         </div>
         <button
@@ -290,7 +281,7 @@ export default function EventApplicationsPage() {
           disabled={busy}
           aria-label={`Remove ${a.user.name}`}
           onClick={() => void remove(a.id, a.user.name)}
-          className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-control)] text-lg leading-none text-muted hover:bg-ice hover:text-navy disabled:opacity-60 sm:inline-flex"
+          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-control)] text-lg leading-none text-muted hover:bg-ice hover:text-navy disabled:opacity-60"
         >
           ×
         </button>
