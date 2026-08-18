@@ -19,7 +19,7 @@ export default function ToastHost() {
   return (
     <div
       role="status"
-      className="fixed bottom-4 left-1/2 z-50 max-w-sm -translate-x-1/2 rounded-[var(--radius-card)] border border-border bg-surface px-4 py-3 text-sm font-medium text-navy shadow-soft"
+      className="fixed top-4 right-4 z-50 max-w-sm rounded-[var(--radius-card)] border border-emerald-200 bg-emerald-600 px-4 py-3 text-sm font-medium text-white shadow-soft"
     >
       {message}
     </div>
