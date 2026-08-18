@@ -132,7 +132,7 @@ export default function EventDetailPage() {
   };
 
   return (
-    <article className={`relative mx-auto max-w-3xl ${showApplyChrome ? 'pb-28 md:pb-8' : 'pb-8'}`}>
+    <article className={`relative mx-auto max-w-3xl ${showApplyChrome ? 'pb-36 md:pb-8' : 'pb-8'}`}>
       <Link
         to="/events"
         className="mb-4 inline-flex min-h-9 items-center gap-1.5 rounded-full bg-sky-tint px-3 py-1.5 text-sm font-semibold text-chip-text transition hover:bg-cobalt/15"
@@ -296,10 +296,10 @@ export default function EventDetailPage() {
           className={[
             'fixed inset-x-0 bottom-0 z-30 border-t border-border px-4 px-safe pt-3 glass-panel',
             'pb-safe-max-3',
-            'md:static md:z-auto md:mb-6 md:border-0 md:bg-transparent md:p-0 md:shadow-none md:backdrop-blur-none',
+            'md:static md:z-auto md:mb-6 md:border-0 md:bg-transparent md:p-0 md:pt-0 md:shadow-none md:backdrop-blur-none',
           ].join(' ')}
         >
-          <div className="mx-auto max-w-3xl md:mx-0">
+          <div className="mx-auto w-full max-w-3xl md:mx-0">
             <ApplyButton
               eventId={event.id}
               isOwner={event.is_owner}
