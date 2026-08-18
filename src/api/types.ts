@@ -14,6 +14,21 @@ export type RoleRequestStatus = 'pending' | 'approved' | 'rejected';
 export type Visibility = 'pending_review' | 'live' | 'rejected';
 export type ApplicationStatus = 'pending' | 'approved' | 'rejected';
 
+export interface AppNotification {
+  id: number;
+  message: string;
+  type: string;
+  read_at: string | null;
+  created_at: string;
+  data: {
+    event_id?: number;
+    application_id?: number;
+    status?: 'approved' | 'rejected';
+    organizer_name?: string;
+    event_title?: string;
+  } | null;
+}
+
 export interface RoleRequest {
   id: number;
   role: ElevatedRole;
@@ -50,6 +65,8 @@ export interface EventItem {
   is_owner: boolean;
   distance_km?: number;
   my_application: { id: number; status: ApplicationStatus } | null;
+  show_participants_publicly?: boolean;
+  approved_participants?: { id: number; name: string }[];
   created_by: {
     id: number;
     name: string;

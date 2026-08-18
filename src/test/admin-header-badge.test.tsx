@@ -85,6 +85,6 @@ describe('AppHeader admin badge', () => {
     );
 
     await user.click(screen.getAllByRole('button', { name: /log out/i })[0]);
-    expect(toastSpy).toHaveBeenCalledWith("You've been logged out.");
+    expect(toastSpy).toHaveBeenCalledWith("You've been logged\u00a0out.");
   });
 });
