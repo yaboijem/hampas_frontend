@@ -1,14 +1,16 @@
 import { useNavigate } from 'react-router-dom';
 import { useNotifications } from '../../notifications/NotificationsContext';
+import { notificationTargetPath } from '../../notifications/notificationTargetPath';
 
 export default function NotificationsPage() {
   const { items, unreadCount, markRead, markAllRead, removeNotification, loading } =
     useNotifications();
   const navigate = useNavigate();
 
-  const openItem = async (id: number, eventId?: number) => {
-    await markRead([id]);
-    if (eventId) navigate(`/events/${eventId}`);
+  const openItem = async (n: (typeof items)[number]) => {
+    await markRead([n.id]);
+    const path = notificationTargetPath(n);
+    if (path) navigate(path);
   };
 
   return (
@@ -51,7 +53,7 @@ export default function NotificationsPage() {
             >
               <button
                 type="button"
-                onClick={() => void openItem(n.id, n.data?.event_id)}
+                onClick={() => void openItem(n)}
                 className="min-w-0 flex-1 text-left"
               >
                 <p

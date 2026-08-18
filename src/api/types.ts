@@ -26,6 +26,7 @@ export interface AppNotification {
     status?: 'approved' | 'rejected';
     organizer_name?: string;
     event_title?: string;
+    applicant_name?: string;
   } | null;
 }
 

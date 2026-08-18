@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useNotifications } from '../notifications/NotificationsContext';
+import { notificationTargetPath } from '../notifications/notificationTargetPath';
 
 export default function NotificationsBell() {
   const { unreadCount, items, markRead, markAllRead, removeNotification } = useNotifications();
@@ -27,10 +28,11 @@ export default function NotificationsBell() {
     };
   }, [open]);
 
-  const openItem = async (id: number, eventId?: number) => {
+  const openItem = async (n: (typeof items)[number]) => {
     setOpen(false);
-    await markRead([id]);
-    if (eventId) navigate(`/events/${eventId}`);
+    await markRead([n.id]);
+    const path = notificationTargetPath(n);
+    if (path) navigate(path);
   };
 
   return (
@@ -99,7 +101,7 @@ export default function NotificationsBell() {
                       'min-w-0 flex-1 rounded-[var(--radius-control)] px-2 py-2 text-left text-sm break-words transition hover:bg-ice',
                       n.read_at ? 'text-muted' : 'font-medium text-navy',
                     ].join(' ')}
-                    onClick={() => void openItem(n.id, n.data?.event_id)}
+                    onClick={() => void openItem(n)}
                   >
                     {n.message}
                   </button>
