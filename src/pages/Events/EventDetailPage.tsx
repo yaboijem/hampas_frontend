@@ -105,6 +105,7 @@ export default function EventDetailPage() {
   const canManage =
     event.is_owner ||
     (user?.is_admin === true && event.visibility === 'live');
+  const canManageApplications = event.is_owner || user?.is_admin === true;
   const org = event.created_by;
   const phone = nonEmpty(org.contact_number) ? org.contact_number.trim() : null;
   const email = nonEmpty(org.contact_email) ? org.contact_email.trim() : null;
@@ -309,7 +310,7 @@ export default function EventDetailPage() {
           >
             Edit event
           </Link>
-          {event.is_owner ? (
+          {canManageApplications ? (
             <Link
               to={`/events/${event.id}/applications`}
               className="inline-flex min-h-11 items-center rounded-[var(--radius-control)] border border-border bg-surface px-4 py-2 text-sm font-medium text-navy hover:border-cobalt"

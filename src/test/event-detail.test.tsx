@@ -122,7 +122,7 @@ describe('EventDetailPage', () => {
     expect(await screen.findByRole('button', { name: /report this event/i })).toBeInTheDocument();
   });
 
-  test('admin sees edit and delete on non-owned live event but not manage applications', async () => {
+  test('admin sees edit, delete, and manage applications on non-owned live event', async () => {
     authState.user = {
       ...authState.user,
       is_admin: true,
@@ -139,9 +139,10 @@ describe('EventDetailPage', () => {
       '/events/7/edit',
     );
     expect(screen.getByRole('button', { name: /delete event/i })).toBeInTheDocument();
-    expect(
-      screen.queryByRole('link', { name: /manage applications/i }),
-    ).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /manage applications/i })).toHaveAttribute(
+      'href',
+      '/events/7/applications',
+    );
   });
 
   test('admin does not see manage tools on non-owned pending event', async () => {
