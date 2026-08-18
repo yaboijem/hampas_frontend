@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useNotifications } from '../../notifications/NotificationsContext';
+import { requestEventApplicationsRefresh } from '../../notifications/eventApplicationsRefresh';
 import { notificationTargetPath } from '../../notifications/notificationTargetPath';
 
 export default function NotificationsPage() {
@@ -9,6 +10,9 @@ export default function NotificationsPage() {
 
   const openItem = async (n: (typeof items)[number]) => {
     await markRead([n.id]);
+    if (n.type === 'application_received' && n.data?.event_id != null) {
+      requestEventApplicationsRefresh(n.data.event_id);
+    }
     const path = notificationTargetPath(n);
     if (path) navigate(path);
   };

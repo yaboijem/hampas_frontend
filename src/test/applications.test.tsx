@@ -179,6 +179,30 @@ describe('EventApplicationsPage', () => {
     expect(screen.getByRole('link', { name: /back to event/i })).toHaveAttribute('href', '/events/2');
   });
 
+  test('reloads applicants when application_received refresh is requested', async () => {
+    const { requestEventApplicationsRefresh } = await import(
+      '../notifications/eventApplicationsRefresh'
+    );
+    vi.mocked(applicationsApi.listEventApplications)
+      .mockResolvedValueOnce({ data: [] })
+      .mockResolvedValueOnce({
+        data: [{ id: 9, user: { id: 7, name: 'Ana' }, status: 'pending' }],
+      });
+
+    render(
+      <MemoryRouter initialEntries={['/events/1/applications']}>
+        <Routes>
+          <Route path="/events/:id/applications" element={<EventApplicationsPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText(/no applications yet/i)).toBeInTheDocument();
+    requestEventApplicationsRefresh(1);
+    expect(await screen.findByText('Ana')).toBeInTheDocument();
+    expect(applicationsApi.listEventApplications).toHaveBeenCalledTimes(2);
+  });
+
   test('surfaces approve failure', async () => {
     const user = userEvent.setup();
     const toastSpy = vi.spyOn(notes, 'showToast').mockImplementation(() => {});

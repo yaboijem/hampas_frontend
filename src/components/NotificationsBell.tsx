@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useNotifications } from '../notifications/NotificationsContext';
+import { requestEventApplicationsRefresh } from '../notifications/eventApplicationsRefresh';
 import { notificationTargetPath } from '../notifications/notificationTargetPath';
 
 export default function NotificationsBell() {
@@ -31,6 +32,9 @@ export default function NotificationsBell() {
   const openItem = async (n: (typeof items)[number]) => {
     setOpen(false);
     await markRead([n.id]);
+    if (n.type === 'application_received' && n.data?.event_id != null) {
+      requestEventApplicationsRefresh(n.data.event_id);
+    }
     const path = notificationTargetPath(n);
     if (path) navigate(path);
   };

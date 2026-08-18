@@ -1,9 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { approveApplication, listEventApplications, rejectApplication } from '../../api/applications';
 import { getEvent, setParticipantsVisibility } from '../../api/events';
 import StatusBadge from '../../components/StatusBadge';
 import { showToast } from '../../lib/adminNotifications';
+import {
+  EVENT_APPLICATIONS_REFRESH,
+  eventIdFromApplicationsRefresh,
+} from '../../notifications/eventApplicationsRefresh';
 import type { ApplicationStatus } from '../../api/types';
 
 interface Applicant {
@@ -40,28 +44,55 @@ export default function EventApplicationsPage() {
   const [showPublic, setShowPublic] = useState(false);
   const [visibilityBusy, setVisibilityBusy] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-    Promise.all([listEventApplications(eventId), getEvent(eventId)])
-      .then(([{ data }, event]) => {
-        if (cancelled) return;
+  const load = useCallback(
+    async (silent = false) => {
+      if (!Number.isFinite(eventId) || eventId <= 0) return;
+      if (!silent) {
+        setLoading(true);
+        setError(null);
+      }
+      try {
+        const [{ data }, event] = await Promise.all([
+          listEventApplications(eventId),
+          getEvent(eventId),
+        ]);
         setApplicants(data);
         setShowPublic(event.show_participants_publicly === true);
-      })
-      .catch((err) => {
-        if (!cancelled) {
+        if (silent) setError(null);
+      } catch (err) {
+        if (!silent) {
           setError(err instanceof Error ? err.message : 'Failed to load applications.');
         }
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
+      } finally {
+        if (!silent) setLoading(false);
+      }
+    },
+    [eventId],
+  );
+
+  useEffect(() => {
+    void load(false);
+  }, [load]);
+
+  useEffect(() => {
+    const refresh = () => void load(true);
+    const onFocus = () => refresh();
+    const onVis = () => {
+      if (document.visibilityState === 'visible') refresh();
     };
-  }, [eventId]);
+    const onNotify = (event: Event) => {
+      const id = eventIdFromApplicationsRefresh(event);
+      if (id === eventId) refresh();
+    };
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVis);
+    window.addEventListener(EVENT_APPLICATIONS_REFRESH, onNotify);
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVis);
+      window.removeEventListener(EVENT_APPLICATIONS_REFRESH, onNotify);
+    };
+  }, [eventId, load]);
 
   const decide = async (applicationId: number, status: 'approved' | 'rejected', name: string) => {
     setError(null);
