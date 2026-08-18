@@ -2,6 +2,11 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from '../App';
 import { MemoryRouter } from 'react-router-dom';
+import { ONBOARDING_STORAGE_KEY } from '../onboarding/storage';
+
+beforeEach(() => {
+  localStorage.setItem(ONBOARDING_STORAGE_KEY, '1');
+});
 
 test('app shell renders brand and navigation', () => {
   render(
@@ -38,5 +43,5 @@ test('app shell exposes theme control', () => {
       <App />
     </MemoryRouter>,
   );
-  expect(screen.getByRole('button', { name: /theme:/i })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: /switch to (dark|light) mode/i })).toBeInTheDocument();
 });
