@@ -10,6 +10,7 @@ import EventForm, {
 } from '../pages/Events/EventForm';
 import * as eventsApi from '../api/events';
 import * as profilesApi from '../api/profiles';
+import * as compressImageMod from '../lib/compressImage';
 import type { EventItem } from '../api/types';
 
 function futureLocal(daysAhead = 2, hour = 18): string {
@@ -49,9 +50,15 @@ vi.mock('../api/events', () => ({
   deleteEvent: vi.fn(),
 }));
 
+vi.mock('../lib/compressImage', () => ({
+  compressImage: vi.fn(async (file: File) => file),
+}));
+
 beforeEach(() => {
   vi.mocked(eventsApi.createEvent).mockReset();
   vi.mocked(eventsApi.updateEvent).mockReset();
+  vi.mocked(compressImageMod.compressImage).mockReset();
+  vi.mocked(compressImageMod.compressImage).mockImplementation(async (file: File) => file);
   vi.mocked(profilesApi.getProfile).mockResolvedValue({
     roles: ['player', 'organizer'],
     player: null,
@@ -223,5 +230,81 @@ describe('EventForm photo removal', () => {
     const form = onSubmit.mock.calls[0]?.[0] as FormData;
     expect(form.get('remove_photo')).toBe('1');
     expect(form.get('photo')).toBeNull();
+  });
+});
+
+describe('EventForm photo compression', () => {
+  test('compresses picked photo and submits compressed file', async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    const original = new File([new Uint8Array(80)], 'court.png', { type: 'image/png' });
+    const compressed = new File([new Uint8Array(40)], 'court.jpg', { type: 'image/jpeg' });
+    vi.mocked(compressImageMod.compressImage).mockResolvedValue(compressed);
+
+    render(
+      <MemoryRouter>
+        <EventForm submitLabel="Create event" onSubmit={onSubmit} />
+      </MemoryRouter>,
+    );
+
+    const input = screen.getByLabelText(/^photo$/i);
+    await user.upload(input, original);
+
+    await waitFor(() => {
+      expect(compressImageMod.compressImage).toHaveBeenCalledWith(original);
+    });
+
+    await user.type(screen.getByLabelText(/title/i), 'Sunday Open Play');
+    await user.type(screen.getByLabelText(/description/i), 'Casual games.');
+    await user.selectOptions(screen.getByLabelText(/event type/i), 'open_play');
+    await user.selectOptions(screen.getByLabelText(/skill level/i), 'all_levels');
+    await user.type(screen.getByLabelText(/barangay/i), 'Malabanias');
+    await user.selectOptions(screen.getByLabelText(/city/i), 'Angeles City');
+    fireEvent.change(screen.getByLabelText(/starts at/i), {
+      target: { value: futureLocal(3, 18) },
+    });
+    await user.click(screen.getByRole('button', { name: /create event/i }));
+
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalledTimes(1);
+    });
+    const form = onSubmit.mock.calls[0]?.[0] as FormData;
+    expect(form.get('photo')).toBe(compressed);
+  });
+
+  test('shows size error when compress rejects oversized result', async () => {
+    const user = userEvent.setup();
+    vi.mocked(compressImageMod.compressImage).mockRejectedValue(
+      new Error('Image must be 5MB or smaller.'),
+    );
+    const big = new File([new Uint8Array(100)], 'big.png', { type: 'image/png' });
+
+    render(
+      <MemoryRouter>
+        <EventForm submitLabel="Create event" onSubmit={vi.fn()} />
+      </MemoryRouter>,
+    );
+
+    await user.upload(screen.getByLabelText(/^photo$/i), big);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Image must be 5MB or smaller.');
+  });
+
+  test('shows process error when compress fails generically', async () => {
+    const user = userEvent.setup();
+    vi.mocked(compressImageMod.compressImage).mockRejectedValue(new Error('decode boom'));
+    const bad = new File([new Uint8Array(20)], 'x.png', { type: 'image/png' });
+
+    render(
+      <MemoryRouter>
+        <EventForm submitLabel="Create event" onSubmit={vi.fn()} />
+      </MemoryRouter>,
+    );
+
+    await user.upload(screen.getByLabelText(/^photo$/i), bad);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Could not process that image. Try another photo.',
+    );
   });
 });

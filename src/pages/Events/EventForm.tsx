@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { EventItem, EventType, SkillLevel } from '../../api/types';
+import BrandMark from '../../components/BrandMark';
 import {
   DEFAULT_EVENT_CITY,
   PAMPANGA_CENTER,
@@ -8,6 +9,7 @@ import {
   cityCenter,
 } from '../../data/pampanga';
 import { showToast } from '../../lib/adminNotifications';
+import { compressImage } from '../../lib/compressImage';
 
 interface Props {
   initial?: EventItem | null;
@@ -102,6 +104,7 @@ export default function EventForm({ initial = null, onSubmit, submitLabel }: Pro
   const [locationError, setLocationError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [compressing, setCompressing] = useState(false);
 
   useEffect(() => {
     if (!photo) return;
@@ -110,19 +113,32 @@ export default function EventForm({ initial = null, onSubmit, submitLabel }: Pro
     return () => URL.revokeObjectURL(url);
   }, [photo]);
 
-  const pickPhoto = (file: File | null) => {
-    if (!file) return;
+  const pickPhoto = async (file: File | null) => {
+    if (!file || compressing) return;
     if (!file.type.startsWith('image/')) {
       setError('Please choose an image file.');
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      setError('Image must be 5MB or smaller.');
-      return;
-    }
     setError(null);
-    setRemovePhoto(false);
-    setPhoto(file);
+    setCompressing(true);
+    try {
+      const next = await compressImage(file);
+      setRemovePhoto(false);
+      setPhoto(next);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : '';
+      if (message === 'Image must be 5MB or smaller.') {
+        setError('Image must be 5MB or smaller.');
+      } else if (message === 'Please choose an image file.') {
+        setError('Please choose an image file.');
+      } else {
+        setError('Could not process that image. Try another photo.');
+      }
+      setPhoto(null);
+      if (fileRef.current) fileRef.current.value = '';
+    } finally {
+      setCompressing(false);
+    }
   };
 
   const clearPhoto = () => {
@@ -201,7 +217,10 @@ export default function EventForm({ initial = null, onSubmit, submitLabel }: Pro
         <div className="pointer-events-none absolute -right-6 -top-8 h-24 w-24 rounded-full bg-cobalt/10 blur-2xl" aria-hidden />
         <div className="relative flex items-center justify-between gap-3">
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-chip-text">🏐 Host a game</p>
+            <p className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.14em] text-chip-text">
+              <BrandMark size={14} />
+              Host a game
+            </p>
             <h1 className="font-display text-xl font-extrabold text-navy">{submitLabel}</h1>
           </div>
           <Link
@@ -221,7 +240,7 @@ export default function EventForm({ initial = null, onSubmit, submitLabel }: Pro
         )}
 
         <div className="flex gap-3">
-          <div className="w-28 shrink-0 sm:w-32">
+          <div className="w-28 shrink-0 sm:w-32" aria-busy={compressing || undefined}>
             <input
               ref={fileRef}
               id={photoId}
@@ -229,7 +248,7 @@ export default function EventForm({ initial = null, onSubmit, submitLabel }: Pro
               accept="image/*"
               className="sr-only"
               aria-label="Photo"
-              onChange={(e) => pickPhoto(e.target.files?.[0] ?? null)}
+              onChange={(e) => void pickPhoto(e.target.files?.[0] ?? null)}
             />
             {preview ? (
               <div className="relative overflow-hidden rounded-xl border-2 border-sky-tint shadow-sm ring-2 ring-cobalt/10">
@@ -237,15 +256,17 @@ export default function EventForm({ initial = null, onSubmit, submitLabel }: Pro
                 <div className="absolute inset-x-0 bottom-0 flex gap-1 bg-gradient-to-t from-navy/85 to-transparent p-1.5 pt-6">
                   <button
                     type="button"
+                    disabled={compressing}
                     onClick={() => fileRef.current?.click()}
-                    className="flex-1 rounded-md bg-sky-tint py-0.5 text-[10px] font-bold text-chip-text"
+                    className="flex-1 rounded-md bg-sky-tint py-0.5 text-[10px] font-bold text-chip-text disabled:opacity-60"
                   >
-                    Change
+                    {compressing ? '…' : 'Change'}
                   </button>
                   <button
                     type="button"
+                    disabled={compressing}
                     onClick={clearPhoto}
-                    className="flex-1 rounded-md bg-white/20 py-0.5 text-[10px] font-bold text-white"
+                    className="flex-1 rounded-md bg-white/20 py-0.5 text-[10px] font-bold text-white disabled:opacity-60"
                   >
                     Remove
                   </button>
@@ -254,13 +275,16 @@ export default function EventForm({ initial = null, onSubmit, submitLabel }: Pro
             ) : (
               <button
                 type="button"
+                disabled={compressing}
                 onClick={() => fileRef.current?.click()}
-                className="flex aspect-square w-full flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-cobalt/30 bg-gradient-to-br from-sky-tint to-ice text-center shadow-sm transition hover:border-cobalt hover:shadow-soft"
+                className="flex aspect-square w-full flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-cobalt/30 bg-gradient-to-br from-sky-tint to-ice text-center shadow-sm transition hover:border-cobalt hover:shadow-soft disabled:opacity-60"
               >
                 <span className="flex h-8 w-8 items-center justify-center rounded-full bg-cobalt text-sm text-white shadow-soft" aria-hidden>
                   📷
                 </span>
-                <span className="px-1 text-[10px] font-bold text-chip-text">Add photo</span>
+                <span className="px-1 text-[10px] font-bold text-chip-text">
+                  {compressing ? 'Compressing…' : 'Add photo'}
+                </span>
               </button>
             )}
           </div>
