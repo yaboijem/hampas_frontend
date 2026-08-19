@@ -94,6 +94,39 @@ describe('EventDetailPage', () => {
     expect(screen.getByRole('button', { name: /^apply$/i })).toBeInTheDocument();
   });
 
+  test('shows Organizer / Coach {name} when host is a coach', async () => {
+    vi.mocked(eventsApi.getEvent).mockResolvedValue({
+      ...baseEvent,
+      created_by: { id: 4, name: 'Jamie Reyes', roles: ['player', 'coach'] },
+    });
+    renderDetail();
+
+    expect(await screen.findByText('Organizer')).toBeInTheDocument();
+    expect(screen.getByText('Coach Jamie Reyes')).toBeInTheDocument();
+  });
+
+  test('shows coach profile achievements experiences and bootcamp', async () => {
+    vi.mocked(eventsApi.getEvent).mockResolvedValue({
+      ...baseEvent,
+      created_by: {
+        id: 4,
+        name: 'Jamie Reyes',
+        roles: ['player', 'coach'],
+        coach: {
+          achievements: ['UAAP Final Four'],
+          experiences: ['Club coach 2019–2022', 'High school varsity'],
+          bootcamp_names: ['Jamie Skills Lab'],
+        },
+      },
+    });
+    renderDetail();
+
+    expect(await screen.findByRole('heading', { name: /coach profile/i })).toBeInTheDocument();
+    expect(screen.getByText('UAAP Final Four')).toBeInTheDocument();
+    expect(screen.getByText(/club coach 2019/i)).toBeInTheDocument();
+    expect(screen.getByText('Jamie Skills Lab')).toBeInTheDocument();
+  });
+
   test('shows pending review banner and owner tools', async () => {
     vi.mocked(eventsApi.getEvent).mockResolvedValue({
       ...baseEvent,

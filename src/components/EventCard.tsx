@@ -6,15 +6,16 @@ import {
   SKILL_LABEL,
   formatEventPlace,
   formatEventWhen,
-  typeEmoji,
   typeLabel,
 } from '../events/eventLabels';
+import BrandMark from './BrandMark';
+import TypeMark from './TypeMark';
 
 /**
  * CUSTOMIZE EVENT CARDS HERE → src/components/EventCard.tsx
  *
  * - Layout / chrome: this file (image, title, chips, hover, spacing)
- * - Type emoji + labels: src/events/eventLabels.ts → TYPE_LABEL, TYPE_EMOJI
+ * - Type marks + labels: src/events/eventLabels.ts + TypeMark
  * - Skill colors: src/events/eventLabels.ts → SKILL_BADGE_CLASS, SKILL_BADGE_OVERLAY_CLASS
  * - Used on: Events list (EventsPage). Detail page is EventDetailPage.tsx
  */
@@ -48,8 +49,8 @@ export default function EventCard({
             className="h-full w-full object-cover transition duration-300 group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:scale-100"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-4xl" aria-hidden>
-            🏐
+          <div className="flex h-full w-full items-center justify-center" aria-hidden>
+            <BrandMark size={56} className="opacity-90 drop-shadow-sm" />
           </div>
         )}
         <span
@@ -70,8 +71,9 @@ export default function EventCard({
         <p className="text-sm text-muted">{when}</p>
         <p className="text-sm text-muted">{place}</p>
         <div className="mt-auto flex flex-wrap gap-2 pt-2">
-          <span className="rounded-full bg-sky-tint px-2.5 py-1 text-xs font-medium text-chip-text">
-            {typeEmoji(event.event_type)} {typeLabel(event.event_type)}
+          <span className="inline-flex items-center gap-1 rounded-full bg-sky-tint px-2.5 py-1 text-xs font-medium text-chip-text">
+            <TypeMark type={event.event_type} size={14} />
+            {typeLabel(event.event_type)}
           </span>
           <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${skillBodyClass}`}>
             {skillLabel}

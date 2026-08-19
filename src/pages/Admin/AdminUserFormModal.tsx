@@ -41,7 +41,7 @@ type FormState = {
   is_admin: boolean;
   roles: Role[];
   player: { positions: PlayerPosition[]; skill_level: '' | Exclude<SkillLevel, 'all_levels'> };
-  coach: { achievements: string; bootcamp_name: string };
+  coach: { achievements: string; experiences: string; bootcamp_names: string };
   organizer: {
     managed_courts: string;
     contact_number: string;
@@ -60,7 +60,7 @@ const emptyForm = (): FormState => ({
   is_admin: false,
   roles: ['player'],
   player: { positions: [], skill_level: '' },
-  coach: { achievements: '', bootcamp_name: '' },
+  coach: { achievements: '', experiences: '', bootcamp_names: '' },
   organizer: {
     managed_courts: '',
     contact_number: '',
@@ -147,8 +147,25 @@ export default function AdminUserFormModal({ mode, userId, onClose, onSaved }: P
                 : '',
           },
           coach: {
-            achievements: coach?.achievements ?? '',
-            bootcamp_name: coach?.bootcamp_name ?? '',
+            achievements: Array.isArray(coach?.achievements)
+              ? coach.achievements.join(', ')
+              : typeof coach?.achievements === 'string'
+                ? coach.achievements
+                : '',
+            experiences: Array.isArray(coach?.experiences)
+              ? coach.experiences.join(', ')
+              : typeof coach?.experiences === 'string'
+                ? coach.experiences
+                : '',
+            bootcamp_names: Array.isArray(coach?.bootcamp_names)
+              ? coach.bootcamp_names.join(', ')
+              : typeof coach?.bootcamp_names === 'string'
+                ? coach.bootcamp_names
+                : Array.isArray(coach?.bootcamp_name)
+                  ? coach.bootcamp_name.join(', ')
+                  : typeof coach?.bootcamp_name === 'string'
+                    ? coach.bootcamp_name
+                    : '',
           },
           organizer: {
             managed_courts: courtsToString(organizer?.managed_courts),
@@ -205,9 +222,15 @@ export default function AdminUserFormModal({ mode, userId, onClose, onSaved }: P
       profiles.player = null;
     }
     if (form.roles.includes('coach')) {
+      const split = (raw: string) =>
+        raw
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean);
       profiles.coach = {
-        achievements: form.coach.achievements || undefined,
-        bootcamp_name: form.coach.bootcamp_name || undefined,
+        achievements: split(form.coach.achievements),
+        experiences: split(form.coach.experiences),
+        bootcamp_names: split(form.coach.bootcamp_names),
       };
     } else {
       profiles.coach = null;
@@ -445,9 +468,9 @@ export default function AdminUserFormModal({ mode, userId, onClose, onSaved }: P
                     <legend className="px-1 text-sm font-semibold text-navy">Coach profile</legend>
                     <label className="block">
                       <span className={labelClass}>Achievements</span>
-                      <textarea
+                      <input
                         className={fieldClass}
-                        rows={2}
+                        placeholder="Comma-separated"
                         value={form.coach.achievements}
                         onChange={(e) =>
                           setForm((f) => ({
@@ -458,14 +481,29 @@ export default function AdminUserFormModal({ mode, userId, onClose, onSaved }: P
                       />
                     </label>
                     <label className="block">
-                      <span className={labelClass}>Bootcamp name</span>
+                      <span className={labelClass}>Experiences</span>
                       <input
                         className={fieldClass}
-                        value={form.coach.bootcamp_name}
+                        placeholder="Comma-separated"
+                        value={form.coach.experiences}
                         onChange={(e) =>
                           setForm((f) => ({
                             ...f,
-                            coach: { ...f.coach, bootcamp_name: e.target.value },
+                            coach: { ...f.coach, experiences: e.target.value },
+                          }))
+                        }
+                      />
+                    </label>
+                    <label className="block">
+                      <span className={labelClass}>Bootcamp names</span>
+                      <input
+                        className={fieldClass}
+                        placeholder="Comma-separated"
+                        value={form.coach.bootcamp_names}
+                        onChange={(e) =>
+                          setForm((f) => ({
+                            ...f,
+                            coach: { ...f.coach, bootcamp_names: e.target.value },
                           }))
                         }
                       />

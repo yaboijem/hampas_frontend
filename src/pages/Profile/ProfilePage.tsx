@@ -122,6 +122,94 @@ function Chip({ children }: { children: ReactNode }) {
   );
 }
 
+function StringListField({
+  label,
+  hint,
+  items,
+  onChange,
+  itemLabel,
+  fieldClassName,
+  secondaryBtnClass,
+}: {
+  label: string;
+  hint?: string;
+  items: string[];
+  onChange: (next: string[]) => void;
+  itemLabel: string;
+  fieldClassName: string;
+  secondaryBtnClass: string;
+}) {
+  const list = items.length > 0 ? items : [''];
+  return (
+    <div>
+      <span className={labelClass}>{label}</span>
+      {hint ? <p className="mt-0.5 text-xs text-muted">{hint}</p> : null}
+      <div className="mt-2 space-y-2">
+        {list.map((item, index) => (
+          <div key={index} className="flex gap-2">
+            <label className="block min-w-0 flex-1">
+              <span className="sr-only">
+                {itemLabel} {index + 1}
+              </span>
+              <input
+                className={fieldClassName}
+                value={item}
+                placeholder={`${itemLabel} ${index + 1}`}
+                onChange={(e) =>
+                  onChange(list.map((c, i) => (i === index ? e.target.value : c)))
+                }
+              />
+            </label>
+            {list.length > 1 ? (
+              <button
+                type="button"
+                className={secondaryBtnClass}
+                aria-label={`Remove ${itemLabel.toLowerCase()} ${index + 1}`}
+                onClick={() => onChange(list.filter((_, i) => i !== index))}
+              >
+                −
+              </button>
+            ) : null}
+          </div>
+        ))}
+        <button
+          type="button"
+          className={secondaryBtnClass}
+          aria-label={`Add ${itemLabel.toLowerCase()}`}
+          onClick={() => onChange([...list, ''])}
+        >
+          +
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function StringListView({
+  label,
+  items,
+}: {
+  label: string;
+  items: string[];
+}) {
+  return (
+    <div>
+      <dt className={labelClass}>{label}</dt>
+      <dd className="mt-0.5 text-navy">
+        {items.length > 0 ? (
+          <ul className="list-disc space-y-1 pl-4">
+            {items.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        ) : (
+          <span className="text-muted">Not set</span>
+        )}
+      </dd>
+    </div>
+  );
+}
+
 function ProfileSkeleton() {
   return (
     <div className="space-y-3" aria-busy="true" aria-label="Loading profile">
@@ -218,7 +306,9 @@ export default function ProfilePage() {
     positions: PlayerPosition[];
     skill_level: SkillLevel | '';
   }>({ positions: [], skill_level: '' });
-  const [coachDraft, setCoachDraft] = useState({ achievements: '', bootcamp_name: '' });
+  const [achievementsDraft, setAchievementsDraft] = useState<string[]>(['']);
+  const [experiencesDraft, setExperiencesDraft] = useState<string[]>(['']);
+  const [bootcampsDraft, setBootcampsDraft] = useState<string[]>(['']);
   const [courtsDraft, setCourtsDraft] = useState<string[]>(['']);
   const [contactDraft, setContactDraft] = useState({
     contact_number: '',
@@ -272,10 +362,14 @@ export default function ProfilePage() {
       positions,
       skill_level: data.player?.skill_level ?? '',
     });
-    setCoachDraft({
-      achievements: data.coach?.achievements ?? '',
-      bootcamp_name: data.coach?.bootcamp_name ?? '',
-    });
+    const achievements = asCourtList(data.coach?.achievements);
+    setAchievementsDraft(achievements.length > 0 ? achievements : ['']);
+    const experiences = asCourtList(data.coach?.experiences);
+    setExperiencesDraft(experiences.length > 0 ? experiences : ['']);
+    const bootcamps = asCourtList(
+      data.coach?.bootcamp_names ?? data.coach?.bootcamp_name,
+    );
+    setBootcampsDraft(bootcamps.length > 0 ? bootcamps : ['']);
     const courts = asCourtList(data.organizer?.managed_courts);
     setCourtsDraft(courts.length > 0 ? courts : ['']);
     setContactDraft({
@@ -351,10 +445,14 @@ export default function ProfilePage() {
       });
     }
     if (key === 'coach') {
-      setCoachDraft({
-        achievements: profile.coach?.achievements ?? '',
-        bootcamp_name: profile.coach?.bootcamp_name ?? '',
-      });
+      const achievements = asCourtList(profile.coach?.achievements);
+      setAchievementsDraft(achievements.length > 0 ? achievements : ['']);
+      const experiences = asCourtList(profile.coach?.experiences);
+      setExperiencesDraft(experiences.length > 0 ? experiences : ['']);
+      const bootcamps = asCourtList(
+        profile.coach?.bootcamp_names ?? profile.coach?.bootcamp_name,
+      );
+      setBootcampsDraft(bootcamps.length > 0 ? bootcamps : ['']);
     }
     if (key === 'organizer') {
       const courts = asCourtList(profile.organizer?.managed_courts);
@@ -494,9 +592,13 @@ export default function ProfilePage() {
     setError(null);
     setSavingRole('coach');
     try {
+      const achievements = achievementsDraft.map((c) => c.trim()).filter(Boolean);
+      const experiences = experiencesDraft.map((c) => c.trim()).filter(Boolean);
+      const bootcamp_names = bootcampsDraft.map((c) => c.trim()).filter(Boolean);
       await updateRole('coach', {
-        achievements: coachDraft.achievements,
-        bootcamp_name: coachDraft.bootcamp_name,
+        achievements,
+        experiences,
+        bootcamp_names,
       });
       await load();
       setEditing((e) => ({ ...e, coach: false }));
@@ -936,66 +1038,76 @@ export default function ProfilePage() {
               icon={ROLE_META.coach.icon}
               open={openCard === 'coach'}
               onToggle={() => toggleCard('coach')}
-              summary={
-                profile.coach?.bootcamp_name || profile.coach?.achievements ? (
+              summary={(() => {
+                const achievements = asCourtList(profile.coach?.achievements);
+                const experiences = asCourtList(profile.coach?.experiences);
+                const bootcamps = asCourtList(
+                  profile.coach?.bootcamp_names ?? profile.coach?.bootcamp_name,
+                );
+                if (achievements.length + experiences.length + bootcamps.length === 0) {
+                  return <span className="text-xs text-muted">Not set</span>;
+                }
+                return (
                   <>
-                    {profile.coach?.bootcamp_name ? (
-                      <Chip>{profile.coach.bootcamp_name}</Chip>
+                    {bootcamps.slice(0, 2).map((b) => (
+                      <Chip key={b}>{b}</Chip>
+                    ))}
+                    {experiences.length > 0 ? (
+                      <Chip>{experiences.length} experience(s)</Chip>
                     ) : null}
-                    {profile.coach?.achievements ? (
-                      <span className="line-clamp-1 text-xs text-muted">
-                        {profile.coach.achievements}
-                      </span>
+                    {achievements.length > 0 ? (
+                      <Chip>{achievements.length} achievement(s)</Chip>
                     ) : null}
                   </>
-                ) : (
-                  <span className="text-xs text-muted">Not set</span>
-                )
-              }
+                );
+              })()}
             >
               {editing.coach ? (
                 <div className="space-y-3">
-                  <label htmlFor="edit-coach-achievements" className="block">
-                    <span className={labelClass}>Achievements</span>
-                    <input
-                      id="edit-coach-achievements"
-                      className={fieldClass}
-                      value={coachDraft.achievements}
-                      onChange={(e) =>
-                        setCoachDraft((d) => ({ ...d, achievements: e.target.value }))
-                      }
-                    />
-                  </label>
-                  <label htmlFor="edit-coach-bootcamp_name" className="block">
-                    <span className={labelClass}>Bootcamp name</span>
-                    <input
-                      id="edit-coach-bootcamp_name"
-                      className={fieldClass}
-                      value={coachDraft.bootcamp_name}
-                      onChange={(e) =>
-                        setCoachDraft((d) => ({ ...d, bootcamp_name: e.target.value }))
-                      }
-                    />
-                  </label>
+                  <StringListField
+                    label="Achievements"
+                    hint="Add one or more achievement items."
+                    items={achievementsDraft}
+                    onChange={setAchievementsDraft}
+                    itemLabel="Achievement"
+                    fieldClassName={fieldClass}
+                    secondaryBtnClass={secondaryBtn}
+                  />
+                  <StringListField
+                    label="Experiences"
+                    hint="Add one or more experience items."
+                    items={experiencesDraft}
+                    onChange={setExperiencesDraft}
+                    itemLabel="Experience"
+                    fieldClassName={fieldClass}
+                    secondaryBtnClass={secondaryBtn}
+                  />
+                  <StringListField
+                    label="Bootcamp names"
+                    hint="Add one or more bootcamp names."
+                    items={bootcampsDraft}
+                    onChange={setBootcampsDraft}
+                    itemLabel="Bootcamp"
+                    fieldClassName={fieldClass}
+                    secondaryBtnClass={secondaryBtn}
+                  />
                 </div>
               ) : (
                 <dl className="space-y-2 text-sm">
-                  <div>
-                    <dt className={labelClass}>Achievements</dt>
-                    <dd className="mt-0.5 text-navy">
-                      {profile.coach?.achievements || (
-                        <span className="text-muted">Not set</span>
-                      )}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className={labelClass}>Bootcamp name</dt>
-                    <dd className="mt-0.5 text-navy">
-                      {profile.coach?.bootcamp_name || (
-                        <span className="text-muted">Not set</span>
-                      )}
-                    </dd>
-                  </div>
+                  <StringListView
+                    label="Achievements"
+                    items={asCourtList(profile.coach?.achievements)}
+                  />
+                  <StringListView
+                    label="Experiences"
+                    items={asCourtList(profile.coach?.experiences)}
+                  />
+                  <StringListView
+                    label="Bootcamp names"
+                    items={asCourtList(
+                      profile.coach?.bootcamp_names ?? profile.coach?.bootcamp_name,
+                    )}
+                  />
                 </dl>
               )}
               {editActions('coach', () => void saveCoach(), savingRole === 'coach', 'Save coach')}

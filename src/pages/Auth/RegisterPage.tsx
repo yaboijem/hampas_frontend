@@ -97,7 +97,7 @@ export default function RegisterPage() {
           />
         </label>
         <label htmlFor="register-email" className="block">
-          <span className={labelClass}>Email</span>
+          <span className={labelClass}>Email (active only)</span>
           <input
             id="register-email"
             type="email"

@@ -84,7 +84,14 @@ describe('EventRequestsPanel', () => {
       expect.objectContaining({ visibility: 'pending_review', page: 1 }),
     );
 
-    await user.click(screen.getByRole('button', { name: /approve/i }));
+    await user.click(screen.getByRole('button', { name: /angeles open cup/i }));
+    expect(await screen.findByText(/review me/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /open event page/i })).toHaveAttribute(
+      'href',
+      '/events/11',
+    );
+
+    await user.click(screen.getByRole('button', { name: /^approve$/i }));
     await waitFor(() => expect(adminApi.approveEvent).toHaveBeenCalledWith(11));
   });
 
@@ -104,7 +111,7 @@ describe('EventRequestsPanel', () => {
     );
 
     await screen.findByText('Reject Me');
-    await user.click(screen.getByRole('button', { name: /reject/i }));
+    await user.click(screen.getByRole('button', { name: /^reject$/i }));
     await waitFor(() => expect(adminApi.rejectEvent).toHaveBeenCalledWith(12));
   });
 

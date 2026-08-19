@@ -175,7 +175,7 @@ describe('ProfilePage', () => {
 
     await expand(/elevated access/i);
     expect(await screen.findByText('Pending')).toBeInTheDocument();
-    expect(screen.queryByLabelText(/bootcamp name/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/bootcamp 1/i)).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /request coach/i })).not.toBeInTheDocument();
   });
 
@@ -183,12 +183,15 @@ describe('ProfilePage', () => {
     vi.mocked(profilesApi.getProfile).mockResolvedValue({
       roles: ['player', 'coach'],
       player: {},
-      coach: { achievements: 'Regionals finalist' },
+      coach: { achievements: ['Regionals finalist'] },
       organizer: null,
     });
     vi.mocked(profilesApi.updateRole).mockResolvedValue({
       role: 'coach',
-      profile: { achievements: 'Regionals finalist', bootcamp_name: 'Hampas Academy' },
+      profile: {
+        achievements: ['Regionals finalist'],
+        bootcamp_names: ['Hampas Academy'],
+      },
     });
 
     const user = userEvent.setup();
@@ -200,13 +203,13 @@ describe('ProfilePage', () => {
 
     await expand(/coach details/i);
     await user.click(screen.getByRole('button', { name: /^edit$/i }));
-    await user.type(screen.getByLabelText(/bootcamp name/i), 'Hampas Academy');
+    await user.type(screen.getByLabelText(/bootcamp 1/i), 'Hampas Academy');
     await user.click(screen.getByRole('button', { name: /save coach/i }));
 
     await waitFor(() =>
       expect(profilesApi.updateRole).toHaveBeenCalledWith(
         'coach',
-        expect.objectContaining({ bootcamp_name: 'Hampas Academy' }),
+        expect.objectContaining({ bootcamp_names: ['Hampas Academy'] }),
       ),
     );
   });

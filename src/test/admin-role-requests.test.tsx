@@ -64,7 +64,12 @@ describe('RoleRequestsPanel', () => {
     );
 
     expect(await screen.findByText('Jem Player')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: /approve/i }));
+
+    await user.click(screen.getByRole('button', { name: /jem player/i }));
+    expect(await screen.findByText('Requested')).toBeInTheDocument();
+    expect(screen.getByText(/no note provided|i run angeles courts/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /^approve$/i }));
 
     await waitFor(() => expect(adminApi.approveRoleRequest).toHaveBeenCalledWith(7));
   });

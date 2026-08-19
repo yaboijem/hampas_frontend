@@ -64,11 +64,11 @@ describe('AppHeader Users nav', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getAllByRole('link', { name: /^users$/i }).length).toBeGreaterThan(0);
+      expect(screen.getAllByRole('link', { name: /users management/i }).length).toBeGreaterThan(0);
     });
 
-    const usersLinks = screen.getAllByRole('link', { name: /^users$/i });
+    const usersLinks = screen.getAllByRole('link', { name: /users management/i });
     expect(usersLinks[0]).toHaveAttribute('href', '/admin/users');
-    expect(screen.getAllByRole('link', { name: /admin/i }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('link', { name: /requests/i }).length).toBeGreaterThan(0);
   });
 });

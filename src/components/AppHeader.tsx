@@ -91,7 +91,14 @@ export default function AppHeader() {
       >
         <div className="flex min-w-0 flex-1 items-center gap-1.5 sm:gap-3">
           <span className="brand-ball shrink-0" aria-hidden>
-            <span className="brand-ball__glyph">🏐</span>
+            <img
+              className="brand-ball__glyph"
+              src="/favicon.png"
+              alt=""
+              width={43}
+              height={43}
+              draggable={false}
+            />
           </span>
           <div className="min-w-0 flex-1 flex-col justify-center pl-0.5 sm:pl-1">
             <Link
@@ -126,12 +133,12 @@ export default function AppHeader() {
                 <>
                   <NavLink to="/admin/requests" className={adminLinkClass}>
                     <span className="inline-flex items-center">
-                      Admin
+                      Requests
                       <AdminPendingBadge count={counts.total} />
                     </span>
                   </NavLink>
                   <NavLink to="/admin/users" className={linkClass}>
-                    Users
+                    Users Management
                   </NavLink>
                 </>
               ) : null}
@@ -235,7 +242,7 @@ export default function AppHeader() {
                             className={adminMenuLinkClass}
                           >
                             <span className="inline-flex items-center">
-                              Admin
+                              Requests
                               <AdminPendingBadge count={counts.total} />
                             </span>
                           </NavLink>
@@ -244,7 +251,7 @@ export default function AppHeader() {
                             role="menuitem"
                             className={menuLinkClass}
                           >
-                            Users
+                            Users Management
                           </NavLink>
                         </>
                       ) : null}

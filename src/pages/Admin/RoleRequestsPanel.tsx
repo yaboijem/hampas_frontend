@@ -22,10 +22,16 @@ export default function RoleRequestsPanel({
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<number | null>(null);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
 
   useEffect(() => {
     setPage(1);
+    setExpandedId(null);
   }, [role, query]);
+
+  useEffect(() => {
+    setExpandedId(null);
+  }, [page]);
 
   useEffect(() => {
     let cancelled = false;
@@ -136,35 +142,92 @@ export default function RoleRequestsPanel({
         <p className="text-sm text-muted">{emptyCopy}</p>
       ) : (
         <>
-          <ul className="space-y-3">
-            {items.map((r) => (
-              <li
-                key={r.id}
-                className="rounded-[var(--radius-card)] border border-border bg-surface p-3 shadow-soft"
-              >
-                <p className="font-display font-bold text-navy">{r.user.name}</p>
-                <p className="text-sm text-muted">{r.user.email}</p>
-                {r.note ? <p className="mt-1 text-sm text-muted">{r.note}</p> : null}
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    disabled={busyId === r.id}
-                    onClick={() => void approve(r.id)}
-                    className="rounded-[var(--radius-control)] bg-cobalt px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
-                  >
-                    Approve
-                  </button>
-                  <button
-                    type="button"
-                    disabled={busyId === r.id}
-                    onClick={() => void reject(r.id)}
-                    className="rounded-[var(--radius-control)] border border-border px-3 py-2 text-sm font-semibold text-navy disabled:opacity-60"
-                  >
-                    Reject
-                  </button>
-                </div>
-              </li>
-            ))}
+          <ul className="divide-y divide-border overflow-hidden rounded-[var(--radius-card)] border border-border bg-surface shadow-soft">
+            {items.map((r) => {
+              const open = expandedId === r.id;
+              return (
+                <li key={r.id} className="bg-surface">
+                  <div className="flex items-center gap-2 px-2.5 py-2 sm:gap-3 sm:px-3">
+                    <button
+                      type="button"
+                      aria-expanded={open}
+                      onClick={() => setExpandedId(open ? null : r.id)}
+                      className="min-w-0 flex-1 rounded-md text-left outline-none focus-visible:ring-2 focus-visible:ring-cobalt/35"
+                    >
+                      <div className="flex min-w-0 items-start gap-1.5">
+                        <span
+                          className="mt-0.5 shrink-0 text-xs text-muted transition-transform"
+                          aria-hidden
+                          style={{ transform: open ? 'rotate(90deg)' : undefined }}
+                        >
+                          ›
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="flex min-w-0 flex-wrap items-baseline gap-x-1.5 gap-y-0">
+                            <span className="truncate text-sm font-semibold text-navy">
+                              {r.user.name}
+                            </span>
+                            <span className="truncate text-xs text-muted">{r.user.email}</span>
+                          </span>
+                          {r.note && !open ? (
+                            <span className="mt-0.5 block line-clamp-1 text-xs text-muted">
+                              {r.note}
+                            </span>
+                          ) : null}
+                        </span>
+                      </div>
+                    </button>
+                    <div className="flex shrink-0 items-center gap-1">
+                      <button
+                        type="button"
+                        disabled={busyId === r.id}
+                        onClick={() => void approve(r.id)}
+                        className="inline-flex h-8 items-center justify-center rounded-[var(--radius-control)] bg-cobalt px-2 text-xs font-semibold text-white disabled:opacity-60"
+                      >
+                        Approve
+                      </button>
+                      <button
+                        type="button"
+                        disabled={busyId === r.id}
+                        onClick={() => void reject(r.id)}
+                        className="inline-flex h-8 items-center justify-center rounded-[var(--radius-control)] border border-border bg-surface px-2 text-xs font-semibold text-navy disabled:opacity-60"
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  </div>
+                  {open ? (
+                    <div className="space-y-2 border-t border-border/70 bg-ice/50 px-3 py-2.5 sm:px-4">
+                      <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-xs">
+                        <dt className="text-muted">Name</dt>
+                        <dd className="font-medium text-navy">{r.user.name}</dd>
+                        <dt className="text-muted">Email</dt>
+                        <dd className="break-all font-medium text-navy">{r.user.email}</dd>
+                        <dt className="text-muted">Role</dt>
+                        <dd className="font-medium capitalize text-navy">{r.role}</dd>
+                        <dt className="text-muted">Status</dt>
+                        <dd className="font-medium capitalize text-navy">{r.status}</dd>
+                        <dt className="text-muted">Requested</dt>
+                        <dd className="font-medium text-navy">
+                          {new Date(r.created_at).toLocaleString(undefined, {
+                            dateStyle: 'medium',
+                            timeStyle: 'short',
+                          })}
+                        </dd>
+                      </dl>
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-wide text-muted">
+                          Note
+                        </p>
+                        <p className="mt-0.5 whitespace-pre-wrap text-sm text-navy">
+                          {r.note?.trim() ? r.note : 'No note provided.'}
+                        </p>
+                      </div>
+                    </div>
+                  ) : null}
+                </li>
+              );
+            })}
           </ul>
           <AdminPagination
             page={page}

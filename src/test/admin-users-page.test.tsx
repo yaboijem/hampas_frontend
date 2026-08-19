@@ -75,12 +75,42 @@ describe('AdminUsersPage', () => {
       ),
     );
 
-    await user.click(screen.getByRole('button', { name: /^coach$/i }));
+    await user.click(screen.getByRole('button', { name: /^filters$/i }));
+    const panel = await screen.findByRole('dialog', { name: /role filters/i });
+    await user.click(within(panel).getByRole('button', { name: /^coach$/i }));
     await waitFor(() =>
       expect(adminApi.listAdminUsers).toHaveBeenCalledWith(
         expect.objectContaining({ roles: ['coach'], page: 1 }),
       ),
     );
+  });
+
+  test('expands a user row to show full details', async () => {
+    const user = userEvent.setup();
+    vi.mocked(adminApi.getAdminUser).mockResolvedValue({
+      id: 1,
+      name: 'Pat Player',
+      email: 'pat@example.com',
+      birth_date: '1998-01-01',
+      gender: 'female',
+      is_admin: false,
+      roles: ['player'],
+      profiles: {
+        player: { positions: ['setter'], skill_level: 'beginner' },
+        coach: null,
+        organizer: null,
+      },
+      created_at: '2026-08-01T00:00:00Z',
+    });
+
+    renderPage();
+    await screen.findByText('Pat Player');
+    await user.click(screen.getByRole('button', { name: /pat player/i }));
+
+    await waitFor(() => expect(adminApi.getAdminUser).toHaveBeenCalledWith(1));
+    expect(await screen.findByText('Player profile')).toBeInTheDocument();
+    expect(screen.getByText(/setter/i)).toBeInTheDocument();
+    expect(screen.getByText(/birth date/i)).toBeInTheDocument();
   });
 
   test('creates a user from the modal', async () => {

@@ -8,6 +8,8 @@ import {
   TYPE_LABEL,
   formatEventPlace,
   formatEventWhen,
+  hostDisplayName,
+  hostRoleLabel,
 } from '../events/eventLabels';
 
 describe('eventLabels', () => {
@@ -16,7 +18,7 @@ describe('eventLabels', () => {
     expect(TYPE_LABEL.training_camp).toBe('Training Camp');
     expect(TYPE_LABEL.exclusive).toBe('Exclusive');
     expect(TYPE_LABEL.try_out).toBe('Try Out');
-    expect(TYPE_EMOJI.open_play).toBe('🏐');
+    expect(TYPE_EMOJI.open_play).toBe('');
     expect(TYPE_EMOJI.league).toBe('🏅');
     expect(TYPE_EMOJI.tournament).toBe('🏆');
     expect(TYPE_EMOJI.training_camp).toBe('💪');
@@ -51,5 +53,13 @@ describe('eventLabels', () => {
   test('formatEventWhen produces a non-empty locale string', () => {
     const s = formatEventWhen('2026-08-20T18:00:00+08:00');
     expect(s.length).toBeGreaterThan(5);
+  });
+
+  test('host title for coach vs organizer', () => {
+    expect(hostRoleLabel(['coach'])).toBe('Organizer');
+    expect(hostRoleLabel(['organizer'])).toBe('Organizer');
+    expect(hostDisplayName('Alex', ['coach'])).toBe('Coach Alex');
+    expect(hostDisplayName('Alex', ['organizer'])).toBe('Alex');
+    expect(hostDisplayName('Alex', ['coach', 'organizer'])).toBe('Coach Alex');
   });
 });

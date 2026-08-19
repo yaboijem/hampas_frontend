@@ -10,8 +10,10 @@ import {
   InstagramIcon,
   PhoneIcon,
 } from '../../components/ContactIcons';
+import BrandMark from '../../components/BrandMark';
 import DeleteEventModal from '../../components/DeleteEventModal';
 import ReportModal from '../../components/ReportModal';
+import TypeMark from '../../components/TypeMark';
 import {
   EVENT_DETAIL_REFRESH,
   eventIdFromDetailRefresh,
@@ -19,10 +21,11 @@ import {
 import {
   SKILL_BADGE_CLASS,
   SKILL_LABEL,
-  typeEmoji,
   typeLabel,
   formatEventPlace,
   formatEventWhen,
+  hostDisplayName,
+  hostRoleLabel,
 } from '../../events/eventLabels';
 
 const PLAYERS_POLL_MS = 8_000;
@@ -174,8 +177,8 @@ export default function EventDetailPage() {
             className="h-full w-full object-cover"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-5xl" aria-hidden>
-            🏐
+          <div className="flex h-full w-full items-center justify-center" aria-hidden>
+            <BrandMark size={72} className="opacity-90 drop-shadow-sm" />
           </div>
         )}
         {event.distance_km !== undefined && (
@@ -190,8 +193,9 @@ export default function EventDetailPage() {
           {event.title}
         </h1>
         <div className="flex flex-wrap gap-2">
-          <span className="rounded-full bg-sky-tint px-2.5 py-1 text-xs font-medium text-chip-text">
-            {typeEmoji(event.event_type)} {typeLabel(event.event_type)}
+          <span className="inline-flex items-center gap-1 rounded-full bg-sky-tint px-2.5 py-1 text-xs font-medium text-chip-text">
+            <TypeMark type={event.event_type} size={14} />
+            {typeLabel(event.event_type)}
           </span>
           <span
             className={`rounded-full px-2.5 py-1 text-xs font-medium ${SKILL_BADGE_CLASS[event.skill_level]}`}
@@ -224,10 +228,78 @@ export default function EventDetailPage() {
           </div>
         )}
         <div className="flex justify-between gap-4 px-4 py-3">
-          <dt className="text-sm text-muted">Organizer</dt>
-          <dd className="text-right text-sm font-medium text-navy">{event.created_by.name}</dd>
+          <dt className="text-sm text-muted">{hostRoleLabel(event.created_by.roles)}</dt>
+          <dd className="text-right text-sm font-medium text-navy">
+            {hostDisplayName(event.created_by.name, event.created_by.roles)}
+          </dd>
         </div>
       </dl>
+
+      {(() => {
+        const coach = event.created_by.coach;
+        if (!coach) return null;
+        const achievements = coach.achievements ?? [];
+        const experiences = coach.experiences ?? [];
+        const bootcamps = coach.bootcamp_names ?? [];
+        if (achievements.length + experiences.length + bootcamps.length === 0) return null;
+        return (
+          <section
+            className="mb-6 rounded-[var(--radius-card)] border border-border bg-surface p-4 shadow-soft"
+            aria-labelledby="coach-profile-heading"
+          >
+            <h2
+              id="coach-profile-heading"
+              className="font-display text-sm font-semibold uppercase tracking-wide text-muted"
+            >
+              Coach profile
+            </h2>
+            <dl className="mt-3 space-y-3 text-sm">
+              {achievements.length > 0 ? (
+                <div>
+                  <dt className="text-xs font-bold uppercase tracking-wide text-chip-text">
+                    Achievements
+                  </dt>
+                  <dd className="mt-0.5 text-navy">
+                    <ul className="list-disc space-y-1 pl-4">
+                      {achievements.map((item) => (
+                        <li key={item}>{item}</li>
+                      ))}
+                    </ul>
+                  </dd>
+                </div>
+              ) : null}
+              {experiences.length > 0 ? (
+                <div>
+                  <dt className="text-xs font-bold uppercase tracking-wide text-chip-text">
+                    Experiences
+                  </dt>
+                  <dd className="mt-0.5 text-navy">
+                    <ul className="list-disc space-y-1 pl-4">
+                      {experiences.map((item) => (
+                        <li key={item}>{item}</li>
+                      ))}
+                    </ul>
+                  </dd>
+                </div>
+              ) : null}
+              {bootcamps.length > 0 ? (
+                <div>
+                  <dt className="text-xs font-bold uppercase tracking-wide text-chip-text">
+                    Bootcamp names
+                  </dt>
+                  <dd className="mt-0.5 text-navy">
+                    <ul className="list-disc space-y-1 pl-4">
+                      {bootcamps.map((item) => (
+                        <li key={item}>{item}</li>
+                      ))}
+                    </ul>
+                  </dd>
+                </div>
+              ) : null}
+            </dl>
+          </section>
+        );
+      })()}
 
       {event.show_participants_publicly &&
         event.approved_participants &&

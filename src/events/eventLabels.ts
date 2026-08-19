@@ -10,8 +10,9 @@ export const TYPE_LABEL: Record<EventType, string> = {
   try_out: 'Try Out',
 };
 
+/** Empty string = use BrandMark (favicon), not emoji. */
 export const TYPE_EMOJI: Record<EventType, string> = {
-  open_play: '🏐',
+  open_play: '',
   league: '🏅',
   tournament: '🏆',
   training_camp: '💪',
@@ -25,7 +26,7 @@ export function typeLabel(type: string): string {
 }
 
 export function typeEmoji(type: string): string {
-  return (TYPE_EMOJI as Record<string, string>)[type] ?? '🏐';
+  return (TYPE_EMOJI as Record<string, string>)[type] ?? '';
 }
 export const SKILL_LABEL: Record<SkillLevel, string> = {
   beginner: 'Beginner',
@@ -59,4 +60,18 @@ export function formatEventWhen(startsAt: string): string {
     dateStyle: 'medium',
     timeStyle: 'short',
   });
+}
+
+/** Fact-row label for the event host (always Organizer). */
+export function hostRoleLabel(_roles?: string[] | null): string {
+  return 'Organizer';
+}
+
+/** Display name: Coach {name} when host has coach role. */
+export function hostDisplayName(name: string, roles?: string[] | null): string {
+  const set = new Set(roles ?? []);
+  if (set.has('coach')) {
+    return `Coach ${name}`;
+  }
+  return name;
 }

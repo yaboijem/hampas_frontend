@@ -107,10 +107,18 @@ export interface EventItem {
   created_by: {
     id: number;
     name: string;
+    /** Host capability roles (player/coach/organizer). */
+    roles?: Role[];
     contact_number?: string | null;
     contact_email?: string | null;
     facebook_url?: string | null;
     instagram_url?: string | null;
+    /** Present when host has coach role. */
+    coach?: {
+      achievements?: string[];
+      experiences?: string[];
+      bootcamp_names?: string[];
+    } | null;
   };
 }
 
@@ -126,7 +134,11 @@ export interface ProfileFieldset {
   position?: string;
   positions?: PlayerPosition[];
   skill_level?: SkillLevel;
-  achievements?: string;
+  /** coach list fields (API JSON arrays) */
+  achievements?: string[] | string;
+  experiences?: string[] | string;
+  bootcamp_names?: string[] | string;
+  /** @deprecated use bootcamp_names */
   bootcamp_name?: string;
   /** list of court names (API JSON array) */
   managed_courts?: string[] | string;

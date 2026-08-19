@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import BrandMark from '../../components/BrandMark';
 import EventCard from '../../components/EventCard';
 import { listEvents, nearbyEvents, type EventFilters } from '../../api/discovery';
 import type { EventItem, EventType, SkillLevel } from '../../api/types';
@@ -392,7 +393,7 @@ export default function EventsPage() {
       : 'Any day';
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <div
         data-testid="events-hero"
         className="hero-enter relative overflow-hidden rounded-[var(--radius-card)] border border-border shadow-soft"
@@ -807,8 +808,8 @@ export default function EventsPage() {
         <EventsGridSkeleton />
       ) : visible.length === 0 ? (
         <div className="rounded-[var(--radius-card)] border border-dashed border-border bg-surface px-6 py-16 text-center">
-          <div className="text-4xl" aria-hidden>
-            🏐
+          <div className="flex justify-center" aria-hidden>
+            <BrandMark size={48} className="opacity-90" />
           </div>
           <h2 className="font-display mt-3 text-xl font-bold text-navy">No events found</h2>
           <p className="mt-1 text-sm text-muted">

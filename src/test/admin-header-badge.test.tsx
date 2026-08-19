@@ -69,7 +69,7 @@ describe('AppHeader admin badge', () => {
       </ThemeProvider>,
     );
 
-    const links = await screen.findAllByRole('link', { name: /admin/i });
+    const links = await screen.findAllByRole('link', { name: /requests/i });
     expect(links.length).toBeGreaterThan(0);
     expect(
       screen.queryByRole('link', { name: /role requests/i }),

@@ -91,6 +91,34 @@ html.dark {
     font-family: var(--font-sans);
   }
 
+  /* Thin scrollbars on desktop only (touch UIs keep OS defaults) */
+  @media (min-width: 640px) {
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: var(--color-border) transparent;
+    }
+
+    *::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    *::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    *::-webkit-scrollbar-thumb {
+      background-color: var(--color-border);
+      border-radius: 9999px;
+      border: 2px solid transparent;
+      background-clip: content-box;
+    }
+
+    *::-webkit-scrollbar-thumb:hover {
+      background-color: var(--color-muted);
+    }
+  }
+
   h1,
   h2,
   h3,
@@ -202,8 +230,8 @@ html.dark {
   .brand-ball {
     position: relative;
     display: inline-flex;
-    height: 2.25rem;
-    width: 2.25rem;
+    height: 2.7rem;
+    width: 2.7rem;
     flex-shrink: 0;
     align-items: center;
     justify-content: center;
@@ -213,9 +241,12 @@ html.dark {
   .brand-ball__glyph {
     position: relative;
     z-index: 1;
-    display: inline-block;
-    font-size: 1.75rem;
-    line-height: 1;
+    display: block;
+    width: 2.1rem;
+    height: 2.1rem;
+    object-fit: contain;
+    user-select: none;
+    pointer-events: none;
     transform-origin: center center;
     animation: brand-ball-glyph 5s linear infinite;
   }
@@ -226,9 +257,9 @@ html.dark {
     left: 50%;
     bottom: 0.05rem;
     z-index: 0;
-    width: 1.35rem;
-    height: 0.38rem;
-    margin-left: -0.675rem;
+    width: 1.62rem;
+    height: 0.456rem;
+    margin-left: -0.81rem;
     border-radius: 9999px;
     background: var(--ball-ground);
     filter: blur(1.5px);
@@ -351,19 +382,20 @@ html.dark {
 
   @media (min-width: 640px) {
     .brand-ball {
-      height: 2.5rem;
-      width: 2.5rem;
+      height: 3rem;
+      width: 3rem;
     }
 
     .brand-ball__glyph {
-      font-size: 2.25rem;
+      width: 2.7rem;
+      height: 2.7rem;
     }
 
     .brand-ball::after {
       bottom: 0;
-      width: 1.65rem;
-      height: 0.45rem;
-      margin-left: -0.825rem;
+      width: 1.98rem;
+      height: 0.54rem;
+      margin-left: -0.99rem;
       filter: blur(2px);
     }
   }
