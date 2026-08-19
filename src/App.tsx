@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './auth/AuthContext';
 import RequireAuth from './auth/RequireAuth';
 import RequireAdmin from './auth/RequireAdmin';
@@ -104,12 +104,14 @@ function AppShell() {
   const [onboardingDone, setOnboardingDone] = useState(() => readOnboardingDone());
   const [shellKey, setShellKey] = useState(0);
   const location = useLocation();
+  const navigate = useNavigate();
   const isLegalPage =
     location.pathname === '/terms' || location.pathname === '/privacy';
 
   const finishOnboarding = () => {
     setOnboardingDone(true);
     setShellKey((k) => k + 1);
+    navigate('/events', { replace: true });
   };
 
   return (

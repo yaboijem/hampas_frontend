@@ -18,6 +18,23 @@ vi.mock('../api/auth', () => ({
 const STRONG = 'Passw0rd!';
 
 describe('RegisterPage', () => {
+  test('policy links open in a new tab so form inputs are kept', () => {
+    render(
+      <MemoryRouter>
+        <RegisterPage />
+      </MemoryRouter>,
+    );
+
+    const privacy = screen.getByRole('link', { name: /privacy policy/i });
+    const terms = screen.getByRole('link', { name: /terms of service/i });
+    expect(privacy).toHaveAttribute('href', '/privacy');
+    expect(privacy).toHaveAttribute('target', '_blank');
+    expect(privacy).toHaveAttribute('rel', expect.stringContaining('noopener'));
+    expect(terms).toHaveAttribute('href', '/terms');
+    expect(terms).toHaveAttribute('target', '_blank');
+    expect(terms).toHaveAttribute('rel', expect.stringContaining('noopener'));
+  });
+
   test('blocks submit until consent checked and age is 18+', async () => {
     const user = userEvent.setup();
     render(

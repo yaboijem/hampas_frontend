@@ -1,6 +1,6 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router-dom';
+import { createMemoryRouter, RouterProvider, useLocation } from 'react-router-dom';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import OnboardingGate from '../components/OnboardingGate';
 import { ONBOARDING_SLIDES } from '../onboarding/slides';
@@ -9,6 +9,10 @@ import {
   readOnboardingDone,
   writeOnboardingDone,
 } from '../onboarding/storage';
+
+function LocationPath() {
+  return <span data-testid="path">{useLocation().pathname}</span>;
+}
 
 beforeEach(() => {
   localStorage.clear();
@@ -61,11 +65,11 @@ describe('onboarding slides', () => {
 });
 
 function renderGate(initialPath = '/') {
-  return render(
-    <MemoryRouter initialEntries={[initialPath]}>
-      <OnboardingGate />
-    </MemoryRouter>,
+  const router = createMemoryRouter(
+    [{ path: '*', element: <OnboardingGate /> }],
+    { initialEntries: [initialPath] },
   );
+  return { ...render(<RouterProvider router={router} />), router };
 }
 
 describe('OnboardingGate', () => {
@@ -119,8 +123,38 @@ describe('OnboardingGate', () => {
     renderGate();
     await user.click(screen.getByRole('button', { name: /^skip$/i }));
     await user.click(screen.getByRole('button', { name: /get started/i }));
-    await vi.advanceTimersByTimeAsync(500);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(500);
+    });
     expect(localStorage.getItem(ONBOARDING_STORAGE_KEY)).toBe('1');
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  test('Get Started navigates to /events not /login', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const router = createMemoryRouter(
+      [
+        {
+          path: '*',
+          element: (
+            <>
+              <LocationPath />
+              <OnboardingGate />
+            </>
+          ),
+        },
+      ],
+      { initialEntries: ['/login'] },
+    );
+    render(<RouterProvider router={router} />);
+    expect(screen.getByTestId('path')).toHaveTextContent('/login');
+    await user.click(screen.getByRole('button', { name: /^skip$/i }));
+    await user.click(screen.getByRole('button', { name: /get started/i }));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(500);
+    });
+    expect(router.state.location.pathname).toBe('/events');
+    expect(screen.getByTestId('path')).toHaveTextContent('/events');
   });
 });

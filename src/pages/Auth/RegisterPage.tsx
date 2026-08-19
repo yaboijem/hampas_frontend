@@ -162,7 +162,12 @@ export default function RegisterPage() {
           />
           <span>
             I accept the{' '}
-            <Link to="/privacy" className="font-semibold text-cobalt hover:underline">
+            <Link
+              to="/privacy"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-cobalt hover:underline"
+            >
               Privacy Policy
             </Link>
           </span>
@@ -176,7 +181,12 @@ export default function RegisterPage() {
           />
           <span>
             I accept the{' '}
-            <Link to="/terms" className="font-semibold text-cobalt hover:underline">
+            <Link
+              to="/terms"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-cobalt hover:underline"
+            >
               Terms of Service
             </Link>
           </span>

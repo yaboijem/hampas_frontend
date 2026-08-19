@@ -50,9 +50,10 @@ export default function OnboardingGate({ onFinished }: Props) {
     setExiting(true);
     window.setTimeout(() => {
       writeOnboardingDone();
+      // Navigate before unmounting so we never land on /login (or stale path).
+      navigate('/events', { replace: true });
       setDone(true);
       onFinished?.();
-      navigate('/events', { replace: true });
     }, EXIT_MS);
   };
 
