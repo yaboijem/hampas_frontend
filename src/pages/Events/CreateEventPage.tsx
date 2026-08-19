@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createEvent } from '../../api/events';
 import { getProfile } from '../../api/profiles';
+import type { Role } from '../../api/types';
 import { useAuth } from '../../auth/AuthContext';
 import { canCreateEvent } from '../../auth/canCreateEvent';
 import CreateEventAccessModal from '../../components/CreateEventAccessModal';
@@ -11,6 +12,7 @@ export default function CreateEventPage() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const [allowed, setAllowed] = useState<boolean | null>(null);
+  const [hostRoles, setHostRoles] = useState<Role[]>([]);
   const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
@@ -21,6 +23,7 @@ export default function CreateEventPage() {
     }
     if (user.is_admin) {
       setAllowed(true);
+      setHostRoles(['coach', 'organizer', 'player']);
       return;
     }
 
@@ -30,6 +33,7 @@ export default function CreateEventPage() {
         if (cancelled) return;
         const ok = canCreateEvent(user, profile.roles);
         setAllowed(ok);
+        setHostRoles(profile.roles);
         if (!ok) setShowModal(true);
       })
       .catch(() => {
@@ -82,6 +86,8 @@ export default function CreateEventPage() {
   return (
     <EventForm
       submitLabel="Create event"
+      hostRoles={hostRoles}
+      isAdmin={Boolean(user?.is_admin)}
       onSubmit={async (form) => {
         const event = await createEvent(form);
         navigate(`/events/${event.id}`);

@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import type { EventItem, EventType, SkillLevel } from '../../api/types';
+import type { EventItem, EventType, Role, SkillLevel } from '../../api/types';
 import BrandMark from '../../components/BrandMark';
 import {
   DEFAULT_EVENT_CITY,
@@ -8,6 +8,7 @@ import {
   PAMPANGA_CITIES,
   cityCenter,
 } from '../../data/pampanga';
+import type { HostDisplayAs } from '../../events/eventLabels';
 import { showToast } from '../../lib/adminNotifications';
 import { compressImage } from '../../lib/compressImage';
 
@@ -15,6 +16,9 @@ interface Props {
   initial?: EventItem | null;
   onSubmit: (form: FormData) => Promise<void>;
   submitLabel: string;
+  /** Host capability roles — used to show "Show as" when both coach + organizer. */
+  hostRoles?: Role[];
+  isAdmin?: boolean;
 }
 
 const EVENT_TYPES: { value: EventType; label: string }[] = [
@@ -69,7 +73,25 @@ export function isStartsAtAllowed(value: string, now = new Date()): boolean {
   return selected.getTime() >= startOfToday.getTime();
 }
 
-export default function EventForm({ initial = null, onSubmit, submitLabel }: Props) {
+function defaultHostDisplayAs(
+  roles: Role[],
+  isAdmin: boolean,
+  initial?: HostDisplayAs | null,
+): HostDisplayAs {
+  if (initial === 'coach' || initial === 'organizer') return initial;
+  const coach = isAdmin || roles.includes('coach');
+  const organizer = isAdmin || roles.includes('organizer');
+  if (coach && !organizer) return 'coach';
+  return 'organizer';
+}
+
+export default function EventForm({
+  initial = null,
+  onSubmit,
+  submitLabel,
+  hostRoles = [],
+  isAdmin = false,
+}: Props) {
   const toLocal = (iso: string | undefined) =>
     iso ? toLocalDatetimeValue(new Date(iso)) : '';
 
@@ -105,6 +127,13 @@ export default function EventForm({ initial = null, onSubmit, submitLabel }: Pro
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [compressing, setCompressing] = useState(false);
+  const [hostDisplayAs, setHostDisplayAs] = useState<HostDisplayAs>(() =>
+    defaultHostDisplayAs(hostRoles, isAdmin, initial?.host_display_as),
+  );
+
+  const canCoach = isAdmin || hostRoles.includes('coach');
+  const canOrganizer = isAdmin || hostRoles.includes('organizer');
+  const showHostDisplayChoice = canCoach && canOrganizer;
 
   useEffect(() => {
     if (!photo) return;
@@ -191,6 +220,7 @@ export default function EventForm({ initial = null, onSubmit, submitLabel }: Pro
       : (cityCenter(city) ?? PAMPANGA_CENTER);
     form.set('latitude', String(pin.lat));
     form.set('longitude', String(pin.lng));
+    form.set('host_display_as', hostDisplayAs);
     if (photo) form.set('photo', photo);
     else if (removePhoto) form.set('remove_photo', '1');
 
@@ -238,6 +268,39 @@ export default function EventForm({ initial = null, onSubmit, submitLabel }: Pro
             {error}
           </p>
         )}
+
+        {showHostDisplayChoice ? (
+          <fieldset className="rounded-xl border border-border/80 bg-ice/40 px-3 py-2.5">
+            <legend className={`${label} px-1`}>Show as</legend>
+            <p className="mb-2 text-[11px] text-muted">
+              You have coach and organizer access. Choose how you appear on the event page.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-navy has-[:checked]:border-cobalt has-[:checked]:bg-sky-tint has-[:checked]:text-chip-text">
+                <input
+                  type="radio"
+                  name="host_display_as"
+                  value="coach"
+                  checked={hostDisplayAs === 'coach'}
+                  onChange={() => setHostDisplayAs('coach')}
+                  className="accent-cobalt"
+                />
+                Coach
+              </label>
+              <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-navy has-[:checked]:border-cobalt has-[:checked]:bg-sky-tint has-[:checked]:text-chip-text">
+                <input
+                  type="radio"
+                  name="host_display_as"
+                  value="organizer"
+                  checked={hostDisplayAs === 'organizer'}
+                  onChange={() => setHostDisplayAs('organizer')}
+                  className="accent-cobalt"
+                />
+                Organizer
+              </label>
+            </div>
+          </fieldset>
+        ) : null}
 
         <div className="flex gap-3">
           <div className="w-28 shrink-0 sm:w-32" aria-busy={compressing || undefined}>

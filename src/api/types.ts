@@ -99,6 +99,8 @@ export interface EventItem {
   starts_at: string; // ISO 8601
   photo_url: string | null;
   visibility: Visibility;
+  /** How the host is shown: coach (title + Coach Name + profile) or organizer (name only). */
+  host_display_as?: 'coach' | 'organizer';
   is_owner: boolean;
   distance_km?: number;
   my_application: { id: number; status: ApplicationStatus } | null;

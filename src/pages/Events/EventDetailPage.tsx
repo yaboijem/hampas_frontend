@@ -26,6 +26,7 @@ import {
   formatEventWhen,
   hostDisplayName,
   hostRoleLabel,
+  resolveHostDisplayAs,
 } from '../../events/eventLabels';
 
 const PLAYERS_POLL_MS = 8_000;
@@ -228,14 +229,18 @@ export default function EventDetailPage() {
           </div>
         )}
         <div className="flex justify-between gap-4 px-4 py-3">
-          <dt className="text-sm text-muted">{hostRoleLabel(event.created_by.roles)}</dt>
+          <dt className="text-sm text-muted">
+            {hostRoleLabel(event.created_by.roles, event.host_display_as)}
+          </dt>
           <dd className="text-right text-sm font-medium text-navy">
-            {hostDisplayName(event.created_by.name, event.created_by.roles)}
+            {hostDisplayName(event.created_by.name, event.created_by.roles, event.host_display_as)}
           </dd>
         </div>
       </dl>
 
       {(() => {
+        const as = resolveHostDisplayAs(event.host_display_as, event.created_by.roles);
+        if (as !== 'coach') return null;
         const coach = event.created_by.coach;
         if (!coach) return null;
         const achievements = coach.achievements ?? [];

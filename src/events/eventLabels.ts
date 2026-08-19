@@ -62,15 +62,38 @@ export function formatEventWhen(startsAt: string): string {
   });
 }
 
-/** Fact-row label for the event host (always Organizer). */
-export function hostRoleLabel(_roles?: string[] | null): string {
-  return 'Organizer';
+export type HostDisplayAs = 'coach' | 'organizer';
+
+/** Resolve display mode from stored preference + host roles. */
+export function resolveHostDisplayAs(
+  hostDisplayAs?: HostDisplayAs | null,
+  roles?: string[] | null,
+): HostDisplayAs {
+  if (hostDisplayAs === 'coach' || hostDisplayAs === 'organizer') {
+    return hostDisplayAs;
+  }
+  const set = new Set(roles ?? []);
+  if (set.has('coach') && !set.has('organizer')) {
+    return 'coach';
+  }
+  return 'organizer';
 }
 
-/** Display name: Coach {name} when host has coach role. */
-export function hostDisplayName(name: string, roles?: string[] | null): string {
-  const set = new Set(roles ?? []);
-  if (set.has('coach')) {
+/** Fact-row label for the event host. */
+export function hostRoleLabel(
+  roles?: string[] | null,
+  hostDisplayAs?: HostDisplayAs | null,
+): string {
+  return resolveHostDisplayAs(hostDisplayAs, roles) === 'coach' ? 'Coach' : 'Organizer';
+}
+
+/** Display name: Coach {name} when shown as coach. */
+export function hostDisplayName(
+  name: string,
+  roles?: string[] | null,
+  hostDisplayAs?: HostDisplayAs | null,
+): string {
+  if (resolveHostDisplayAs(hostDisplayAs, roles) === 'coach') {
     return `Coach ${name}`;
   }
   return name;

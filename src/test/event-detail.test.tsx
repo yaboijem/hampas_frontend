@@ -94,20 +94,40 @@ describe('EventDetailPage', () => {
     expect(screen.getByRole('button', { name: /^apply$/i })).toBeInTheDocument();
   });
 
-  test('shows Organizer / Coach {name} when host is a coach', async () => {
+  test('shows Coach label and Coach {name} when host_display_as is coach', async () => {
     vi.mocked(eventsApi.getEvent).mockResolvedValue({
       ...baseEvent,
+      host_display_as: 'coach',
       created_by: { id: 4, name: 'Jamie Reyes', roles: ['player', 'coach'] },
     });
     renderDetail();
 
-    expect(await screen.findByText('Organizer')).toBeInTheDocument();
+    expect(await screen.findByText('Coach')).toBeInTheDocument();
     expect(screen.getByText('Coach Jamie Reyes')).toBeInTheDocument();
+  });
+
+  test('shows Organizer label and plain name when host_display_as is organizer', async () => {
+    vi.mocked(eventsApi.getEvent).mockResolvedValue({
+      ...baseEvent,
+      host_display_as: 'organizer',
+      created_by: {
+        id: 4,
+        name: 'Jamie Reyes',
+        roles: ['player', 'coach', 'organizer'],
+        coach: { achievements: ['Hidden when organizer'] },
+      },
+    });
+    renderDetail();
+
+    expect(await screen.findByText('Organizer')).toBeInTheDocument();
+    expect(screen.getByText('Jamie Reyes')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /coach profile/i })).not.toBeInTheDocument();
   });
 
   test('shows coach profile achievements experiences and bootcamp', async () => {
     vi.mocked(eventsApi.getEvent).mockResolvedValue({
       ...baseEvent,
+      host_display_as: 'coach',
       created_by: {
         id: 4,
         name: 'Jamie Reyes',
