@@ -7,7 +7,6 @@ import {
   verifyPasswordCode,
 } from '../../api/auth';
 import {
-  createRoleRequest,
   getProfile,
   listMyRoleRequests,
   updateRole,
@@ -22,16 +21,18 @@ import type {
   SkillLevel,
 } from '../../api/types';
 import { PLAYER_POSITIONS } from '../../api/types';
+import BrandMark from '../../components/BrandMark';
 import PasswordField from '../../components/PasswordField';
 import PasswordRules from '../../components/PasswordRules';
+import RoleRequestModal from '../../components/RoleRequestModal';
 import { SKILL_BADGE_CLASS, SKILL_LABEL } from '../../events/eventLabels';
 import { showToast } from '../../lib/adminNotifications';
 import { passwordFormValid } from '../../lib/passwordRules';
 
-const ROLE_META: Record<Role, { label: string; emoji: string }> = {
-  player: { label: 'Player', emoji: '🏐' },
-  coach: { label: 'Coach', emoji: '📋' },
-  organizer: { label: 'Organizer', emoji: '🏟️' },
+const ROLE_META: Record<Role, { label: string; icon: ReactNode }> = {
+  player: { label: 'Player', icon: <BrandMark size={14} /> },
+  coach: { label: 'Coach', icon: '📋' },
+  organizer: { label: 'Organizer', icon: '🏟️' },
 };
 
 const ELEVATED: ElevatedRole[] = ['coach', 'organizer'];
@@ -134,7 +135,7 @@ function ProfileSkeleton() {
 function CollapsibleCard({
   id,
   title,
-  emoji,
+  icon,
   summary,
   open,
   onToggle,
@@ -142,7 +143,7 @@ function CollapsibleCard({
 }: {
   id: string;
   title: string;
-  emoji?: string;
+  icon?: ReactNode;
   summary?: ReactNode;
   open: boolean;
   onToggle: () => void;
@@ -160,10 +161,10 @@ function CollapsibleCard({
         onClick={onToggle}
       >
         <span className="min-w-0 flex-1">
-          <span className="font-display block text-base font-bold text-navy">
-            {emoji ? (
-              <span aria-hidden className="mr-1.5">
-                {emoji}
+          <span className="font-display flex items-center gap-1.5 text-base font-bold text-navy">
+            {icon ? (
+              <span aria-hidden className="inline-flex shrink-0">
+                {icon}
               </span>
             ) : null}
             {title}
@@ -206,7 +207,7 @@ export default function ProfilePage() {
   const [editing, setEditing] = useState<Partial<Record<CardKey, boolean>>>({});
   const [savingRole, setSavingRole] = useState<Role | null>(null);
   const [savingAccount, setSavingAccount] = useState(false);
-  const [requesting, setRequesting] = useState<ElevatedRole | null>(null);
+  const [requestModalRole, setRequestModalRole] = useState<ElevatedRole | null>(null);
   const [account, setAccount] = useState<AccountForm>({
     name: '',
     email: '',
@@ -533,26 +534,6 @@ export default function ProfilePage() {
     }
   };
 
-  const requestRole = async (role: ElevatedRole) => {
-    setError(null);
-    setRequesting(role);
-    try {
-      const created = await createRoleRequest({ role });
-      setRequests((rs) => [...rs, created]);
-      showToast(
-        role === 'coach'
-          ? 'Coach request submitted.'
-          : 'Organizer request submitted.',
-      );
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to request role.';
-      setError(msg);
-      showToast(msg, 'error');
-    } finally {
-      setRequesting(null);
-    }
-  };
-
   const latestFor = (role: ElevatedRole): RoleRequest | undefined => {
     const mine = requests.filter((r) => r.role === role);
     return mine.sort((a, b) => b.id - a.id)[0];
@@ -621,7 +602,9 @@ export default function ProfilePage() {
                 key={r}
                 className="inline-flex items-center gap-1 rounded-full bg-sky-tint px-2 py-0.5 text-xs font-semibold text-chip-text"
               >
-                <span aria-hidden>{ROLE_META[r].emoji}</span>
+                <span aria-hidden className="inline-flex">
+                  {ROLE_META[r].icon}
+                </span>
                 {ROLE_META[r].label}
               </span>
             ))
@@ -819,7 +802,7 @@ export default function ProfilePage() {
           <CollapsibleCard
             id="player"
             title="Player details"
-            emoji={ROLE_META.player.emoji}
+            icon={ROLE_META.player.icon}
             open={openCard === 'player'}
             onToggle={() => toggleCard('player')}
             summary={
@@ -950,7 +933,7 @@ export default function ProfilePage() {
             <CollapsibleCard
               id="coach"
               title="Coach details"
-              emoji={ROLE_META.coach.emoji}
+              icon={ROLE_META.coach.icon}
               open={openCard === 'coach'}
               onToggle={() => toggleCard('coach')}
               summary={
@@ -1023,7 +1006,7 @@ export default function ProfilePage() {
             <CollapsibleCard
               id="organizer"
               title="Organizer details"
-              emoji={ROLE_META.organizer.emoji}
+              icon={ROLE_META.organizer.icon}
               open={openCard === 'organizer'}
               onToggle={() => toggleCard('organizer')}
               summary={
@@ -1198,9 +1181,11 @@ export default function ProfilePage() {
               {ELEVATED.map((role) => {
                 if (profile.roles.includes(role)) {
                   return (
-                    <li key={role} className="text-sm text-muted">
-                      {ROLE_META[role].emoji} {ROLE_META[role].label} granted — open that card
-                      above.
+                    <li key={role} className="inline-flex items-center gap-1.5 text-sm text-muted">
+                      <span aria-hidden className="inline-flex">
+                        {ROLE_META[role].icon}
+                      </span>
+                      {ROLE_META[role].label} granted — open that card above.
                     </li>
                   );
                 }
@@ -1211,8 +1196,11 @@ export default function ProfilePage() {
                       key={role}
                       className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border/80 bg-ice px-3 py-2"
                     >
-                      <span className="text-sm font-medium text-navy">
-                        {ROLE_META[role].emoji} {ROLE_META[role].label}
+                      <span className="inline-flex items-center gap-1.5 text-sm font-medium text-navy">
+                        <span aria-hidden className="inline-flex">
+                          {ROLE_META[role].icon}
+                        </span>
+                        {ROLE_META[role].label}
                       </span>
                       <span className="rounded-full bg-sky-tint px-2 py-0.5 text-xs font-semibold text-chip-text">
                         Pending
@@ -1227,18 +1215,20 @@ export default function ProfilePage() {
                       className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border/80 px-3 py-2"
                     >
                       <div>
-                        <p className="text-sm font-medium text-navy">
-                          {ROLE_META[role].emoji} {ROLE_META[role].label}
+                        <p className="inline-flex items-center gap-1.5 text-sm font-medium text-navy">
+                          <span aria-hidden className="inline-flex">
+                            {ROLE_META[role].icon}
+                          </span>
+                          {ROLE_META[role].label}
                         </p>
                         <p className="text-xs text-muted">Request was rejected.</p>
                       </div>
                       <button
                         type="button"
                         className={secondaryBtn}
-                        disabled={requesting === role}
-                        onClick={() => void requestRole(role)}
+                        onClick={() => setRequestModalRole(role)}
                       >
-                        {requesting === role ? 'Requesting…' : 'Request again'}
+                        Request again
                       </button>
                     </li>
                   );
@@ -1248,26 +1238,36 @@ export default function ProfilePage() {
                     key={role}
                     className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border/80 px-3 py-2"
                   >
-                    <span className="text-sm font-medium text-navy">
-                      {ROLE_META[role].emoji} {ROLE_META[role].label}
+                    <span className="inline-flex items-center gap-1.5 text-sm font-medium text-navy">
+                      <span aria-hidden className="inline-flex">
+                        {ROLE_META[role].icon}
+                      </span>
+                      {ROLE_META[role].label}
                     </span>
                     <button
                       type="button"
                       className={primaryBtn}
-                      disabled={requesting === role}
-                      onClick={() => void requestRole(role)}
+                      onClick={() => setRequestModalRole(role)}
                     >
-                      {requesting === role
-                        ? 'Requesting…'
-                        : role === 'coach'
-                          ? 'Request coach'
-                          : 'Request organizer'}
+                      {role === 'coach' ? 'Request coach' : 'Request organizer'}
                     </button>
                   </li>
                 );
               })}
             </ul>
           </CollapsibleCard>
+
+          {requestModalRole ? (
+            <RoleRequestModal
+              role={requestModalRole}
+              onClose={() => setRequestModalRole(null)}
+              onSubmitted={() => {
+                void listMyRoleRequests()
+                  .then(setRequests)
+                  .catch(() => undefined);
+              }}
+            />
+          ) : null}
         </>
       )}
     </div>

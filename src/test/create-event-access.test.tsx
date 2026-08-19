@@ -162,13 +162,17 @@ describe('CreateEventPage gate', () => {
       coach: null,
       organizer: null,
     });
-    vi.mocked(profilesApi.createRoleRequest).mockResolvedValue({
+    const pending = {
       id: 1,
-      role: 'coach',
-      status: 'pending',
+      role: 'coach' as const,
+      status: 'pending' as const,
       note: null,
       created_at: '2026-08-18T00:00:00Z',
-    });
+    };
+    vi.mocked(profilesApi.createRoleRequest).mockResolvedValue(pending);
+    vi.mocked(profilesApi.listMyRoleRequests)
+      .mockResolvedValueOnce([])
+      .mockResolvedValue([pending]);
 
     render(
       <MemoryRouter>
@@ -178,6 +182,16 @@ describe('CreateEventPage gate', () => {
 
     await user.click(screen.getByRole('button', { name: /create event/i }));
     await user.click(await screen.findByRole('button', { name: /request coach access/i }));
+
+    expect(
+      await screen.findByRole('dialog', { name: /request coach access/i }),
+    ).toBeInTheDocument();
+    expect(profilesApi.createRoleRequest).not.toHaveBeenCalled();
+
+    const accept = screen.getByRole('checkbox', { name: /accept/i });
+    await waitFor(() => expect(accept).not.toBeDisabled());
+    await user.click(accept);
+    await user.click(screen.getByRole('button', { name: /submit request/i }));
 
     await waitFor(() =>
       expect(profilesApi.createRoleRequest).toHaveBeenCalledWith({ role: 'coach' }),

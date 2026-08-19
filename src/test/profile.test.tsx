@@ -136,10 +136,18 @@ describe('ProfilePage', () => {
     await expand(/elevated access/i);
     await user.click(await screen.findByRole('button', { name: /request coach/i }));
 
+    const dialog = await screen.findByRole('dialog', { name: /request coach access/i });
+    expect(dialog).toBeInTheDocument();
+    expect(profilesApi.createRoleRequest).not.toHaveBeenCalled();
+
+    const accept = screen.getByRole('checkbox', { name: /accept/i });
+    await waitFor(() => expect(accept).not.toBeDisabled());
+    await user.click(accept);
+    await user.click(screen.getByRole('button', { name: /submit request/i }));
+
     await waitFor(() =>
       expect(profilesApi.createRoleRequest).toHaveBeenCalledWith({ role: 'coach' }),
     );
-    expect(await screen.findByText(/pending/i)).toBeInTheDocument();
   });
 
   test('shows pending status and hides coach field editors', async () => {
