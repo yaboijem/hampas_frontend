@@ -13,6 +13,7 @@ import PrivacyPolicy from './pages/Legal/PrivacyPolicy';
 import Terms from './pages/Legal/Terms';
 import ProfilePage from './pages/Profile/ProfilePage';
 import AdminRequestsPage from './pages/Admin/AdminRequestsPage';
+import AdminUsersPage from './pages/Admin/AdminUsersPage';
 import CreateEventPage from './pages/Events/CreateEventPage';
 import EditEventPage from './pages/Events/EditEventPage';
 import EventDetailPage from './pages/Events/EventDetailPage';
@@ -62,6 +63,16 @@ function AppRoutes() {
               <RequireAuth>
                 <RequireAdmin>
                   <AdminRequestsPage />
+                </RequireAdmin>
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/admin/users"
+            element={
+              <RequireAuth>
+                <RequireAdmin>
+                  <AdminUsersPage />
                 </RequireAdmin>
               </RequireAuth>
             }

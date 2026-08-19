@@ -52,6 +52,42 @@ export interface User {
   is_admin: boolean;
 }
 
+export interface AdminUserListItem {
+  id: number;
+  name: string;
+  email: string;
+  birth_date: string;
+  gender: Gender;
+  is_admin: boolean;
+  roles: Role[];
+  created_at: string;
+}
+
+export interface AdminUserProfiles {
+  player: ProfileFieldset | null;
+  coach: ProfileFieldset | null;
+  organizer: ProfileFieldset | null;
+}
+
+export interface AdminUserDetail extends AdminUserListItem {
+  profiles: AdminUserProfiles;
+}
+
+export type AdminUserWritePayload = {
+  name: string;
+  email: string;
+  password?: string;
+  birth_date: string;
+  gender: Gender;
+  is_admin: boolean;
+  roles: Role[];
+  profiles: {
+    player?: ProfileFieldset | null;
+    coach?: ProfileFieldset | null;
+    organizer?: ProfileFieldset | null;
+  };
+};
+
 export interface EventItem {
   id: number;
   title: string;

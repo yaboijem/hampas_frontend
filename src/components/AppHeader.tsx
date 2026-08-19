@@ -53,12 +53,14 @@ export default function AppHeader() {
 
   const adminLinkClass = ({ isActive }: { isActive: boolean }) =>
     linkClass({
-      isActive: isActive || location.pathname.startsWith("/admin"),
+      isActive:
+        isActive || location.pathname.startsWith("/admin/requests"),
     });
 
   const adminMenuLinkClass = ({ isActive }: { isActive: boolean }) =>
     menuLinkClass({
-      isActive: isActive || location.pathname.startsWith("/admin"),
+      isActive:
+        isActive || location.pathname.startsWith("/admin/requests"),
     });
 
   useEffect(() => {
@@ -121,12 +123,17 @@ export default function AppHeader() {
                 Profile
               </NavLink>
               {user.is_admin ? (
-                <NavLink to="/admin/requests" className={adminLinkClass}>
-                  <span className="inline-flex items-center">
-                    Admin
-                    <AdminPendingBadge count={counts.total} />
-                  </span>
-                </NavLink>
+                <>
+                  <NavLink to="/admin/requests" className={adminLinkClass}>
+                    <span className="inline-flex items-center">
+                      Admin
+                      <AdminPendingBadge count={counts.total} />
+                    </span>
+                  </NavLink>
+                  <NavLink to="/admin/users" className={linkClass}>
+                    Users
+                  </NavLink>
+                </>
               ) : null}
               <CreateEventControl variant="header" />
               <button
@@ -221,16 +228,25 @@ export default function AppHeader() {
                         Profile
                       </NavLink>
                       {user.is_admin ? (
-                        <NavLink
-                          to="/admin/requests"
-                          role="menuitem"
-                          className={adminMenuLinkClass}
-                        >
-                          <span className="inline-flex items-center">
-                            Admin
-                            <AdminPendingBadge count={counts.total} />
-                          </span>
-                        </NavLink>
+                        <>
+                          <NavLink
+                            to="/admin/requests"
+                            role="menuitem"
+                            className={adminMenuLinkClass}
+                          >
+                            <span className="inline-flex items-center">
+                              Admin
+                              <AdminPendingBadge count={counts.total} />
+                            </span>
+                          </NavLink>
+                          <NavLink
+                            to="/admin/users"
+                            role="menuitem"
+                            className={menuLinkClass}
+                          >
+                            Users
+                          </NavLink>
+                        </>
                       ) : null}
                       <CreateEventControl variant="menu" />
                       <button

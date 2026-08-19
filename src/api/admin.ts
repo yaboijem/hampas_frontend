@@ -1,14 +1,63 @@
 import { api } from './client';
 import type {
   AdminRoleRequest,
+  AdminUserDetail,
+  AdminUserListItem,
+  AdminUserWritePayload,
   ElevatedRole,
   EventItem,
   Paginated,
+  Role,
   RoleRequestStatus,
   Visibility,
 } from './types';
 
 export const ADMIN_PAGE_SIZE = 10;
+
+export type ListAdminUsersParams = {
+  q?: string;
+  roles?: Role[];
+  page?: number;
+  per_page?: number;
+};
+
+export async function listAdminUsers(
+  params: ListAdminUsersParams = {},
+): Promise<Paginated<AdminUserListItem>> {
+  const { data } = await api.get<Paginated<AdminUserListItem>>('/admin/users', {
+    params: {
+      q: params.q?.trim() || undefined,
+      roles: params.roles?.length ? params.roles : undefined,
+      page: params.page ?? 1,
+      per_page: params.per_page ?? ADMIN_PAGE_SIZE,
+    },
+  });
+  return data;
+}
+
+export async function getAdminUser(id: number): Promise<AdminUserDetail> {
+  const { data } = await api.get<AdminUserDetail>(`/admin/users/${id}`);
+  return data;
+}
+
+export async function createAdminUser(
+  payload: AdminUserWritePayload,
+): Promise<AdminUserDetail> {
+  const { data } = await api.post<AdminUserDetail>('/admin/users', payload);
+  return data;
+}
+
+export async function updateAdminUser(
+  id: number,
+  payload: AdminUserWritePayload,
+): Promise<AdminUserDetail> {
+  const { data } = await api.put<AdminUserDetail>(`/admin/users/${id}`, payload);
+  return data;
+}
+
+export async function deleteAdminUser(id: number): Promise<void> {
+  await api.delete(`/admin/users/${id}`);
+}
 
 export type ListAdminRoleRequestsParams = {
   status?: RoleRequestStatus;
