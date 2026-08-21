@@ -17,7 +17,11 @@ export default function Terms() {
       <h2 className="text-lg font-semibold">Suspension and termination</h2>
       <p>We may suspend or terminate accounts that violate these terms. You can stop using the service at any time and request deletion of your data per the Privacy Policy.</p>
       <h2 className="text-lg font-semibold">Contact</h2>
-      <p><a href="mailto:support@hampas.app" className="underline">support@hampas.app</a></p>
+      <p>
+        <a href="mailto:hampasapp@gmail.com" className="underline">
+          hampasapp@gmail.com
+        </a>
+      </p>
     </article>
   );
 }

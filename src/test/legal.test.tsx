@@ -17,4 +17,21 @@ describe('legal pages', () => {
     expect(screen.getByRole('heading', { name: /suspension and termination/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /reporting and moderation/i })).toBeInTheDocument();
   });
+
+  test('terms contact uses hampasapp@gmail.com', () => {
+    render(<Terms />);
+    const link = screen.getByRole('link', { name: /hampasapp@gmail\.com/i });
+    expect(link).toHaveAttribute('href', 'mailto:hampasapp@gmail.com');
+    expect(screen.queryByRole('link', { name: /@hampas\.app/i })).not.toBeInTheDocument();
+  });
+
+  test('privacy contacts use hampasapp@gmail.com only', () => {
+    render(<PrivacyPolicy />);
+    const links = screen.getAllByRole('link', { name: /hampasapp@gmail\.com/i });
+    expect(links.length).toBeGreaterThanOrEqual(2);
+    for (const link of links) {
+      expect(link).toHaveAttribute('href', 'mailto:hampasapp@gmail.com');
+    }
+    expect(screen.queryByRole('link', { name: /@hampas\.app/i })).not.toBeInTheDocument();
+  });
 });

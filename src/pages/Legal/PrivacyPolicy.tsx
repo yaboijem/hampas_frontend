@@ -14,9 +14,21 @@ export default function PrivacyPolicy() {
       <h2 className="text-lg font-semibold">How long we keep data</h2>
       <p>We keep your data while your account is active. When you delete your account, we remove your profile data and uploaded photos.</p>
       <h2 className="text-lg font-semibold">Your right to delete</h2>
-      <p>To delete your account and data, email <a href="mailto:privacy@hampas.app" className="underline">privacy@hampas.app</a> with the subject "Delete my account" from your registered email. We respond within 30 days.</p>
+      <p>
+        To delete your account and data, email{' '}
+        <a href="mailto:hampasapp@gmail.com" className="underline">
+          hampasapp@gmail.com
+        </a>{' '}
+        with the subject "Delete my account" from your registered email. We respond within 30 days.
+      </p>
       <h2 className="text-lg font-semibold">Contact</h2>
-      <p>Questions about this policy: <a href="mailto:privacy@hampas.app" className="underline">privacy@hampas.app</a>.</p>
+      <p>
+        Questions about this policy:{' '}
+        <a href="mailto:hampasapp@gmail.com" className="underline">
+          hampasapp@gmail.com
+        </a>
+        .
+      </p>
     </article>
   );
 }
