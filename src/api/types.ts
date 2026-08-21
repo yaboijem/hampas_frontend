@@ -96,6 +96,10 @@ export interface EventItem {
   skill_level: SkillLevel;
   barangay: string | null;
   city: string;
+  venue_name?: string | null;
+  location_address?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
   starts_at: string; // ISO 8601
   photo_url: string | null;
   visibility: Visibility;
