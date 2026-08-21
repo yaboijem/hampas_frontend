@@ -10,9 +10,9 @@ export function isThemePreference(value: unknown): value is ThemePreference {
 export function readStoredPreference(storage?: Storage | null): ThemePreference {
   try {
     const raw = (storage ?? localStorage).getItem(THEME_STORAGE_KEY);
-    return isThemePreference(raw) ? raw : 'system';
+    return isThemePreference(raw) ? raw : 'light';
   } catch {
-    return 'system';
+    return 'light';
   }
 }
 

@@ -45,12 +45,12 @@ test('isThemePreference accepts only light|dark|system', () => {
   expect(isThemePreference(null)).toBe(false);
 });
 
-test('readStoredPreference defaults to system and ignores junk', () => {
-  expect(readStoredPreference(localStorage)).toBe('system');
+test('readStoredPreference defaults to light and ignores junk', () => {
+  expect(readStoredPreference(localStorage)).toBe('light');
   localStorage.setItem(THEME_STORAGE_KEY, 'dark');
   expect(readStoredPreference(localStorage)).toBe('dark');
   localStorage.setItem(THEME_STORAGE_KEY, 'garbage');
-  expect(readStoredPreference(localStorage)).toBe('system');
+  expect(readStoredPreference(localStorage)).toBe('light');
 });
 
 test('writeStoredPreference persists value', () => {
@@ -83,13 +83,13 @@ test('applyResolvedTheme toggles html.dark', () => {
   expect(document.documentElement.classList.contains('dark')).toBe(false);
 });
 
-test('ThemeProvider defaults to system and applies resolved class', () => {
-  mockMatchMedia(true);
+test('ThemeProvider defaults to light and applies resolved class', () => {
+  mockMatchMedia(true); // system dark must NOT win when preference is light default
 
   const { result } = renderHook(() => useTheme(), { wrapper });
-  expect(result.current.preference).toBe('system');
-  expect(result.current.resolvedTheme).toBe('dark');
-  expect(document.documentElement.classList.contains('dark')).toBe(true);
+  expect(result.current.preference).toBe('light');
+  expect(result.current.resolvedTheme).toBe('light');
+  expect(document.documentElement.classList.contains('dark')).toBe(false);
 });
 
 test('toggleTheme flips resolved theme in one click', async () => {
