@@ -56,25 +56,7 @@ export default function EventMap({ lat, lng, className = '' }: Props) {
           aria-hidden
         />
 
-        <span className="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-2 sm:left-4 sm:right-4 sm:bottom-4">
-          <span className="inline-flex max-w-[65%] items-center gap-1.5 rounded-full border border-white/25 bg-navy/75 px-2.5 py-1 text-[11px] font-semibold tracking-wide text-white shadow-soft backdrop-blur-sm dark:bg-navy/90">
-            <svg
-              width={12}
-              height={12}
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2.4}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="shrink-0 text-electric"
-              aria-hidden
-            >
-              <path d="M12 21s7-5.33 7-11a7 7 0 1 0-14 0c0 5.67 7 11 7 11Z" />
-              <circle cx="12" cy="10" r="2.5" />
-            </svg>
-            Venue pin
-          </span>
+        <span className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-cobalt px-3 py-1.5 text-xs font-bold text-white shadow-soft transition group-hover:bg-electric group-hover:brightness-105">
             Open in Maps
             <svg
