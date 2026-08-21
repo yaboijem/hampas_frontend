@@ -266,7 +266,7 @@ describe('ProfilePage', () => {
       organizer: null,
     });
     vi.mocked(authApi.sendPasswordCode).mockResolvedValue({
-      message: 'A 4-digit code was sent to your email.',
+      message: 'A 6-digit code was sent to your email.',
     });
     vi.mocked(authApi.verifyPasswordCode).mockResolvedValue({
       message: 'Code verified. You can set a new password.',
@@ -289,9 +289,9 @@ describe('ProfilePage', () => {
     await user.click(screen.getByRole('button', { name: /^send code$/i }));
     await waitFor(() => expect(authApi.sendPasswordCode).toHaveBeenCalled());
 
-    await user.type(screen.getByLabelText(/4-digit code/i), '1234');
+    await user.type(screen.getByLabelText(/6-digit code/i), '123456');
     await user.click(screen.getByRole('button', { name: /verify code/i }));
-    await waitFor(() => expect(authApi.verifyPasswordCode).toHaveBeenCalledWith('1234'));
+    await waitFor(() => expect(authApi.verifyPasswordCode).toHaveBeenCalledWith('123456'));
 
     await user.type(screen.getByLabelText(/^new password$/i), 'Newpass1!');
     await user.type(screen.getByLabelText(/^confirm password$/i), 'Newpass1!');
@@ -310,7 +310,7 @@ describe('ProfilePage', () => {
       organizer: null,
     });
     vi.mocked(authApi.sendPasswordCode).mockResolvedValue({
-      message: 'A 4-digit code was sent to your email.',
+      message: 'A 6-digit code was sent to your email.',
     });
 
     const user = userEvent.setup();
@@ -337,7 +337,7 @@ describe('ProfilePage', () => {
       organizer: null,
     });
     vi.mocked(authApi.sendPasswordCode).mockResolvedValue({
-      message: 'A 4-digit code was sent to your email.',
+      message: 'A 6-digit code was sent to your email.',
     });
     vi.mocked(authApi.verifyPasswordCode).mockResolvedValue({
       message: 'Code verified. You can set a new password.',
@@ -354,7 +354,7 @@ describe('ProfilePage', () => {
     await user.click(screen.getByRole('button', { name: /^edit$/i }));
     await user.click(screen.getByRole('button', { name: /^send code$/i }));
     await waitFor(() => expect(authApi.sendPasswordCode).toHaveBeenCalled());
-    await user.type(screen.getByLabelText(/4-digit code/i), '1234');
+    await user.type(screen.getByLabelText(/6-digit code/i), '123456');
     await user.click(screen.getByRole('button', { name: /verify code/i }));
     await waitFor(() => expect(authApi.verifyPasswordCode).toHaveBeenCalled());
 

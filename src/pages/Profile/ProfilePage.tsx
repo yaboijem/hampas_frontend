@@ -534,8 +534,8 @@ export default function ProfilePage() {
   };
 
   const handleVerifyCode = async () => {
-    if (!/^\d{4}$/.test(passwordCode)) {
-      setPasswordError('Enter the 4-digit code.');
+    if (!/^\d{6}$/.test(passwordCode)) {
+      setPasswordError('Enter the 6-digit code.');
       return;
     }
     setPasswordError(null);
@@ -793,7 +793,7 @@ export default function ProfilePage() {
                   <div className="mt-4 border-t border-border pt-3">
                     <p className={labelClass}>Password</p>
                     <p className="mt-1 text-xs text-muted">
-                      Change password using a 4-digit code sent to {user.email}.
+                      Change password using a 6-digit code sent to {user.email}.
                     </p>
                     {passwordError ? (
                       <p className="mt-2 text-sm font-medium text-red-700" role="alert">
@@ -807,16 +807,16 @@ export default function ProfilePage() {
                       <div className="mt-3 space-y-2">
                         {passwordPhase === 'code_sent' ? (
                           <label className="block" htmlFor="password-change-code">
-                            <span className={labelClass}>4-digit code</span>
+                            <span className={labelClass}>6-digit code</span>
                             <input
                               id="password-change-code"
                               inputMode="numeric"
                               autoComplete="one-time-code"
-                              maxLength={4}
+                              maxLength={6}
                               className={fieldClass}
                               value={passwordCode}
                               onChange={(e) =>
-                                setPasswordCode(e.target.value.replace(/\D/g, '').slice(0, 4))
+                                setPasswordCode(e.target.value.replace(/\D/g, '').slice(0, 6))
                               }
                             />
                           </label>
@@ -826,7 +826,7 @@ export default function ProfilePage() {
                             <button
                               type="button"
                               className={primaryBtn}
-                              disabled={verifyingCode || passwordCode.length !== 4}
+                              disabled={verifyingCode || passwordCode.length !== 6}
                               onClick={() => void handleVerifyCode()}
                             >
                               {verifyingCode ? 'Verifying…' : 'Verify code'}
