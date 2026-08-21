@@ -257,7 +257,7 @@ export default function EventDetailPage() {
         ) : null}
         {hasPin ? (
           <div className="mt-3">
-            <EventMap lat={event.latitude!} lng={event.longitude!} className="h-52 w-full" />
+            <EventMap lat={event.latitude!} lng={event.longitude!} />
           </div>
         ) : null}
       </section>

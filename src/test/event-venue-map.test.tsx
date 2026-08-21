@@ -11,7 +11,7 @@ vi.mock('react-leaflet', () => ({
   TileLayer: () => null,
   Marker: () => null,
   useMapEvents: () => null,
-  useMap: () => ({ setView: vi.fn() }),
+  useMap: () => ({ setView: vi.fn(), getZoom: () => 15 }),
 }));
 
 vi.mock('../lib/leafletIcon', () => ({
@@ -39,7 +39,7 @@ describe('EventForm venue pin', () => {
       </MemoryRouter>,
     );
     expect(screen.getByLabelText(/venue name/i)).toBeInTheDocument();
-    expect(screen.getByText(/tap the map or drag the pin/i)).toBeInTheDocument();
+    expect(screen.getByText(/tap map or drag pin/i)).toBeInTheDocument();
     expect(screen.queryByText(/optional · for nearby discovery/i)).not.toBeInTheDocument();
   });
 });

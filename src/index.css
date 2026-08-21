@@ -737,6 +737,54 @@ html.dark {
     }
   }
 
+  /* Leaflet map chrome — brand pin + clean tile frame */
+  .event-map__leaflet.leaflet-container {
+    background: var(--color-ice);
+    font: inherit;
+  }
+
+  .event-map__leaflet .leaflet-control-attribution {
+    display: none;
+  }
+
+  .hampas-map-pin {
+    background: transparent !important;
+    border: none !important;
+  }
+
+  .hampas-map-pin__glyph {
+    display: block;
+    filter: drop-shadow(0 3px 6px rgb(42 32 19 / 0.28));
+    transform-origin: 50% 100%;
+  }
+
+  .hampas-map-pin__pulse {
+    position: absolute;
+    left: 50%;
+    bottom: 4px;
+    width: 18px;
+    height: 18px;
+    margin-left: -9px;
+    border-radius: 9999px;
+    background: rgb(217 119 6 / 0.35);
+    animation: hampas-pin-pulse 1.8s ease-out infinite;
+  }
+
+  @keyframes hampas-pin-pulse {
+    0% {
+      transform: scale(0.55);
+      opacity: 0.7;
+    }
+    70% {
+      transform: scale(1.85);
+      opacity: 0;
+    }
+    100% {
+      transform: scale(1.85);
+      opacity: 0;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .skeleton-shimmer {
       animation: none;
@@ -760,6 +808,11 @@ html.dark {
       animation: none;
       filter: none;
       transform: none;
+    }
+
+    .hampas-map-pin__pulse {
+      animation: none;
+      opacity: 0;
     }
   }
 }

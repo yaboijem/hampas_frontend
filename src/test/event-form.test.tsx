@@ -20,7 +20,7 @@ vi.mock('react-leaflet', () => ({
   TileLayer: () => null,
   Marker: () => null,
   useMapEvents: () => null,
-  useMap: () => ({ setView: vi.fn() }),
+  useMap: () => ({ setView: vi.fn(), getZoom: () => 15 }),
 }));
 
 vi.mock('../lib/reverseGeocode', () => ({
