@@ -1,11 +1,3 @@
-export type ImageSlide = {
-  kind: 'image';
-  id: string;
-  imageSrc: string;
-  title: string;
-  body: string;
-};
-
 export type PoliciesSlide = {
   kind: 'policies';
   id: string;
@@ -16,30 +8,9 @@ export type PoliciesSlide = {
   privacyPath: '/privacy';
 };
 
-export type OnboardingSlide = ImageSlide | PoliciesSlide;
+export type OnboardingSlide = PoliciesSlide;
 
 export const ONBOARDING_SLIDES: OnboardingSlide[] = [
-  {
-    kind: 'image',
-    id: 'discover',
-    imageSrc: '/courtwball.jpg',
-    title: 'Discover and Play',
-    body: 'Browse local games and courts. Find events that match your sport and\u00A0schedule.',
-  },
-  {
-    kind: 'image',
-    id: 'friendship',
-    imageSrc: '/friendship.jpg',
-    title: 'Find Friendship',
-    body: 'Meet players nearby, apply to join, and build your crew on and off the\u00A0court.',
-  },
-  {
-    kind: 'image',
-    id: 'enjoy',
-    imageSrc: '/enjoy.jpg',
-    title: 'Enjoy and have fun',
-    body: 'Show up, play hard, stay respectful. Hampas is for good games and good\u00A0vibes.',
-  },
   {
     kind: 'policies',
     id: 'policies',
