@@ -55,13 +55,13 @@ export default function EventLocationPicker({
   return (
     <div className="space-y-2.5">
       <div className="overflow-hidden rounded-[var(--radius-card)] border border-border/90 bg-surface shadow-soft ring-1 ring-cobalt/10">
-        <div className="relative">
+        <div className="relative isolate">
           {!expanded ? (
             <>
               <MapContainer
                 center={[value.lat, value.lng]}
                 zoom={15}
-                className="event-map__leaflet h-56 w-full sm:h-60"
+                className="event-map__leaflet relative z-0 h-56 w-full sm:h-60"
                 scrollWheelZoom={!disabled}
                 style={{ height: '100%', width: '100%', minHeight: '14rem' }}
                 zoomControl={false}
@@ -88,11 +88,11 @@ export default function EventLocationPicker({
               </MapContainer>
 
               <div
-                className="pointer-events-none absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-surface/50 to-transparent dark:from-surface/30"
+                className="pointer-events-none absolute inset-x-0 top-0 z-10 h-12 bg-gradient-to-b from-surface/50 to-transparent dark:from-surface/30"
                 aria-hidden
               />
 
-              <p className="pointer-events-none absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full border border-border/80 bg-surface/90 px-2.5 py-1 text-[11px] font-semibold text-chip-text shadow-sm backdrop-blur-sm">
+              <p className="pointer-events-none absolute left-3 top-3 z-10 inline-flex max-w-[calc(100%-4.5rem)] items-center gap-1.5 rounded-full border border-border/80 bg-surface/90 px-2.5 py-1 text-[11px] font-semibold text-chip-text shadow-sm backdrop-blur-sm">
                 <svg
                   width={12}
                   height={12}
@@ -116,22 +116,12 @@ export default function EventLocationPicker({
                   type="button"
                   onClick={() => setExpanded(true)}
                   aria-label="Expand map"
-                  className="absolute right-3 top-3 z-[1] inline-flex min-h-11 min-w-11 items-center justify-center gap-1 rounded-full border border-border/80 bg-surface/90 px-2.5 text-[11px] font-semibold text-chip-text shadow-sm backdrop-blur-sm hover:border-cobalt sm:min-w-0"
+                  title="Expand map"
+                  className="absolute right-2 top-2 z-[1000] inline-flex h-11 min-w-11 items-center justify-center rounded-lg border-2 border-white/90 bg-cobalt px-2.5 font-mono text-lg font-black leading-none tracking-tight text-white shadow-md ring-1 ring-navy/20 transition hover:bg-electric focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cobalt/60"
                 >
-                  <svg
-                    width={16}
-                    height={16}
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={2.2}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden
-                  >
-                    <path d="M9 3H3v6M15 3h6v6M9 21H3v-6M21 15v6h-6" />
-                  </svg>
-                  <span className="hidden sm:inline">Expand</span>
+                  <span aria-hidden className="select-none">
+                    {'<>'}
+                  </span>
                 </button>
               ) : null}
             </>

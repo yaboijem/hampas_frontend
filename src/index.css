@@ -741,6 +741,7 @@ html.dark {
   .event-map__leaflet.leaflet-container {
     background: var(--color-ice);
     font: inherit;
+    z-index: 0;
   }
 
   .event-map__leaflet .leaflet-control-attribution {
