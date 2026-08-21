@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { AdminPendingCountsProvider } from '../admin/AdminPendingCountsContext';
@@ -51,6 +52,7 @@ describe('AppHeader Users nav', () => {
   });
 
   test('shows Users link for admin', async () => {
+    const user = userEvent.setup();
     render(
       <ThemeProvider>
         <MemoryRouter>
@@ -63,12 +65,14 @@ describe('AppHeader Users nav', () => {
       </ThemeProvider>,
     );
 
+    await user.click(screen.getByRole('button', { name: /open menu/i }));
+
     await waitFor(() => {
-      expect(screen.getAllByRole('link', { name: /users management/i }).length).toBeGreaterThan(0);
+      expect(screen.getByRole('menuitem', { name: /users management/i })).toBeInTheDocument();
     });
 
-    const usersLinks = screen.getAllByRole('link', { name: /users management/i });
-    expect(usersLinks[0]).toHaveAttribute('href', '/admin/users');
-    expect(screen.getAllByRole('link', { name: /requests/i }).length).toBeGreaterThan(0);
+    const usersLink = screen.getByRole('menuitem', { name: /users management/i });
+    expect(usersLink).toHaveAttribute('href', '/admin/users');
+    expect(screen.getByRole('menuitem', { name: /requests/i })).toBeInTheDocument();
   });
 });

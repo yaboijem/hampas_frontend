@@ -31,7 +31,7 @@ test('mobile menu toggles navigation links', async () => {
   await user.click(openMenu);
 
   expect(screen.getByRole('menu')).toBeInTheDocument();
-  expect(screen.getAllByRole('link', { name: /^events$/i }).length).toBeGreaterThan(0);
+  expect(screen.getByRole('menuitem', { name: /^events$/i })).toBeInTheDocument();
 
   await user.click(screen.getByRole('button', { name: 'Close menu' }));
   expect(screen.queryByRole('menu')).not.toBeInTheDocument();

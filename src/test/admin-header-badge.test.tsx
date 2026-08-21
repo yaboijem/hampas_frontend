@@ -57,6 +57,7 @@ describe('AppHeader admin badge', () => {
   });
 
   test('shows Admin link with total pending badge', async () => {
+    const user = userEvent.setup();
     render(
       <ThemeProvider>
         <MemoryRouter>
@@ -69,13 +70,15 @@ describe('AppHeader admin badge', () => {
       </ThemeProvider>,
     );
 
-    const links = await screen.findAllByRole('link', { name: /requests/i });
-    expect(links.length).toBeGreaterThan(0);
+    await user.click(screen.getByRole('button', { name: /open menu/i }));
+
+    const requests = await screen.findByRole('menuitem', { name: /requests/i });
+    expect(requests).toBeInTheDocument();
     expect(
-      screen.queryByRole('link', { name: /role requests/i }),
+      screen.queryByRole('menuitem', { name: /role requests/i }),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByRole('link', { name: /event requests/i }),
+      screen.queryByRole('menuitem', { name: /event requests/i }),
     ).not.toBeInTheDocument();
 
     await waitFor(() => {
@@ -99,7 +102,8 @@ describe('AppHeader admin badge', () => {
       </ThemeProvider>,
     );
 
-    await user.click(screen.getAllByRole('button', { name: /log out/i })[0]);
+    await user.click(screen.getByRole('button', { name: /open menu/i }));
+    await user.click(screen.getByRole('menuitem', { name: /log out/i }));
     expect(toastSpy).toHaveBeenCalledWith("You've been logged\u00a0out.");
   });
 });

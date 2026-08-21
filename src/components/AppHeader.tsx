@@ -8,14 +8,6 @@ import CreateEventControl from "./CreateEventControl";
 import NotificationsBell from "./NotificationsBell";
 import ThemeToggle from "./ThemeToggle";
 
-const linkClass = ({ isActive }: { isActive: boolean }) =>
-  [
-    "px-3 py-2 text-sm font-medium transition-colors border-b-2",
-    isActive
-      ? "border-cobalt text-navy"
-      : "border-transparent text-muted hover:text-navy",
-  ].join(" ");
-
 const menuLinkClass = ({ isActive }: { isActive: boolean }) =>
   [
     "block w-full rounded-[var(--radius-control)] px-3 py-3 text-sm font-medium transition-colors",
@@ -50,12 +42,6 @@ export default function AppHeader() {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuId = useId();
-
-  const adminLinkClass = ({ isActive }: { isActive: boolean }) =>
-    linkClass({
-      isActive:
-        isActive || location.pathname.startsWith("/admin/requests"),
-    });
 
   const adminMenuLinkClass = ({ isActive }: { isActive: boolean }) =>
     menuLinkClass({
@@ -113,63 +99,11 @@ export default function AppHeader() {
           </div>
         </div>
 
-        {/* Desktop / tablet nav */}
-        <div className="hidden items-center justify-end gap-1 md:flex md:gap-2">
-          <NavLink to="/events" className={linkClass}>
-            Events
-          </NavLink>
-          {!loading && user && (
-            <>
-              <NavLink to="/me/applications" className={linkClass}>
-                My applications
-              </NavLink>
-              <NavLink to="/me/hosted-events" className={linkClass}>
-                Hosted events
-              </NavLink>
-              <NavLink to="/profile" className={linkClass}>
-                Profile
-              </NavLink>
-              {user.is_admin ? (
-                <>
-                  <NavLink to="/admin/requests" className={adminLinkClass}>
-                    <span className="inline-flex items-center">
-                      Requests
-                      <AdminPendingBadge count={counts.total} />
-                    </span>
-                  </NavLink>
-                  <NavLink to="/admin/users" className={linkClass}>
-                    Users Management
-                  </NavLink>
-                </>
-              ) : null}
-              <CreateEventControl variant="header" />
-              <button
-                type="button"
-                onClick={handleSignOut}
-                aria-label="Log out"
-                title="Log out"
-                className="logout-btn inline-flex h-10 w-10 items-center justify-center rounded-[var(--radius-control)] border border-solid transition sm:h-11 sm:w-11"
-              >
-                <LogoutIcon />
-              </button>
-            </>
-          )}
-          {!loading && !user && (
-            <Link
-              to="/login"
-              className="rounded-[var(--radius-control)] bg-cobalt px-3 py-2 text-sm font-semibold text-white shadow-soft hover:bg-electric"
-            >
-              Log in
-            </Link>
-          )}
-        </div>
-
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
           {!loading && user ? <NotificationsBell /> : null}
           <ThemeToggle className="!h-10 !w-10 !px-0 sm:!h-11 sm:!w-11" />
 
-          {/* Mobile hamburger */}
-          <div className="relative md:hidden">
+          <div className="relative">
             <button
               type="button"
               className="inline-flex h-10 w-10 items-center justify-center rounded-[var(--radius-control)] border border-border bg-surface text-navy sm:h-11 sm:w-11"
@@ -202,7 +136,7 @@ export default function AppHeader() {
                 <div
                   id={menuId}
                   role="menu"
-                  className="absolute right-0 z-50 mt-2 w-56 origin-top-right rounded-[var(--radius-card)] border border-border bg-surface p-2 shadow-soft"
+                  className="absolute right-0 z-50 mt-2 w-56 origin-top-right rounded-[var(--radius-card)] border border-border bg-surface p-2 shadow-soft sm:w-64"
                 >
                   <NavLink
                     to="/events"
