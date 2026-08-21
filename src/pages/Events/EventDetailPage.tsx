@@ -12,6 +12,7 @@ import {
 } from '../../components/ContactIcons';
 import BrandMark from '../../components/BrandMark';
 import DeleteEventModal from '../../components/DeleteEventModal';
+import EventMap from '../../components/EventMap';
 import ReportModal from '../../components/ReportModal';
 import TypeMark from '../../components/TypeMark';
 import {
@@ -108,6 +109,12 @@ export default function EventDetailPage() {
   }
 
   const place = formatEventPlace(event.barangay, event.city);
+  const venueTitle = event.venue_name?.trim() || place;
+  const hasPin =
+    typeof event.latitude === 'number' &&
+    typeof event.longitude === 'number' &&
+    Number.isFinite(event.latitude) &&
+    Number.isFinite(event.longitude);
   const when = formatEventWhen(event.starts_at);
   const showApplyChrome = !event.is_owner && event.visibility === 'live';
   const canManage =
@@ -218,10 +225,6 @@ export default function EventDetailPage() {
           <dt className="text-sm text-muted">When</dt>
           <dd className="text-right text-sm font-medium text-navy">{when}</dd>
         </div>
-        <div className="flex justify-between gap-4 px-4 py-3">
-          <dt className="text-sm text-muted">Where</dt>
-          <dd className="text-right text-sm font-medium text-navy">{place}</dd>
-        </div>
         {event.distance_km !== undefined && (
           <div className="flex justify-between gap-4 px-4 py-3">
             <dt className="text-sm text-muted">Distance</dt>
@@ -237,6 +240,27 @@ export default function EventDetailPage() {
           </dd>
         </div>
       </dl>
+
+      <section className="mb-6" aria-labelledby="event-location-heading">
+        <h2
+          id="event-location-heading"
+          className="mb-2 font-display text-sm font-semibold uppercase tracking-wide text-muted"
+        >
+          Location
+        </h2>
+        <p className="text-base font-semibold text-navy">{venueTitle}</p>
+        {event.location_address?.trim() ? (
+          <p className="mt-0.5 text-sm text-muted">{event.location_address.trim()}</p>
+        ) : null}
+        {event.venue_name?.trim() && place ? (
+          <p className="mt-0.5 text-sm text-muted">{place}</p>
+        ) : null}
+        {hasPin ? (
+          <div className="mt-3">
+            <EventMap lat={event.latitude!} lng={event.longitude!} className="h-52 w-full" />
+          </div>
+        ) : null}
+      </section>
 
       {(() => {
         const as = resolveHostDisplayAs(event.host_display_as, event.created_by.roles);

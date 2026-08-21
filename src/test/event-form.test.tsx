@@ -13,6 +13,24 @@ import * as profilesApi from '../api/profiles';
 import * as compressImageMod from '../lib/compressImage';
 import type { EventItem } from '../api/types';
 
+vi.mock('react-leaflet', () => ({
+  MapContainer: ({ children }: { children?: React.ReactNode }) => (
+    <div data-testid="map">{children}</div>
+  ),
+  TileLayer: () => null,
+  Marker: () => null,
+  useMapEvents: () => null,
+  useMap: () => ({ setView: vi.fn() }),
+}));
+
+vi.mock('../lib/reverseGeocode', () => ({
+  reverseGeocode: vi.fn().mockResolvedValue('Mock Address, Pampanga'),
+}));
+
+vi.mock('../lib/leafletIcon', () => ({
+  defaultMarkerIcon: {},
+}));
+
 function futureLocal(daysAhead = 2, hour = 18): string {
   const d = new Date();
   d.setDate(d.getDate() + daysAhead);
@@ -75,6 +93,10 @@ const existingEvent: EventItem = {
   skill_level: 'intermediate',
   barangay: 'Malabanias',
   city: 'Angeles City',
+  venue_name: 'Friday Court',
+  location_address: 'Malabanias, Angeles City',
+  latitude: 15.145,
+  longitude: 120.588,
   starts_at: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
   photo_url: 'https://example.com/storage/events/court.jpg',
   visibility: 'live',
@@ -101,6 +123,7 @@ describe('CreateEventPage', () => {
     await user.selectOptions(screen.getByLabelText(/skill level/i), 'all_levels');
     await user.type(screen.getByLabelText(/barangay/i), 'Malabanias');
     await user.selectOptions(screen.getByLabelText(/city/i), 'Angeles City');
+    await user.type(screen.getByLabelText(/venue name/i), 'Capel Open Court');
     const starts = futureLocal(3, 18);
     fireEvent.change(screen.getByLabelText(/starts at/i), { target: { value: starts } });
     await user.click(screen.getByRole('button', { name: /create event/i }));
@@ -110,6 +133,9 @@ describe('CreateEventPage', () => {
       expect(call).toBeInstanceOf(FormData);
       expect(call.get('title')).toBe('Sunday Open Play');
       expect(call.get('starts_at')).toBe(starts);
+      expect(call.get('venue_name')).toBe('Capel Open Court');
+      expect(call.get('latitude')).toBeTruthy();
+      expect(call.get('longitude')).toBeTruthy();
     });
   });
 });
@@ -132,6 +158,7 @@ describe('CreateEventPage try_out', () => {
     await user.selectOptions(screen.getByLabelText(/skill level/i), 'all_levels');
     await user.type(screen.getByLabelText(/barangay/i), 'Balibago');
     await user.selectOptions(screen.getByLabelText(/city/i), 'Angeles City');
+    await user.type(screen.getByLabelText(/venue name/i), 'Angeles Club Court');
     fireEvent.change(screen.getByLabelText(/starts at/i), {
       target: { value: futureLocal(5, 10) },
     });
@@ -186,6 +213,9 @@ describe('EventForm starts_at restriction', () => {
             skill_level: 'all_levels',
             barangay: null,
             city: 'Angeles City',
+            venue_name: 'Old Court',
+            latitude: 15.145,
+            longitude: 120.588,
             starts_at: pastIso,
             photo_url: null,
             visibility: 'live',
@@ -260,6 +290,7 @@ describe('EventForm photo compression', () => {
     await user.selectOptions(screen.getByLabelText(/skill level/i), 'all_levels');
     await user.type(screen.getByLabelText(/barangay/i), 'Malabanias');
     await user.selectOptions(screen.getByLabelText(/city/i), 'Angeles City');
+    await user.type(screen.getByLabelText(/venue name/i), 'Photo Court');
     fireEvent.change(screen.getByLabelText(/starts at/i), {
       target: { value: futureLocal(3, 18) },
     });

@@ -56,10 +56,11 @@ describe('eventLabels', () => {
   });
 
   test('host title for coach vs organizer', () => {
-    expect(hostRoleLabel(['coach'])).toBe('Organizer');
+    expect(hostRoleLabel(['coach'])).toBe('Coach');
     expect(hostRoleLabel(['organizer'])).toBe('Organizer');
     expect(hostDisplayName('Alex', ['coach'])).toBe('Coach Alex');
     expect(hostDisplayName('Alex', ['organizer'])).toBe('Alex');
-    expect(hostDisplayName('Alex', ['coach', 'organizer'])).toBe('Coach Alex');
+    expect(hostDisplayName('Alex', ['coach', 'organizer'])).toBe('Alex');
+    expect(hostDisplayName('Alex', ['coach', 'organizer'], 'coach')).toBe('Coach Alex');
   });
 });

@@ -18,6 +18,20 @@ const authState = vi.hoisted(() => ({
   },
 }));
 
+vi.mock('react-leaflet', () => ({
+  MapContainer: ({ children }: { children?: React.ReactNode }) => (
+    <div data-testid="map">{children}</div>
+  ),
+  TileLayer: () => null,
+  Marker: () => null,
+  useMapEvents: () => null,
+  useMap: () => ({ setView: vi.fn() }),
+}));
+
+vi.mock('../lib/leafletIcon', () => ({
+  defaultMarkerIcon: {},
+}));
+
 vi.mock('../api/events', () => ({
   getEvent: vi.fn(),
   deleteEvent: vi.fn(),
@@ -92,6 +106,24 @@ describe('EventDetailPage', () => {
     expect(screen.getByRole('link', { name: /back to events/i })).toHaveAttribute('href', '/events');
     expect(screen.getByTestId('event-sticky-cta')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^apply$/i })).toBeInTheDocument();
+  });
+
+  test('shows venue name, pin address, and Google Maps link', async () => {
+    vi.mocked(eventsApi.getEvent).mockResolvedValue({
+      ...baseEvent,
+      venue_name: 'Clark Court 3',
+      location_address: 'Manuel A. Roxas Hwy, Angeles, Pampanga',
+      latitude: 15.1395,
+      longitude: 120.5877,
+    });
+    renderDetail();
+
+    expect(await screen.findByText('Clark Court 3')).toBeInTheDocument();
+    expect(screen.getByText(/Manuel A\. Roxas Hwy/i)).toBeInTheDocument();
+    expect(screen.getByText(/malabanias, angeles city/i)).toBeInTheDocument();
+    const mapLink = screen.getByRole('link', { name: /open venue in google maps/i });
+    expect(mapLink).toHaveAttribute('href', 'https://www.google.com/maps?q=15.1395,120.5877');
+    expect(mapLink).toHaveAttribute('target', '_blank');
   });
 
   test('shows Coach label and Coach {name} when host_display_as is coach', async () => {

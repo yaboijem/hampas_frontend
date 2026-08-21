@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { EventItem, EventType, Role, SkillLevel } from '../../api/types';
 import BrandMark from '../../components/BrandMark';
+import EventLocationPicker from '../../components/EventLocationPicker';
 import {
   DEFAULT_EVENT_CITY,
   PAMPANGA_CENTER,
@@ -11,6 +12,7 @@ import {
 import type { HostDisplayAs } from '../../events/eventLabels';
 import { showToast } from '../../lib/adminNotifications';
 import { compressImage } from '../../lib/compressImage';
+import { reverseGeocode } from '../../lib/reverseGeocode';
 
 interface Props {
   initial?: EventItem | null;
@@ -102,6 +104,7 @@ export default function EventForm({
   const skillId = useId();
   const barangayId = useId();
   const cityId = useId();
+  const venueId = useId();
   const startsId = useId();
   const photoId = useId();
 
@@ -111,6 +114,7 @@ export default function EventForm({
   const [skillLevel, setSkillLevel] = useState<SkillLevel>(initial?.skill_level ?? 'all_levels');
   const [barangay, setBarangay] = useState(initial?.barangay ?? '');
   const [city, setCity] = useState(initial?.city ?? DEFAULT_EVENT_CITY);
+  const [venueName, setVenueName] = useState(initial?.venue_name ?? '');
   const cityOptions =
     initial?.city && !(PAMPANGA_CITIES as readonly string[]).includes(initial.city)
       ? [initial.city, ...PAMPANGA_CITIES]
@@ -121,7 +125,25 @@ export default function EventForm({
   const [photo, setPhoto] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(initial?.photo_url ?? null);
   const [removePhoto, setRemovePhoto] = useState(false);
-  const [geo, setGeo] = useState<{ latitude: number; longitude: number } | null>(null);
+  const initialPin = (() => {
+    if (
+      typeof initial?.latitude === 'number' &&
+      typeof initial?.longitude === 'number' &&
+      Number.isFinite(initial.latitude) &&
+      Number.isFinite(initial.longitude)
+    ) {
+      return { lat: initial.latitude, lng: initial.longitude };
+    }
+    return cityCenter(initial?.city ?? DEFAULT_EVENT_CITY) ?? PAMPANGA_CENTER;
+  })();
+  const [pin, setPin] = useState(initialPin);
+  const [pinTouched, setPinTouched] = useState(
+    typeof initial?.latitude === 'number' && typeof initial?.longitude === 'number',
+  );
+  const [locationAddress, setLocationAddress] = useState<string | null>(
+    initial?.location_address ?? null,
+  );
+  const [addressStatus, setAddressStatus] = useState<'idle' | 'loading' | 'error'>('idle');
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -177,6 +199,27 @@ export default function EventForm({
     if (fileRef.current) fileRef.current.value = '';
   };
 
+  useEffect(() => {
+    const ac = new AbortController();
+    setAddressStatus('loading');
+    const t = window.setTimeout(() => {
+      void reverseGeocode(pin.lat, pin.lng, ac.signal).then((addr) => {
+        if (ac.signal.aborted) return;
+        if (addr) {
+          setLocationAddress(addr);
+          setAddressStatus('idle');
+        } else {
+          setLocationAddress(null);
+          setAddressStatus('error');
+        }
+      });
+    }, 500);
+    return () => {
+      ac.abort();
+      window.clearTimeout(t);
+    };
+  }, [pin.lat, pin.lng]);
+
   const useMyLocation = () => {
     setLocationError(null);
     if (!navigator.geolocation) {
@@ -186,7 +229,8 @@ export default function EventForm({
     setLocating(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setGeo({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
+        setPin({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setPinTouched(true);
         setLocating(false);
       },
       () => {
@@ -197,10 +241,18 @@ export default function EventForm({
     );
   };
 
+  const onCityChange = (nextCity: string) => {
+    setCity(nextCity);
+    if (!pinTouched) {
+      const c = cityCenter(nextCity) ?? PAMPANGA_CENTER;
+      setPin(c);
+    }
+  };
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !description.trim() || !startsAt || !city.trim()) {
-      setError('Please fill in title, description, city, and start time.');
+    if (!title.trim() || !description.trim() || !startsAt || !city.trim() || !venueName.trim()) {
+      setError('Please fill in title, description, venue name, city, and start time.');
       return;
     }
     if (!isStartsAtAllowed(startsAt)) {
@@ -214,10 +266,9 @@ export default function EventForm({
     form.set('skill_level', skillLevel);
     form.set('barangay', barangay.trim());
     form.set('city', city.trim());
+    form.set('venue_name', venueName.trim());
+    if (locationAddress) form.set('location_address', locationAddress);
     form.set('starts_at', startsAt);
-    const pin = geo
-      ? { lat: geo.latitude, lng: geo.longitude }
-      : (cityCenter(city) ?? PAMPANGA_CENTER);
     form.set('latitude', String(pin.lat));
     form.set('longitude', String(pin.lng));
     form.set('host_display_as', hostDisplayAs);
@@ -452,7 +503,7 @@ export default function EventForm({
               id={cityId}
               className={field}
               value={city}
-              onChange={(e) => setCity(e.target.value)}
+              onChange={(e) => onCityChange(e.target.value)}
               required
             >
               {cityOptions.map((c) => (
@@ -464,47 +515,33 @@ export default function EventForm({
           </div>
         </div>
 
-        <div
-          className={[
-            'flex flex-wrap items-center gap-2 rounded-xl px-3 py-2 ring-1',
-            geo
-              ? 'bg-sky-tint/70 ring-cobalt/20'
-              : 'bg-gradient-to-r from-ice to-sky-tint/40 ring-border/60',
-          ].join(' ')}
-        >
-          <button
-            type="button"
-            onClick={useMyLocation}
-            disabled={locating || submitting}
-            className="rounded-lg bg-cobalt px-3 py-1.5 text-xs font-bold text-white shadow-soft hover:bg-electric disabled:opacity-60"
-          >
-            {locating ? 'Locating…' : geo ? 'Update GPS' : '📍 Use my location'}
-          </button>
-          {geo && (
-            <button
-              type="button"
-              onClick={() => {
-                setGeo(null);
-                setLocationError(null);
-              }}
-              className="rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs font-semibold text-muted hover:text-navy"
-            >
-              Clear
-            </button>
-          )}
-          {geo ? (
-            <span className="text-[11px] font-semibold text-chip-text">
-              Pin set · {geo.latitude.toFixed(4)}, {geo.longitude.toFixed(4)}
-            </span>
-          ) : (
-            <span className="text-[11px] text-muted">Optional · for nearby discovery</span>
-          )}
-          {locationError && (
-            <span role="alert" className="w-full text-[11px] font-medium text-red-600">
-              {locationError}
-            </span>
-          )}
+        <div>
+          <label htmlFor={venueId} className={label}>
+            Venue name
+          </label>
+          <input
+            id={venueId}
+            className={field}
+            value={venueName}
+            onChange={(e) => setVenueName(e.target.value)}
+            placeholder="e.g. SM City Clark Court 3"
+            required
+          />
         </div>
+
+        <EventLocationPicker
+          value={pin}
+          onChange={(next) => {
+            setPin(next);
+            setPinTouched(true);
+          }}
+          address={locationAddress}
+          addressStatus={addressStatus}
+          disabled={submitting}
+          onUseMyLocation={useMyLocation}
+          locating={locating}
+          locationError={locationError}
+        />
 
         <button
           type="submit"
