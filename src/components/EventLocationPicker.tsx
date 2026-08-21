@@ -1,6 +1,7 @@
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { MapContainer, Marker, TileLayer, useMap, useMapEvents } from 'react-leaflet';
 import { defaultMarkerIcon } from '../lib/leafletIcon';
+import MapSheet from './MapSheet';
 
 export type LatLng = { lat: number; lng: number };
 
@@ -43,61 +44,105 @@ export default function EventLocationPicker({
   locating = false,
   locationError = null,
 }: EventLocationPickerProps) {
+  const [expanded, setExpanded] = useState(false);
+  const expandRef = useRef<HTMLButtonElement>(null);
+
+  const closeSheet = () => {
+    setExpanded(false);
+    requestAnimationFrame(() => expandRef.current?.focus());
+  };
+
   return (
     <div className="space-y-2.5">
       <div className="overflow-hidden rounded-[var(--radius-card)] border border-border/90 bg-surface shadow-soft ring-1 ring-cobalt/10">
         <div className="relative">
-          <MapContainer
-            center={[value.lat, value.lng]}
-            zoom={15}
-            className="event-map__leaflet h-56 w-full sm:h-60"
-            scrollWheelZoom={!disabled}
-            style={{ height: '100%', width: '100%', minHeight: '14rem' }}
-            zoomControl={false}
-            attributionControl={false}
-          >
-            <TileLayer
-              attribution='&copy; OSM &copy; CARTO'
-              url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-            />
-            <Recenter lat={value.lat} lng={value.lng} />
-            {!disabled ? <ClickToPin onPick={(lat, lng) => onChange({ lat, lng })} /> : null}
-            <Marker
-              position={[value.lat, value.lng]}
-              icon={defaultMarkerIcon}
-              draggable={!disabled}
-              eventHandlers={{
-                dragend: (e) => {
-                  const m = e.target;
-                  const pos = m.getLatLng();
-                  onChange({ lat: pos.lat, lng: pos.lng });
-                },
-              }}
-            />
-          </MapContainer>
+          {!expanded ? (
+            <>
+              <MapContainer
+                center={[value.lat, value.lng]}
+                zoom={15}
+                className="event-map__leaflet h-56 w-full sm:h-60"
+                scrollWheelZoom={!disabled}
+                style={{ height: '100%', width: '100%', minHeight: '14rem' }}
+                zoomControl={false}
+                attributionControl={false}
+              >
+                <TileLayer
+                  attribution="&copy; OSM &copy; CARTO"
+                  url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+                />
+                <Recenter lat={value.lat} lng={value.lng} />
+                {!disabled ? <ClickToPin onPick={(lat, lng) => onChange({ lat, lng })} /> : null}
+                <Marker
+                  position={[value.lat, value.lng]}
+                  icon={defaultMarkerIcon}
+                  draggable={!disabled}
+                  eventHandlers={{
+                    dragend: (e) => {
+                      const m = e.target;
+                      const pos = m.getLatLng();
+                      onChange({ lat: pos.lat, lng: pos.lng });
+                    },
+                  }}
+                />
+              </MapContainer>
 
-          <div
-            className="pointer-events-none absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-surface/50 to-transparent dark:from-surface/30"
-            aria-hidden
-          />
+              <div
+                className="pointer-events-none absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-surface/50 to-transparent dark:from-surface/30"
+                aria-hidden
+              />
 
-          <p className="pointer-events-none absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full border border-border/80 bg-surface/90 px-2.5 py-1 text-[11px] font-semibold text-chip-text shadow-sm backdrop-blur-sm">
-            <svg
-              width={12}
-              height={12}
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2.4}
-              strokeLinecap="round"
-              strokeLinejoin="round"
+              <p className="pointer-events-none absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full border border-border/80 bg-surface/90 px-2.5 py-1 text-[11px] font-semibold text-chip-text shadow-sm backdrop-blur-sm">
+                <svg
+                  width={12}
+                  height={12}
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2.4}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden
+                >
+                  <path d="M12 21s7-5.33 7-11a7 7 0 1 0-14 0c0 5.67 7 11 7 11Z" />
+                  <circle cx="12" cy="10" r="2.5" />
+                </svg>
+                Tap map or drag pin
+              </p>
+
+              {!disabled ? (
+                <button
+                  ref={expandRef}
+                  type="button"
+                  onClick={() => setExpanded(true)}
+                  aria-label="Expand map"
+                  className="absolute right-3 top-3 z-[1] inline-flex min-h-11 min-w-11 items-center justify-center gap-1 rounded-full border border-border/80 bg-surface/90 px-2.5 text-[11px] font-semibold text-chip-text shadow-sm backdrop-blur-sm hover:border-cobalt sm:min-w-0"
+                >
+                  <svg
+                    width={16}
+                    height={16}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2.2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden
+                  >
+                    <path d="M9 3H3v6M15 3h6v6M9 21H3v-6M21 15v6h-6" />
+                  </svg>
+                  <span className="hidden sm:inline">Expand</span>
+                </button>
+              ) : null}
+            </>
+          ) : (
+            <div
+              className="flex h-56 items-center justify-center bg-ice/40 text-[11px] font-medium text-muted sm:h-60"
               aria-hidden
             >
-              <path d="M12 21s7-5.33 7-11a7 7 0 1 0-14 0c0 5.67 7 11 7 11Z" />
-              <circle cx="12" cy="10" r="2.5" />
-            </svg>
-            Tap map or drag pin
-          </p>
+              Map open full screen
+            </div>
+          )}
         </div>
 
         <div className="flex flex-wrap items-center gap-2 border-t border-border/70 bg-gradient-to-r from-ice/80 via-surface to-sky-tint/40 px-3 py-2.5">
@@ -105,7 +150,7 @@ export default function EventLocationPicker({
             type="button"
             onClick={onUseMyLocation}
             disabled={locating || disabled}
-            className="inline-flex items-center gap-1.5 rounded-[var(--radius-control)] bg-cobalt px-3 py-1.5 text-xs font-bold text-white shadow-soft transition hover:bg-electric disabled:opacity-60"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-[var(--radius-control)] bg-cobalt px-3 py-1.5 text-xs font-bold text-white shadow-soft transition hover:bg-electric disabled:opacity-60"
           >
             <svg
               width={14}
@@ -141,6 +186,20 @@ export default function EventLocationPicker({
           ) : null}
         </div>
       </div>
+
+      {expanded ? (
+        <MapSheet
+          value={value}
+          onChange={onChange}
+          address={address}
+          addressStatus={addressStatus}
+          disabled={disabled}
+          onUseMyLocation={onUseMyLocation}
+          locating={locating}
+          locationError={locationError}
+          onClose={closeSheet}
+        />
+      ) : null}
     </div>
   );
 }
