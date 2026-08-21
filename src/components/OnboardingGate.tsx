@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ONBOARDING_SLIDES } from '../onboarding/slides';
 import { readOnboardingDone, writeOnboardingDone } from '../onboarding/storage';
@@ -8,6 +8,9 @@ const ghostBtnDark =
 
 const EXIT_MS = 420;
 const MIN_LOAD_MS = 1000;
+/** Cap while favicon still loading so the bar doesn't fake 100%. */
+const ASSET_PENDING_CAP = 0.88;
+const PROGRESS_COLOR = '#D97706';
 
 type Props = {
   /** Called after exit animation, once storage is written — parent should mount app shell. */
@@ -16,6 +19,12 @@ type Props = {
 
 type Phase = 'loading' | 'policies';
 
+function loadProgress(elapsedMs: number, assetReady: boolean): number {
+  const timeRatio = Math.min(1, elapsedMs / MIN_LOAD_MS);
+  if (!assetReady) return Math.min(ASSET_PENDING_CAP, timeRatio) * 100;
+  return timeRatio * 100;
+}
+
 export default function OnboardingGate({ onFinished }: Props) {
   const navigate = useNavigate();
   const [done, setDone] = useState(() => readOnboardingDone());
@@ -23,6 +32,9 @@ export default function OnboardingGate({ onFinished }: Props) {
   const [exiting, setExiting] = useState(false);
   const [assetReady, setAssetReady] = useState(false);
   const [minElapsed, setMinElapsed] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const loadStartedAt = useRef<number | null>(null);
+  const assetReadyRef = useRef(false);
 
   const slide = ONBOARDING_SLIDES[0];
 
@@ -35,6 +47,11 @@ export default function OnboardingGate({ onFinished }: Props) {
     };
   }, [done]);
 
+  const markAssetReady = () => {
+    assetReadyRef.current = true;
+    setAssetReady(true);
+  };
+
   useEffect(() => {
     if (done || phase !== 'loading') return;
     const id = window.setTimeout(() => setMinElapsed(true), MIN_LOAD_MS);
@@ -42,7 +59,34 @@ export default function OnboardingGate({ onFinished }: Props) {
   }, [done, phase]);
 
   useEffect(() => {
+    if (done || phase !== 'loading') return;
+    loadStartedAt.current = performance.now();
+    let raf = 0;
+    const tick = (now: number) => {
+      const start = loadStartedAt.current ?? now;
+      const elapsed = now - start;
+      const next = loadProgress(elapsed, assetReadyRef.current);
+      setProgress(next);
+      if (elapsed < MIN_LOAD_MS || !assetReadyRef.current) {
+        raf = window.requestAnimationFrame(tick);
+      } else {
+        setProgress(100);
+      }
+    };
+    raf = window.requestAnimationFrame(tick);
+    return () => window.cancelAnimationFrame(raf);
+  }, [done, phase]);
+
+  useEffect(() => {
+    if (phase !== 'loading' || !assetReady) return;
+    const start = loadStartedAt.current ?? performance.now();
+    const elapsed = performance.now() - start;
+    setProgress(loadProgress(elapsed, true));
+  }, [phase, assetReady]);
+
+  useEffect(() => {
     if (phase === 'loading' && assetReady && minElapsed) {
+      setProgress(100);
       setPhase('policies');
     }
   }, [phase, assetReady, minElapsed]);
@@ -60,7 +104,7 @@ export default function OnboardingGate({ onFinished }: Props) {
 
   const onBallImg = (el: HTMLImageElement | null) => {
     if (!el) return;
-    if (el.complete) setAssetReady(true);
+    if (el.complete) markAssetReady();
   };
 
   if (done) return null;
@@ -76,6 +120,20 @@ export default function OnboardingGate({ onFinished }: Props) {
         aria-busy="true"
         aria-label="Loading Hampas"
       >
+        <div
+          className="pointer-events-none absolute inset-x-0 top-0 z-10 h-0.5 overflow-hidden bg-navy/10"
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.round(progress)}
+          aria-label="Loading progress"
+          data-testid="onboarding-load-progress"
+        >
+          <div
+            className="h-full origin-left transition-[width] duration-75 ease-linear"
+            style={{ width: `${progress}%`, backgroundColor: PROGRESS_COLOR }}
+          />
+        </div>
         <span className="brand-ball shrink-0" data-testid="onboarding-loading-ball" aria-hidden>
           <img
             ref={onBallImg}
@@ -85,8 +143,8 @@ export default function OnboardingGate({ onFinished }: Props) {
             width={43}
             height={43}
             draggable={false}
-            onLoad={() => setAssetReady(true)}
-            onError={() => setAssetReady(true)}
+            onLoad={markAssetReady}
+            onError={markAssetReady}
           />
         </span>
       </div>

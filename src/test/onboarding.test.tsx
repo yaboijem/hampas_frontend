@@ -73,14 +73,43 @@ describe('OnboardingGate', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
-  test('shows loading with brand ball before policies', () => {
+  test('shows loading with brand ball and progress bar before policies', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     renderGate();
     const dialog = screen.getByRole('dialog');
     expect(dialog).toHaveAttribute('aria-busy', 'true');
     expect(screen.getByTestId('onboarding-loading-ball')).toBeInTheDocument();
+    const bar = screen.getByRole('progressbar', { name: /loading progress/i });
+    expect(bar).toBeInTheDocument();
+    expect(bar).toHaveAttribute('data-testid', 'onboarding-load-progress');
+    const fill = bar.firstElementChild as HTMLElement;
+    expect(fill.style.backgroundColor).toMatch(/rgb\(217,\s*119,\s*6\)|#d97706/i);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(400);
+    });
+    const mid = Number(bar.getAttribute('aria-valuenow'));
+    expect(mid).toBeGreaterThan(0);
+    expect(mid).toBeLessThan(100);
     expect(screen.queryByRole('heading', { name: /before you play/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^skip$/i })).not.toBeInTheDocument();
+  });
+
+  test('progress reaches 100 when asset ready and min time elapses', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    renderGate();
+    const bar = screen.getByRole('progressbar', { name: /loading progress/i });
+    // Time only — asset still pending → capped below 100
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+    expect(Number(bar.getAttribute('aria-valuenow'))).toBeLessThan(100);
+    const img = screen.getByTestId('onboarding-loading-ball').querySelector('img');
+    fireEvent.load(img!);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(50);
+    });
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /before you play/i })).toBeInTheDocument();
   });
 
   test('reveals policies after min load once favicon settles', async () => {
