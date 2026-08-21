@@ -120,33 +120,35 @@ export default function OnboardingGate({ onFinished }: Props) {
         aria-busy="true"
         aria-label="Loading Hampas"
       >
-        <div
-          className="pointer-events-none absolute inset-x-0 top-0 z-10 h-0.5 overflow-hidden bg-navy/10"
-          role="progressbar"
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={Math.round(progress)}
-          aria-label="Loading progress"
-          data-testid="onboarding-load-progress"
-        >
+        <div className="flex flex-col items-center gap-6">
+          <span className="brand-ball shrink-0" data-testid="onboarding-loading-ball" aria-hidden>
+            <img
+              ref={onBallImg}
+              className="brand-ball__glyph"
+              src="/favicon.png"
+              alt=""
+              width={43}
+              height={43}
+              draggable={false}
+              onLoad={markAssetReady}
+              onError={markAssetReady}
+            />
+          </span>
           <div
-            className="h-full origin-left transition-[width] duration-75 ease-linear"
-            style={{ width: `${progress}%`, backgroundColor: PROGRESS_COLOR }}
-          />
+            className="h-0.5 w-40 overflow-hidden rounded-full bg-navy/10 sm:w-48"
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={Math.round(progress)}
+            aria-label="Loading progress"
+            data-testid="onboarding-load-progress"
+          >
+            <div
+              className="h-full origin-left rounded-full transition-[width] duration-75 ease-linear"
+              style={{ width: `${progress}%`, backgroundColor: PROGRESS_COLOR }}
+            />
+          </div>
         </div>
-        <span className="brand-ball shrink-0" data-testid="onboarding-loading-ball" aria-hidden>
-          <img
-            ref={onBallImg}
-            className="brand-ball__glyph"
-            src="/favicon.png"
-            alt=""
-            width={43}
-            height={43}
-            draggable={false}
-            onLoad={markAssetReady}
-            onError={markAssetReady}
-          />
-        </span>
       </div>
     );
   }
