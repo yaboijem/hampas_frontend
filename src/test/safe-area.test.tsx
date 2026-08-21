@@ -98,7 +98,7 @@ describe('safe-area floating chrome', () => {
 
   test('InstallPrompt uses safe-area offset utilities', () => {
     const src = read('src/components/InstallPrompt.tsx');
-    expect(src).toContain('bottom-safe-offset-4');
+    expect(src).toContain('top-safe-offset-4');
     expect(src).toContain('right-safe-offset-4');
   });
 });
