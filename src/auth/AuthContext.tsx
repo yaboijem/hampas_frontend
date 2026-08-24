@@ -6,7 +6,6 @@ function normalizeUser(user: User): User {
   return {
     ...user,
     is_admin: Boolean(user.is_admin),
-    email_verified_at: user.email_verified_at ?? null,
   };
 }
 
@@ -78,10 +77,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   return useContext(AuthContext);
-}
-
-export function isEmailVerified(user: User | null | undefined): boolean {
-  if (!user) return false;
-  if (user.is_admin) return true;
-  return Boolean(user.email_verified_at);
 }
