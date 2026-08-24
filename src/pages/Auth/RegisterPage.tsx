@@ -5,6 +5,7 @@ import { useAuth } from '../../auth/AuthContext';
 import type { Gender } from '../../api/types';
 import PasswordField from '../../components/PasswordField';
 import PasswordRules from '../../components/PasswordRules';
+import { getApiErrorMessage } from '../../lib/apiError';
 import { passwordFormValid } from '../../lib/passwordRules';
 
 const cardClass =
@@ -67,7 +68,7 @@ export default function RegisterPage() {
       signIn(user);
       navigate('/verify-email', { replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Registration failed.');
+      setError(getApiErrorMessage(err, 'Registration failed.'));
     } finally {
       setSubmitting(false);
     }

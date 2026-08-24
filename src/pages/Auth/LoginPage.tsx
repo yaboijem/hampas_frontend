@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { login } from '../../api/auth';
 import { useAuth } from '../../auth/AuthContext';
 import PasswordField from '../../components/PasswordField';
+import { getApiErrorMessage } from '../../lib/apiError';
 
 const cardClass =
   'mx-auto w-full max-w-md rounded-[var(--radius-card)] border border-border bg-surface p-5 shadow-soft sm:p-6';
@@ -15,16 +16,12 @@ const primaryBtn =
 
 function loginErrorMessage(err: unknown): string {
   if (isAxiosError(err)) {
-    const data = err.response?.data as
-      | { message?: string; errors?: Record<string, string[]> }
-      | undefined;
-    const fieldError =
-      data?.errors?.email?.[0] ?? data?.errors?.password?.[0] ?? data?.message;
-    if (fieldError) return fieldError;
-    if (err.response?.status === 422) return 'Invalid email or password.';
     if (err.response?.status === 429) return 'Too many attempts. Try again shortly.';
+    if (err.response?.status === 422) {
+      return getApiErrorMessage(err, 'Invalid email or password.');
+    }
   }
-  return err instanceof Error ? err.message : 'Login failed.';
+  return getApiErrorMessage(err, 'Login failed.');
 }
 
 export default function LoginPage() {

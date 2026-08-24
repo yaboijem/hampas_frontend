@@ -33,4 +33,22 @@ describe('getApiErrorMessage', () => {
   test('fallback', () => {
     expect(getApiErrorMessage({}, 'Fallback')).toBe('Fallback');
   });
+
+  test('hides axios status code messages', () => {
+    const err = new AxiosError('Request failed with status code 422');
+    err.response = {
+      data: {},
+      status: 422,
+      statusText: 'Unprocessable Entity',
+      headers: {},
+      config: { headers: {} } as never,
+    };
+    expect(getApiErrorMessage(err, 'Login failed.')).toBe('Login failed.');
+  });
+
+  test('hides status code in API message body', () => {
+    expect(
+      getApiErrorMessage(axiosErr({ message: 'HTTP 500 Internal Server Error' }), 'Oops'),
+    ).toBe('Oops');
+  });
 });
