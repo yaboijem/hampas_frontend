@@ -1,29 +1,31 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import { getMe } from '../api/auth';
+import { getMe, logout as apiLogout } from '../api/auth';
 import type { User } from '../api/types';
 
 function normalizeUser(user: User): User {
   return {
     ...user,
-    // API may return 0/1 before boolean cast is applied
     is_admin: Boolean(user.is_admin),
+    email_verified_at: user.email_verified_at ?? null,
   };
 }
 
 interface AuthValue {
   user: User | null;
   loading: boolean;
-  signIn: (token: string, user: User) => void;
-  signOut: () => void;
+  signIn: (user: User) => void;
+  signOut: () => Promise<void>;
   updateUser: (user: User) => void;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthValue>({
   user: null,
   loading: true,
   signIn: () => {},
-  signOut: () => {},
+  signOut: async () => {},
   updateUser: () => {},
+  refreshUser: async () => {},
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -31,24 +33,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('hampas_token');
-    if (!token) {
-      setLoading(false);
-      return;
-    }
     getMe()
-      .then(({ user }) => setUser(normalizeUser(user)))
-      .catch(() => localStorage.removeItem('hampas_token'))
+      .then(({ user: next }) => setUser(normalizeUser(next)))
+      .catch(() => setUser(null))
       .finally(() => setLoading(false));
   }, []);
 
-  const signIn = (token: string, nextUser: User) => {
-    localStorage.setItem('hampas_token', token);
+  useEffect(() => {
+    const onUnauthorized = () => {
+      setUser(null);
+    };
+    window.addEventListener('hampas:unauthorized', onUnauthorized);
+    return () => window.removeEventListener('hampas:unauthorized', onUnauthorized);
+  }, []);
+
+  const signIn = (nextUser: User) => {
     setUser(normalizeUser(nextUser));
   };
 
-  const signOut = () => {
-    localStorage.removeItem('hampas_token');
+  const signOut = async () => {
+    try {
+      await apiLogout();
+    } catch {
+      // still clear local session
+    }
     setUser(null);
   };
 
@@ -56,8 +64,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(normalizeUser(nextUser));
   };
 
+  const refreshUser = async () => {
+    const { user: next } = await getMe();
+    setUser(normalizeUser(next));
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signOut, updateUser }}>
+    <AuthContext.Provider value={{ user, loading, signIn, signOut, updateUser, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );
@@ -65,4 +78,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   return useContext(AuthContext);
+}
+
+export function isEmailVerified(user: User | null | undefined): boolean {
+  if (!user) return false;
+  if (user.is_admin) return true;
+  return Boolean(user.email_verified_at);
 }

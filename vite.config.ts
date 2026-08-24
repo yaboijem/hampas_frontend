@@ -41,6 +41,10 @@ export default defineConfig(({ command }) => ({
         target: 'http://127.0.0.1:8000',
         changeOrigin: true,
       },
+      '/sanctum': {
+        target: 'http://127.0.0.1:8000',
+        changeOrigin: true,
+      },
       '/storage': {
         target: 'http://127.0.0.1:8000',
         changeOrigin: true,

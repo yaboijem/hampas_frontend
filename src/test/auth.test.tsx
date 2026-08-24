@@ -13,6 +13,12 @@ vi.mock('../api/auth', () => ({
   getMe: vi.fn(),
   forgotPassword: vi.fn(),
   resetPassword: vi.fn(),
+  resendVerificationEmail: vi.fn(),
+}));
+
+vi.mock('../api/csrf', () => ({
+  ensureCsrfCookie: vi.fn().mockResolvedValue(undefined),
+  apiOrigin: () => '',
 }));
 
 const STRONG = 'Passw0rd!';
@@ -101,7 +107,6 @@ describe('RegisterPage', () => {
   test('submits registration payload', async () => {
     const user = userEvent.setup();
     vi.mocked(authApi.register).mockResolvedValue({
-      token: 'tok',
       user: {
         id: 1,
         name: 'Test Player',
@@ -146,7 +151,6 @@ describe('LoginPage', () => {
   test('submits credentials', async () => {
     const user = userEvent.setup();
     vi.mocked(authApi.login).mockResolvedValue({
-      token: 'tok',
       user: {
         id: 1,
         name: 'A',
@@ -172,7 +176,6 @@ describe('LoginPage', () => {
   test('login with from state returns to that path', async () => {
     const user = userEvent.setup();
     vi.mocked(authApi.login).mockResolvedValue({
-      token: 'tok',
       user: {
         id: 1,
         name: 'A',

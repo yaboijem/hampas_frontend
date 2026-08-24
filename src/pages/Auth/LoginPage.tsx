@@ -41,8 +41,8 @@ export default function LoginPage() {
     setError(null);
     setSubmitting(true);
     try {
-      const { token, user } = await login(email.trim().toLowerCase(), password);
-      signIn(token, user);
+      const { user } = await login(email.trim().toLowerCase(), password);
+      signIn(user);
       const fromState = location.state as
         | { from?: { pathname?: string; search?: string; hash?: string } }
         | null;

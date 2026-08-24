@@ -54,7 +54,7 @@ export default function RegisterPage() {
     setSubmitting(true);
     setError(null);
     try {
-      const { token, user } = await register({
+      const { user } = await register({
         name: form.name,
         email: form.email,
         password: form.password,
@@ -64,7 +64,7 @@ export default function RegisterPage() {
         privacy_policy_accepted: form.privacy_policy_accepted,
         terms_accepted: form.terms_accepted,
       });
-      signIn(token, user);
+      signIn(user);
       navigate('/events');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registration failed.');

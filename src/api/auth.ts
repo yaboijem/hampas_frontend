@@ -1,4 +1,5 @@
 import { api } from './client';
+import { ensureCsrfCookie } from './csrf';
 import type { Gender, User } from './types';
 
 export async function register(payload: {
@@ -10,12 +11,14 @@ export async function register(payload: {
   gender: Gender;
   privacy_policy_accepted: boolean;
   terms_accepted: boolean;
-}): Promise<{ token: string; user: User }> {
+}): Promise<{ user: User }> {
+  await ensureCsrfCookie();
   const { data } = await api.post('/register', payload);
   return data;
 }
 
-export async function login(email: string, password: string): Promise<{ token: string; user: User }> {
+export async function login(email: string, password: string): Promise<{ user: User }> {
+  await ensureCsrfCookie();
   const { data } = await api.post('/login', { email, password });
   return data;
 }
@@ -40,6 +43,7 @@ export async function updateMe(payload: {
 }
 
 export async function forgotPassword(email: string): Promise<{ message: string }> {
+  await ensureCsrfCookie();
   const { data } = await api.post('/forgot-password', { email });
   return data;
 }
@@ -50,7 +54,13 @@ export async function resetPassword(
   password: string,
   password_confirmation: string,
 ): Promise<{ message: string }> {
-  const { data } = await api.post('/reset-password', { token, email, password, password_confirmation });
+  await ensureCsrfCookie();
+  const { data } = await api.post('/reset-password', {
+    token,
+    email,
+    password,
+    password_confirmation,
+  });
   return data;
 }
 
@@ -69,5 +79,10 @@ export async function changePassword(
   password_confirmation: string,
 ): Promise<{ message: string }> {
   const { data } = await api.put('/user/password', { password, password_confirmation });
+  return data;
+}
+
+export async function resendVerificationEmail(): Promise<{ status?: string; message?: string }> {
+  const { data } = await api.post('/email/verification-notification');
   return data;
 }
