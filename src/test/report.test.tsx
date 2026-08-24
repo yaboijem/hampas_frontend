@@ -11,8 +11,9 @@ vi.mock('../api/reports', () => ({
 }));
 
 vi.mock('../auth/AuthContext', () => ({
+  isEmailVerified: (user: { is_admin?: boolean; email_verified_at?: string | null } | null) => Boolean(user?.is_admin || user?.email_verified_at),
   useAuth: () => ({
-    user: { id: 9, name: 'Me', email: 'me@example.com', birth_date: '2000-01-01', gender: 'male', is_admin: false },
+    user: { id: 9, name: 'Me', email: 'me@example.com', birth_date: '2000-01-01', gender: 'male', is_admin: false, email_verified_at: '2020-01-01' },
     loading: false,
     signIn: vi.fn(),
     signOut: vi.fn(),

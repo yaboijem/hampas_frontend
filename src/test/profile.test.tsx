@@ -14,7 +14,7 @@ const { updateUser, mockUser } = vi.hoisted(() => ({
     email: 'jem@example.com',
     birth_date: '2000-01-01',
     gender: 'male' as const,
-    is_admin: false,
+    is_admin: false, email_verified_at: '2020-01-01',
   },
 }));
 
@@ -33,6 +33,7 @@ vi.mock('../api/auth', () => ({
 }));
 
 vi.mock('../auth/AuthContext', () => ({
+  isEmailVerified: (user: { is_admin?: boolean; email_verified_at?: string | null } | null) => Boolean(user?.is_admin || user?.email_verified_at),
   useAuth: () => ({
     user: mockUser,
     loading: false,
@@ -228,7 +229,7 @@ describe('ProfilePage', () => {
         email: 'jem2@example.com',
         birth_date: '1999-06-15',
         gender: 'female',
-        is_admin: false,
+        is_admin: false, email_verified_at: '2020-01-01',
       },
     });
 

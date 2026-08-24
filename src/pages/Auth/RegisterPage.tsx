@@ -65,7 +65,7 @@ export default function RegisterPage() {
         terms_accepted: form.terms_accepted,
       });
       signIn(user);
-      navigate('/events');
+      navigate('/verify-email', { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registration failed.');
     } finally {

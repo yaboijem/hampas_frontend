@@ -31,8 +31,9 @@ import {
 } from '../../events/eventLabels';
 import { getApiErrorMessage } from '../../lib/apiError';
 import { queryKeys } from '../../lib/queryKeys';
+import { safeHttpUrl } from '../../lib/safeUrl';
 
-const PLAYERS_POLL_MS = 8_000;
+const PLAYERS_POLL_MS = 45_000;
 
 function nonEmpty(v: string | null | undefined): v is string {
   return typeof v === 'string' && v.trim() !== '';
@@ -126,8 +127,8 @@ export default function EventDetailPage() {
   const org = event.created_by;
   const phone = nonEmpty(org.contact_number) ? org.contact_number.trim() : null;
   const email = nonEmpty(org.contact_email) ? org.contact_email.trim() : null;
-  const facebook = nonEmpty(org.facebook_url) ? org.facebook_url.trim() : null;
-  const instagram = nonEmpty(org.instagram_url) ? org.instagram_url.trim() : null;
+  const facebook = safeHttpUrl(org.facebook_url);
+  const instagram = safeHttpUrl(org.instagram_url);
   const hasContact = Boolean(phone || email || facebook || instagram);
 
   const confirmDelete = async () => {

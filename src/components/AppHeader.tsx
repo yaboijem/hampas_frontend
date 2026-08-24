@@ -64,9 +64,11 @@ export default function AppHeader() {
 
   const handleSignOut = () => {
     setMenuOpen(false);
-    signOut();
-    showToast("You've been logged\u00a0out.");
-    navigate("/events", { replace: true });
+    void (async () => {
+      await signOut();
+      showToast("You've been logged\u00a0out.");
+      navigate("/events", { replace: true });
+    })();
   };
 
   return (

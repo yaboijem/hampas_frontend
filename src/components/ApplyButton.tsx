@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { apply, cancelApplication } from '../api/applications';
-import { useAuth } from '../auth/AuthContext';
+import { isAxiosError } from 'axios';
+import { isEmailVerified, useAuth } from '../auth/AuthContext';
 import { showToast } from '../lib/adminNotifications';
 import StatusBadge from './StatusBadge';
 import type { ApplicationStatus } from '../api/types';
@@ -44,13 +45,28 @@ export default function ApplyButton({ eventId, isOwner, visibility, myApplicatio
       navigate('/login', { state: { from: location } });
       return;
     }
+    if (!isEmailVerified(user)) {
+      navigate('/verify-email');
+      return;
+    }
     setError(null);
     try {
       const { application: next } = await apply(eventId);
       setApplication(next);
       showToast('Application submitted.');
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Apply failed.';
+      let msg = 'Apply failed.';
+      if (isAxiosError(err)) {
+        const data = err.response?.data as { message?: string } | undefined;
+        if (err.response?.status === 409) {
+          msg = data?.message ?? 'Verify your email before applying.';
+          navigate('/verify-email');
+        } else if (data?.message) {
+          msg = data.message;
+        }
+      } else if (err instanceof Error) {
+        msg = err.message;
+      }
       setError(msg);
       showToast(msg, 'error');
     }

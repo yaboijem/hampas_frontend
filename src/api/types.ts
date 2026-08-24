@@ -50,6 +50,8 @@ export interface User {
   birth_date: string;
   gender: Gender;
   is_admin: boolean;
+  /** ISO timestamp when verified; null/undefined = not verified */
+  email_verified_at?: string | null;
 }
 
 export interface AdminUserListItem {

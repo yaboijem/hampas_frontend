@@ -9,6 +9,9 @@ import RegisterPage from './pages/Auth/RegisterPage';
 import LoginPage from './pages/Auth/LoginPage';
 import ForgotPasswordPage from './pages/Auth/ForgotPasswordPage';
 import ResetPasswordPage from './pages/Auth/ResetPasswordPage';
+import VerifyEmailPage from './pages/Auth/VerifyEmailPage';
+import EmailVerifiedPage from './pages/Auth/EmailVerifiedPage';
+import RequireVerified from './auth/RequireVerified';
 import PrivacyPolicy from './pages/Legal/PrivacyPolicy';
 import Terms from './pages/Legal/Terms';
 import ProfilePage from './pages/Profile/ProfilePage';
@@ -55,6 +58,8 @@ function AppRoutes() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/verify-email" element={<VerifyEmailPage />} />
+          <Route path="/email-verified" element={<EmailVerifiedPage />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/profile" element={<RequireAuth><ProfilePage /></RequireAuth>} />
@@ -97,7 +102,7 @@ function AppRoutes() {
             element={<Navigate to="/admin/requests?tab=events" replace />}
           />
           <Route path="/events" element={<EventsPage />} />
-          <Route path="/events/new" element={<RequireAuth><CreateEventPage /></RequireAuth>} />
+          <Route path="/events/new" element={<RequireVerified><CreateEventPage /></RequireVerified>} />
           <Route path="/events/:id/edit" element={<RequireAuth><EditEventPage /></RequireAuth>} />
           <Route path="/events/:id/applications" element={<RequireAuth><EventApplicationsPage /></RequireAuth>} />
           <Route path="/me/applications" element={<RequireAuth><MyApplicationsPage /></RequireAuth>} />

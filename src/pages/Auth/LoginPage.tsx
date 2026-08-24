@@ -47,9 +47,13 @@ export default function LoginPage() {
         | { from?: { pathname?: string; search?: string; hash?: string } }
         | null;
       const from = fromState?.from;
-      const target = from?.pathname
-        ? `${from.pathname}${from.search ?? ''}${from.hash ?? ''}`
-        : '/events';
+      const path = from?.pathname ?? '';
+      const safePath =
+        path.startsWith('/') && !path.startsWith('//') ? path : '/events';
+      const target =
+        safePath === '/events'
+          ? '/events'
+          : `${safePath}${from?.search ?? ''}${from?.hash ?? ''}`;
       navigate(target, { replace: true });
     } catch (err) {
       setError(loginErrorMessage(err));

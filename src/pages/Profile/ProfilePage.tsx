@@ -1,4 +1,5 @@
 import { useEffect, useId, useState, type ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthContext';
 import {
   changePassword,
@@ -282,7 +283,8 @@ type AccountForm = {
 };
 
 export default function ProfilePage() {
-  const { user, updateUser } = useAuth();
+  const { user, updateUser, signOut } = useAuth();
+  const navigate = useNavigate();
   const nameId = useId();
   const emailId = useId();
   const birthId = useId();
@@ -558,7 +560,9 @@ export default function ProfilePage() {
     setSavingPassword(true);
     try {
       const { message } = await changePassword(newPassword, confirmPassword);
-      resetPasswordUi(message || 'Password updated.');
+      resetPasswordUi(message || 'Password updated. Please log in again.');
+      await signOut();
+      navigate('/login', { replace: true });
     } catch (err) {
       setPasswordError(apiErrorMessage(err, 'Failed to update password.'));
     } finally {

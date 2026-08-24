@@ -15,11 +15,12 @@ const authState = vi.hoisted(() => ({
     email: 'me@example.com',
     birth_date: '2000-01-01',
     gender: 'male' as const,
-    is_admin: false,
+    is_admin: false, email_verified_at: '2020-01-01',
   },
 }));
 
 vi.mock('../auth/AuthContext', () => ({
+  isEmailVerified: (user: { is_admin?: boolean; email_verified_at?: string | null } | null) => Boolean(user?.is_admin || user?.email_verified_at),
   useAuth: () => ({
     user: authState.user,
     loading: false,
@@ -46,7 +47,7 @@ beforeEach(() => {
     email: 'me@example.com',
     birth_date: '2000-01-01',
     gender: 'male',
-    is_admin: false,
+    is_admin: false, email_verified_at: '2020-01-01',
   };
   vi.mocked(profilesApi.getProfile).mockReset();
   vi.mocked(profilesApi.listMyRoleRequests).mockReset();
@@ -57,18 +58,18 @@ beforeEach(() => {
 
 describe('canCreateEvent', () => {
   test('allows admin regardless of roles', () => {
-    expect(canCreateEvent({ is_admin: true }, [])).toBe(true);
-    expect(canCreateEvent({ is_admin: true }, ['player'])).toBe(true);
+    expect(canCreateEvent({ is_admin: true, email_verified_at: '2020-01-01' }, [])).toBe(true);
+    expect(canCreateEvent({ is_admin: true, email_verified_at: '2020-01-01' }, ['player'])).toBe(true);
   });
 
   test('allows coach or organizer', () => {
-    expect(canCreateEvent({ is_admin: false }, ['player', 'coach'])).toBe(true);
-    expect(canCreateEvent({ is_admin: false }, ['organizer'])).toBe(true);
+    expect(canCreateEvent({ is_admin: false, email_verified_at: '2020-01-01' }, ['player', 'coach'])).toBe(true);
+    expect(canCreateEvent({ is_admin: false, email_verified_at: '2020-01-01' }, ['organizer'])).toBe(true);
   });
 
   test('denies player-only and signed-out', () => {
-    expect(canCreateEvent({ is_admin: false }, ['player'])).toBe(false);
-    expect(canCreateEvent({ is_admin: false }, [])).toBe(false);
+    expect(canCreateEvent({ is_admin: false, email_verified_at: '2020-01-01' }, ['player'])).toBe(false);
+    expect(canCreateEvent({ is_admin: false, email_verified_at: '2020-01-01' }, [])).toBe(false);
     expect(canCreateEvent(null, ['coach'])).toBe(false);
   });
 });
@@ -142,7 +143,7 @@ describe('CreateEventPage gate', () => {
   });
 
   test('admin can open create form without profile roles', async () => {
-    authState.user = { ...authState.user, is_admin: true };
+    authState.user = { ...authState.user, is_admin: true, email_verified_at: '2020-01-01' };
 
     render(
       <MemoryRouter>

@@ -18,6 +18,7 @@ vi.mock('../api/admin', () => ({
 }));
 
 vi.mock('../auth/AuthContext', () => ({
+  isEmailVerified: (user: { is_admin?: boolean; email_verified_at?: string | null } | null) => Boolean(user?.is_admin || user?.email_verified_at),
   useAuth: () => ({
     user: {
       id: 99,
@@ -25,7 +26,7 @@ vi.mock('../auth/AuthContext', () => ({
       email: 'admin@example.com',
       birth_date: '1990-01-01',
       gender: 'other' as const,
-      is_admin: true,
+      is_admin: true, email_verified_at: '2020-01-01',
     },
     loading: false,
     signOut: vi.fn(),
@@ -54,7 +55,7 @@ describe('AdminUsersPage', () => {
           email: 'pat@example.com',
           birth_date: '1998-01-01',
           gender: 'female',
-          is_admin: false,
+          is_admin: false, email_verified_at: '2020-01-01',
           roles: ['player'],
           created_at: '2026-08-01T00:00:00Z',
         },
@@ -93,7 +94,7 @@ describe('AdminUsersPage', () => {
       email: 'pat@example.com',
       birth_date: '1998-01-01',
       gender: 'female',
-      is_admin: false,
+      is_admin: false, email_verified_at: '2020-01-01',
       roles: ['player'],
       profiles: {
         player: { positions: ['setter'], skill_level: 'beginner' },
@@ -121,7 +122,7 @@ describe('AdminUsersPage', () => {
       email: 'new@example.com',
       birth_date: '1995-06-01',
       gender: 'other',
-      is_admin: false,
+      is_admin: false, email_verified_at: '2020-01-01',
       roles: ['player'],
       profiles: { player: { positions: [] }, coach: null, organizer: null },
       created_at: '2026-08-19T00:00:00Z',
@@ -163,7 +164,7 @@ describe('AdminUsersPage', () => {
       email: 'pat@example.com',
       birth_date: '1998-01-01',
       gender: 'female',
-      is_admin: false,
+      is_admin: false, email_verified_at: '2020-01-01',
       roles: ['player'],
       profiles: {
         player: { positions: ['setter'], skill_level: 'beginner' },
@@ -178,7 +179,7 @@ describe('AdminUsersPage', () => {
       email: 'pat@example.com',
       birth_date: '1998-01-01',
       gender: 'female',
-      is_admin: false,
+      is_admin: false, email_verified_at: '2020-01-01',
       roles: ['player'],
       profiles: {
         player: { positions: ['setter'], skill_level: 'beginner' },

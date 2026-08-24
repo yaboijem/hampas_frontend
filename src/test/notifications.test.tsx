@@ -18,7 +18,7 @@ const auth = vi.hoisted(() => ({
     email: 'me@example.com',
     birth_date: '2000-01-01',
     gender: 'male' as const,
-    is_admin: false,
+    is_admin: false, email_verified_at: '2020-01-01',
   } as null | {
     id: number;
     name: string;
@@ -30,6 +30,7 @@ const auth = vi.hoisted(() => ({
 }));
 
 vi.mock('../auth/AuthContext', () => ({
+  isEmailVerified: (user: { is_admin?: boolean; email_verified_at?: string | null } | null) => Boolean(user?.is_admin || user?.email_verified_at),
   useAuth: () => ({
     user: auth.user,
     loading: false,
@@ -67,7 +68,7 @@ beforeEach(() => {
     email: 'me@example.com',
     birth_date: '2000-01-01',
     gender: 'male',
-    is_admin: false,
+    is_admin: false, email_verified_at: '2020-01-01',
   };
   vi.useFakeTimers({ shouldAdvanceTime: true });
 });
@@ -132,7 +133,7 @@ describe('NotificationsProvider', () => {
     await waitFor(() => expect(screen.getByTestId('count')).toHaveTextContent('0'));
 
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(8_000);
+      await vi.advanceTimersByTimeAsync(45_000);
     });
 
     await waitFor(() =>

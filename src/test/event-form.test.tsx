@@ -39,6 +39,7 @@ function futureLocal(daysAhead = 2, hour = 18): string {
 }
 
 vi.mock('../auth/AuthContext', () => ({
+  isEmailVerified: (user: { is_admin?: boolean; email_verified_at?: string | null } | null) => Boolean(user?.is_admin || user?.email_verified_at),
   useAuth: () => ({
     user: {
       id: 1,
@@ -46,7 +47,7 @@ vi.mock('../auth/AuthContext', () => ({
       email: 'host@example.com',
       birth_date: '2000-01-01',
       gender: 'male',
-      is_admin: false,
+      is_admin: false, email_verified_at: '2020-01-01',
     },
     loading: false,
     signIn: vi.fn(),

@@ -18,7 +18,7 @@ import type { AppNotification } from '../api/types';
 import { useAuth } from '../auth/AuthContext';
 import { showToast } from '../lib/adminNotifications';
 
-const POLL_MS = 8_000;
+const POLL_MS = 45_000;
 
 type Ctx = {
   unreadCount: number;

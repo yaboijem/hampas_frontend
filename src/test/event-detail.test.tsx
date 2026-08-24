@@ -15,7 +15,7 @@ const authState = vi.hoisted(() => ({
     email: 'me@example.com',
     birth_date: '2000-01-01',
     gender: 'male' as const,
-    is_admin: false,
+    is_admin: false, email_verified_at: '2020-01-01',
   },
 }));
 
@@ -41,6 +41,7 @@ vi.mock('../api/events', () => ({
 }));
 
 vi.mock('../auth/AuthContext', () => ({
+  isEmailVerified: (user: { is_admin?: boolean; email_verified_at?: string | null } | null) => Boolean(user?.is_admin || user?.email_verified_at),
   useAuth: () => ({
     user: authState.user,
     loading: false,
@@ -88,7 +89,7 @@ beforeEach(() => {
     email: 'me@example.com',
     birth_date: '2000-01-01',
     gender: 'male',
-    is_admin: false,
+    is_admin: false, email_verified_at: '2020-01-01',
   };
 });
 
@@ -236,7 +237,7 @@ describe('EventDetailPage', () => {
   test('admin sees edit, delete, and manage applications on non-owned live event', async () => {
     authState.user = {
       ...authState.user,
-      is_admin: true,
+      is_admin: true, email_verified_at: '2020-01-01',
     };
     vi.mocked(eventsApi.getEvent).mockResolvedValue({
       ...baseEvent,
@@ -259,7 +260,7 @@ describe('EventDetailPage', () => {
   test('admin does not see manage tools on non-owned pending event', async () => {
     authState.user = {
       ...authState.user,
-      is_admin: true,
+      is_admin: true, email_verified_at: '2020-01-01',
     };
     vi.mocked(eventsApi.getEvent).mockResolvedValue({
       ...baseEvent,

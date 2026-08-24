@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getProfile } from '../api/profiles';
-import { useAuth } from '../auth/AuthContext';
+import { isEmailVerified, useAuth } from '../auth/AuthContext';
 import { canCreateEvent } from '../auth/canCreateEvent';
 import { showToast } from '../lib/adminNotifications';
 import CreateEventAccessModal from './CreateEventAccessModal';
@@ -20,6 +20,10 @@ export default function CreateEventControl({ variant = 'header' }: Props) {
   if (!user) return null;
 
   const onClick = async () => {
+    if (!isEmailVerified(user)) {
+      navigate('/verify-email');
+      return;
+    }
     if (user.is_admin) {
       navigate('/events/new');
       return;
