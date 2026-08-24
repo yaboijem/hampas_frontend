@@ -6,6 +6,7 @@ import EventDetailPage from '../pages/Events/EventDetailPage';
 import * as eventsApi from '../api/events';
 import type { EventItem } from '../api/types';
 import { requestEventDetailRefresh } from '../events/eventDetailRefresh';
+import { withQuery } from './query';
 
 const authState = vi.hoisted(() => ({
   user: {
@@ -67,12 +68,14 @@ const baseEvent: EventItem = {
 
 function renderDetail(path = '/events/7') {
   return render(
-    <MemoryRouter initialEntries={[path]}>
-      <Routes>
-        <Route path="/events/:id" element={<EventDetailPage />} />
-        <Route path="/events" element={<div>Events list</div>} />
-      </Routes>
-    </MemoryRouter>,
+    withQuery(
+      <MemoryRouter initialEntries={[path]}>
+        <Routes>
+          <Route path="/events/:id" element={<EventDetailPage />} />
+          <Route path="/events" element={<div>Events list</div>} />
+        </Routes>
+      </MemoryRouter>,
+    ),
   );
 }
 

@@ -6,6 +6,7 @@ import EventsPage from '../pages/Events/EventsPage';
 import * as discoveryApi from '../api/discovery';
 import * as weatherApi from '../api/weather';
 import type { EventItem } from '../api/types';
+import { withQuery } from './query';
 
 vi.mock('../api/discovery', () => ({
   listEvents: vi.fn(),
@@ -76,11 +77,9 @@ describe('EventsPage', () => {
     );
     vi.mocked(discoveryApi.nearbyEvents).mockResolvedValue(pageOf([event({ distance_km: 2.4 })]));
 
-    render(
-      <MemoryRouter>
+    render(withQuery(<MemoryRouter>
         <EventsPage />
-      </MemoryRouter>,
-    );
+      </MemoryRouter>));
 
     expect(await screen.findByText(/Sunday Open Play/i)).toBeInTheDocument();
     expect(screen.getByText(/2.4 km away/i)).toBeInTheDocument();
@@ -99,11 +98,9 @@ describe('EventsPage', () => {
     );
     vi.mocked(discoveryApi.nearbyEvents).mockResolvedValue(pageOf([event({ distance_km: 12 })]));
 
-    render(
-      <MemoryRouter>
+    render(withQuery(<MemoryRouter>
         <EventsPage />
-      </MemoryRouter>,
-    );
+      </MemoryRouter>));
 
     expect(await screen.findByText(/Sunday Open Play/i)).toBeInTheDocument();
     expect(screen.getByRole('status')).toHaveTextContent(/location/i);
@@ -122,11 +119,9 @@ describe('EventsPage', () => {
     );
 
     const user = userEvent.setup();
-    render(
-      <MemoryRouter>
+    render(withQuery(<MemoryRouter>
         <EventsPage />
-      </MemoryRouter>,
-    );
+      </MemoryRouter>));
 
     expect(await screen.findByText(/Sunday Open Play/i)).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /all events/i }));
@@ -151,11 +146,9 @@ describe('EventsPage', () => {
     );
 
     const user = userEvent.setup();
-    render(
-      <MemoryRouter>
+    render(withQuery(<MemoryRouter>
         <EventsPage />
-      </MemoryRouter>,
-    );
+      </MemoryRouter>));
 
     expect(await screen.findByText(/Sunday Open Play/i)).toBeInTheDocument();
     const callsBefore = vi.mocked(discoveryApi.nearbyEvents).mock.calls.length;
@@ -183,11 +176,9 @@ describe('EventsPage', () => {
     );
 
     const user = userEvent.setup();
-    render(
-      <MemoryRouter>
+    render(withQuery(<MemoryRouter>
         <EventsPage />
-      </MemoryRouter>,
-    );
+      </MemoryRouter>));
 
     expect(await screen.findByText(/Sunday Open Play/i)).toBeInTheDocument();
     expect(screen.getByText(/Friday League Night/i)).toBeInTheDocument();
@@ -204,11 +195,9 @@ describe('EventsPage', () => {
     );
     vi.mocked(discoveryApi.nearbyEvents).mockResolvedValue(pageOf([event()]));
 
-    render(
-      <MemoryRouter>
+    render(withQuery(<MemoryRouter>
         <EventsPage />
-      </MemoryRouter>,
-    );
+      </MemoryRouter>));
 
     const hero = await screen.findByTestId('events-hero');
     expect(hero).toBeInTheDocument();

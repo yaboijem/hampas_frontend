@@ -1,9 +1,10 @@
+import { useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import BrandMark from '../../components/BrandMark';
 import EventCard from '../../components/EventCard';
 import { listEvents, nearbyEvents, type EventFilters } from '../../api/discovery';
-import type { EventItem, EventType, SkillLevel } from '../../api/types';
+import type { EventType, SkillLevel } from '../../api/types';
 import { fetchWeather, type WeatherSnapshot } from '../../api/weather';
 import { ConditionIcon, DropletsIcon, WindIcon } from '../../components/WeatherIcons';
 import {
@@ -11,6 +12,8 @@ import {
   PAMPANGA_CITIES,
   PAMPANGA_NEARBY_RADIUS_KM,
 } from '../../data/pampanga';
+import { getApiErrorMessage } from '../../lib/apiError';
+import { queryKeys } from '../../lib/queryKeys';
 
 type Mode = 'nearby' | 'manual';
 type FilterKey = 'type' | 'skill' | 'time';
@@ -183,8 +186,6 @@ function MenuOption({
 
 export default function EventsPage() {
   const [mode, setMode] = useState<Mode>('nearby');
-  const [events, setEvents] = useState<EventItem[]>([]);
-  const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<EventFilters>({});
   const [manual, setManual] = useState<{ city: string; barangay: string }>({
     city: '',
@@ -194,6 +195,8 @@ export default function EventsPage() {
   const [openMenu, setOpenMenu] = useState<FilterKey | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [weather, setWeather] = useState<WeatherSnapshot | null>(null);
+  const [geoHint, setGeoHint] = useState<string | null>(null);
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const filterRootRef = useRef<HTMLDivElement>(null);
   const filterPanelId = useId();
@@ -229,79 +232,70 @@ export default function EventsPage() {
     setOpenMenu(key);
   }, []);
 
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [geoHint, setGeoHint] = useState<string | null>(null);
-
-  const loadManual = useCallback(async () => {
-    setLoading(true);
-    setLoadError(null);
-    try {
-      const params: EventFilters = { ...filters };
-      if (manual.city) params.city = manual.city;
-      if (manual.barangay) params.barangay = manual.barangay;
-      const page = await listEvents(params);
-      setEvents(page.data);
-    } catch (err) {
-      setEvents([]);
-      setLoadError(err instanceof Error ? err.message : 'Failed to load events.');
-    } finally {
-      setLoading(false);
-    }
+  const listFilters = useMemo(() => {
+    const params: EventFilters = { ...filters };
+    if (manual.city) params.city = manual.city;
+    if (manual.barangay) params.barangay = manual.barangay;
+    return params;
   }, [filters, manual]);
 
-  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const nearbyQuery = useQuery({
+    queryKey: queryKeys.events.nearby(
+      coords?.lat ?? 0,
+      coords?.lng ?? 0,
+      PAMPANGA_NEARBY_RADIUS_KM,
+    ),
+    queryFn: () => nearbyEvents(coords!.lat, coords!.lng, PAMPANGA_NEARBY_RADIUS_KM),
+    enabled: mode === 'nearby' && coords !== null,
+  });
 
-  const loadNearby = useCallback((latitude: number, longitude: number) => {
-    setLoading(true);
-    setLoadError(null);
-    setCoords({ lat: latitude, lng: longitude });
-    nearbyEvents(latitude, longitude, PAMPANGA_NEARBY_RADIUS_KM)
-      .then((page) => setEvents(page.data))
-      .catch((err) => {
-        setEvents([]);
-        setLoadError(err instanceof Error ? err.message : 'Failed to load nearby events.');
-      })
-      .finally(() => setLoading(false));
-  }, []);
+  const listQuery = useQuery({
+    queryKey: queryKeys.events.list(listFilters as Record<string, unknown>),
+    queryFn: () => listEvents(listFilters),
+    enabled: mode === 'manual',
+  });
+
+  const active = mode === 'nearby' ? nearbyQuery : listQuery;
+  const loading = mode === 'nearby' ? coords === null || active.isPending : active.isPending;
+  const loadError = active.error
+    ? getApiErrorMessage(
+        active.error,
+        mode === 'nearby' ? 'Failed to load nearby events.' : 'Failed to load events.',
+      )
+    : null;
+  const events = active.data?.data ?? [];
 
   useEffect(() => {
-    if (mode === 'nearby') {
-      if (!navigator.geolocation) {
-        setGeoHint('Location not supported on this browser. Showing all events.');
-        setMode('manual');
-        return;
-      }
-      // Already have coords — don't re-prompt geo on every filter change
-      if (coords) {
-        return;
-      }
-      // HTTP on a phone IP is not a secure context — many browsers block GPS there.
-      const insecureLan =
-        !window.isSecureContext &&
-        !/^(localhost|127\.0\.0\.1)$/i.test(window.location.hostname);
-
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          setGeoHint(null);
-          loadNearby(pos.coords.latitude, pos.coords.longitude);
-        },
-        () => {
-          if (insecureLan) {
-            setGeoHint(
-              'Phone browsers block GPS on plain HTTP. Showing Pampanga games from the map center.',
-            );
-          } else {
-            setGeoHint('Location permission denied or timed out. Showing Pampanga games from the map center.');
-          }
-          // Still load nearby from province center so the list is not empty.
-          loadNearby(PAMPANGA_CENTER.lat, PAMPANGA_CENTER.lng);
-        },
-        { enableHighAccuracy: true, timeout: 12000, maximumAge: 60_000 },
-      );
+    if (mode !== 'nearby') return;
+    if (!navigator.geolocation) {
+      setGeoHint('Location not supported on this browser. Showing all events.');
+      setMode('manual');
       return;
     }
-    void loadManual();
-  }, [mode, loadNearby, loadManual, coords]);
+    if (coords) return;
+
+    const insecureLan =
+      !window.isSecureContext &&
+      !/^(localhost|127\.0\.0\.1)$/i.test(window.location.hostname);
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setGeoHint(null);
+        setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+      },
+      () => {
+        if (insecureLan) {
+          setGeoHint(
+            'Phone browsers block GPS on plain HTTP. Showing Pampanga games from the map center.',
+          );
+        } else {
+          setGeoHint('Turn on your GPS or Location Services for better results.');
+        }
+        setCoords({ lat: PAMPANGA_CENTER.lat, lng: PAMPANGA_CENTER.lng });
+      },
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 60_000 },
+    );
+  }, [mode, coords]);
 
   useEffect(() => {
     const lat = coords?.lat ?? PAMPANGA_CENTER.lat;
@@ -794,7 +788,7 @@ export default function EventsPage() {
             <button
               type="button"
               className="rounded-[var(--radius-control)] border border-border bg-surface px-3 py-1.5 text-sm font-medium text-navy hover:border-cobalt"
-              onClick={() => void loadManual()}
+              onClick={() => void listQuery.refetch()}
             >
               Apply
             </button>

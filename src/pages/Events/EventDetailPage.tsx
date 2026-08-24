@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { deleteEvent, getEvent } from '../../api/events';
-import type { EventItem } from '../../api/types';
 import { useAuth } from '../../auth/AuthContext';
 import ApplyButton from '../../components/ApplyButton';
 import {
@@ -29,6 +29,8 @@ import {
   hostRoleLabel,
   resolveHostDisplayAs,
 } from '../../events/eventLabels';
+import { getApiErrorMessage } from '../../lib/apiError';
+import { queryKeys } from '../../lib/queryKeys';
 
 const PLAYERS_POLL_MS = 8_000;
 
@@ -43,35 +45,33 @@ export default function EventDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [event, setEvent] = useState<EventItem | null>(null);
-  const [error] = useState<string | null>(null);
+  const queryClient = useQueryClient();
   const [showReport, setShowReport] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const eventId = Number(id);
+  const enabled = Number.isFinite(eventId) && eventId > 0;
 
-  const load = useCallback(
-    async (opts?: { silent?: boolean; hardFail?: boolean }) => {
-      if (!Number.isFinite(eventId) || eventId <= 0) return;
-      const silent = opts?.silent === true;
-      const hardFail = opts?.hardFail !== false && !silent;
-      try {
-        const next = await getEvent(eventId);
-        setEvent(next);
-      } catch {
-        if (hardFail) navigate('/events', { replace: true });
-      }
-    },
-    [eventId, navigate],
-  );
+  const {
+    data: event,
+    isPending,
+    isError,
+  } = useQuery({
+    queryKey: queryKeys.events.detail(eventId),
+    queryFn: () => getEvent(eventId),
+    enabled,
+  });
 
   useEffect(() => {
-    void load({ hardFail: true });
-  }, [load]);
+    if (isError && !event) navigate('/events', { replace: true });
+  }, [isError, event, navigate]);
 
   useEffect(() => {
-    const refresh = () => void load({ silent: true, hardFail: false });
+    if (!enabled) return;
+    const refresh = () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.events.detail(eventId) });
+    };
     const onFocus = () => refresh();
     const onVis = () => {
       if (document.visibilityState === 'visible') refresh();
@@ -88,15 +88,17 @@ export default function EventDetailPage() {
       document.removeEventListener('visibilitychange', onVis);
       window.removeEventListener(EVENT_DETAIL_REFRESH, onNotify);
     };
-  }, [eventId, load]);
+  }, [enabled, eventId, queryClient]);
 
   useEffect(() => {
-    if (!event?.show_participants_publicly) return;
-    const id = window.setInterval(() => void load({ silent: true, hardFail: false }), PLAYERS_POLL_MS);
+    if (!event?.show_participants_publicly || !enabled) return;
+    const id = window.setInterval(() => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.events.detail(eventId) });
+    }, PLAYERS_POLL_MS);
     return () => window.clearInterval(id);
-  }, [event?.show_participants_publicly, load]);
+  }, [event?.show_participants_publicly, enabled, eventId, queryClient]);
 
-  if (!event) {
+  if (isPending || !event) {
     return (
       <div className="mx-auto max-w-3xl space-y-4" aria-busy="true" aria-label="Loading event">
         <div className="skeleton-shimmer h-4 w-32 rounded" />
@@ -133,10 +135,12 @@ export default function EventDetailPage() {
     setDeleteError(null);
     try {
       await deleteEvent(event.id);
+      queryClient.removeQueries({ queryKey: queryKeys.events.detail(eventId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.events.all });
       setShowDelete(false);
       navigate('/events');
     } catch (err) {
-      setDeleteError(err instanceof Error ? err.message : 'Delete failed.');
+      setDeleteError(getApiErrorMessage(err, 'Delete failed.'));
     } finally {
       setDeleteBusy(false);
     }
@@ -168,12 +172,6 @@ export default function EventDetailPage() {
       {event.visibility !== 'live' && (
         <p className="mb-4 rounded-[var(--radius-control)] border border-amber-500/30 bg-amber-100 px-3 py-2 text-sm text-amber-950 dark:bg-amber-950/40 dark:text-amber-100">
           Pending review — this event is not public yet.
-        </p>
-      )}
-
-      {error && (
-        <p role="alert" className="mb-4 text-sm text-red-600">
-          {error}
         </p>
       )}
 
