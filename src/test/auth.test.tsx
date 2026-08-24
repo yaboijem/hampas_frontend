@@ -1,9 +1,11 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { describe, expect, test, vi } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import RegisterPage from '../pages/Auth/RegisterPage';
 import LoginPage from '../pages/Auth/LoginPage';
+import ForgotPasswordPage from '../pages/Auth/ForgotPasswordPage';
+import ResetPasswordPage from '../pages/Auth/ResetPasswordPage';
 import * as authApi from '../api/auth';
 
 vi.mock('../api/auth', () => ({
@@ -204,5 +206,69 @@ describe('LoginPage', () => {
     await user.click(screen.getByRole('button', { name: /log in/i }));
 
     expect(await screen.findByText('Event 9')).toBeInTheDocument();
+  });
+
+  test('links to forgot password', () => {
+    render(
+      <MemoryRouter>
+        <LoginPage />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole('link', { name: /forgot password/i })).toHaveAttribute(
+      'href',
+      '/forgot-password',
+    );
+  });
+});
+
+describe('ForgotPasswordPage', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  test('sends reset link and shows confirmation', async () => {
+    const user = userEvent.setup();
+    vi.mocked(authApi.forgotPassword).mockResolvedValue({ message: 'ok' });
+    render(
+      <MemoryRouter>
+        <ForgotPasswordPage />
+      </MemoryRouter>,
+    );
+
+    await user.type(screen.getByLabelText(/email/i), 'a@b.com');
+    await user.click(screen.getByRole('button', { name: /send reset link/i }));
+
+    await waitFor(() => expect(authApi.forgotPassword).toHaveBeenCalledWith('a@b.com'));
+    expect(await screen.findByRole('heading', { name: /check your email/i })).toBeInTheDocument();
+  });
+});
+
+describe('ResetPasswordPage', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  test('email link path provides token and submits reset', async () => {
+    const user = userEvent.setup();
+    vi.mocked(authApi.resetPassword).mockResolvedValue({ message: 'ok' });
+    render(
+      <MemoryRouter initialEntries={['/password-reset/tok123?email=a%40b.com']}>
+        <Routes>
+          <Route path="/password-reset/:token" element={<ResetPasswordPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('heading', { name: /set new password/i })).toBeInTheDocument();
+    expect(screen.getByLabelText(/email/i)).toHaveValue('a@b.com');
+
+    await user.type(screen.getByLabelText('New password'), STRONG);
+    await user.type(screen.getByLabelText('Confirm password'), STRONG);
+    await user.click(screen.getByRole('button', { name: /reset password/i }));
+
+    await waitFor(() =>
+      expect(authApi.resetPassword).toHaveBeenCalledWith('tok123', 'a@b.com', STRONG, STRONG),
+    );
+    expect(await screen.findByRole('heading', { name: /password updated/i })).toBeInTheDocument();
   });
 });

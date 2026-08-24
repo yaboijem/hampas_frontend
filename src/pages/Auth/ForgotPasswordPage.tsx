@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { forgotPassword } from '../../api/auth';
+import { getApiErrorMessage } from '../../lib/apiError';
 
 const cardClass =
   'mx-auto w-full max-w-md rounded-[var(--radius-card)] border border-border bg-surface p-5 shadow-soft sm:p-6';
@@ -24,7 +25,7 @@ export default function ForgotPasswordPage() {
       await forgotPassword(email.trim());
       setSent(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Request failed.');
+      setError(getApiErrorMessage(err, 'Request failed.'));
     } finally {
       setSubmitting(false);
     }

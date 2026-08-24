@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { resetPassword } from '../../api/auth';
 import PasswordField from '../../components/PasswordField';
 import PasswordRules from '../../components/PasswordRules';
+import { getApiErrorMessage } from '../../lib/apiError';
 import { passwordFormValid } from '../../lib/passwordRules';
 
 const cardClass =
@@ -14,7 +15,9 @@ const primaryBtn =
   'inline-flex w-full items-center justify-center rounded-[var(--radius-control)] bg-cobalt px-3 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:bg-electric disabled:cursor-not-allowed disabled:opacity-60';
 
 export default function ResetPasswordPage() {
+  const { token: tokenParam } = useParams();
   const [params] = useSearchParams();
+  const token = tokenParam || params.get('token') || '';
   const [email, setEmail] = useState(params.get('email') ?? '');
   const [password, setPassword] = useState('');
   const [confirmation, setConfirmation] = useState('');
@@ -22,7 +25,7 @@ export default function ResetPasswordPage() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const valid = passwordFormValid(password, confirmation) && email.includes('@');
+  const valid = passwordFormValid(password, confirmation) && email.includes('@') && token.length > 0;
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,10 +33,10 @@ export default function ResetPasswordPage() {
     setError(null);
     setSubmitting(true);
     try {
-      await resetPassword(params.get('token') ?? '', email.trim(), password, confirmation);
+      await resetPassword(token, email.trim(), password, confirmation);
       setDone(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Reset failed.');
+      setError(getApiErrorMessage(err, 'Reset failed.'));
     } finally {
       setSubmitting(false);
     }
@@ -61,6 +64,11 @@ export default function ResetPasswordPage() {
         Set new password
       </h1>
       <p className="mt-1 text-sm text-muted">Choose a strong password for your account.</p>
+      {!token ? (
+        <p role="alert" className="mt-4 text-sm text-red-600">
+          This reset link is missing a token. Request a new link from forgot password.
+        </p>
+      ) : null}
       <form onSubmit={submit} className="mt-5 space-y-3">
         {error ? (
           <p
@@ -98,6 +106,15 @@ export default function ResetPasswordPage() {
           {submitting ? 'Saving…' : 'Reset password'}
         </button>
       </form>
+      <p className="mt-4 text-center text-sm text-muted">
+        <Link to="/forgot-password" className="font-semibold text-cobalt hover:underline">
+          Request a new link
+        </Link>
+        {' · '}
+        <Link to="/login" className="font-semibold text-cobalt hover:underline">
+          Back to log in
+        </Link>
+      </p>
     </div>
   );
 }
