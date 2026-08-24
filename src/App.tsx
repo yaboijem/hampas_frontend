@@ -12,6 +12,7 @@ import ResetPasswordPage from './pages/Auth/ResetPasswordPage';
 import PrivacyPolicy from './pages/Legal/PrivacyPolicy';
 import Terms from './pages/Legal/Terms';
 import ProfilePage from './pages/Profile/ProfilePage';
+import AdminReportsPage from './pages/Admin/AdminReportsPage';
 import AdminRequestsPage from './pages/Admin/AdminRequestsPage';
 import AdminUsersPage from './pages/Admin/AdminUsersPage';
 import CreateEventPage from './pages/Events/CreateEventPage';
@@ -73,6 +74,16 @@ function AppRoutes() {
               <RequireAuth>
                 <RequireAdmin>
                   <AdminUsersPage />
+                </RequireAdmin>
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/admin/reports"
+            element={
+              <RequireAuth>
+                <RequireAdmin>
+                  <AdminReportsPage />
                 </RequireAdmin>
               </RequireAuth>
             }

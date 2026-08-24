@@ -2,21 +2,13 @@ import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { getReportReasons, submitReport } from '../api/reports';
 import { useAuth } from '../auth/AuthContext';
+import { reportReasonLabel } from '../content/reportReasons';
 
 interface Props {
   targetType: 'user' | 'event';
   targetId: number;
   onClose: () => void;
 }
-
-const LABELS: Record<string, string> = {
-  fake_event: 'Fake event',
-  fake_organizer: 'Fake organizer',
-  inappropriate: 'Inappropriate content',
-  spam: 'Spam',
-  harassment: 'Harassment',
-  other: 'Other',
-};
 
 export default function ReportModal({ targetType, targetId, onClose }: Props) {
   const { user } = useAuth();
@@ -63,7 +55,11 @@ export default function ReportModal({ targetType, targetId, onClose }: Props) {
         <label className="block">
           Reason
           <select className="block w-full border p-2" value={reason} onChange={(e) => setReason(e.target.value)} aria-label="Reason">
-            {reasons.map((r) => <option key={r} value={r}>{LABELS[r] ?? r}</option>)}
+            {reasons.map((r) => (
+              <option key={r} value={r}>
+                {reportReasonLabel(r)}
+              </option>
+            ))}
           </select>
         </label>
         <label className="block">

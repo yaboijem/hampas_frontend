@@ -187,6 +187,13 @@ export default function AppHeader() {
                           >
                             Users Management
                           </NavLink>
+                          <NavLink
+                            to="/admin/reports"
+                            role="menuitem"
+                            className={menuLinkClass}
+                          >
+                            Reports
+                          </NavLink>
                         </>
                       ) : null}
                       <CreateEventControl variant="menu" />
